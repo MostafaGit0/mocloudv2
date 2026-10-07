@@ -9,9 +9,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&display=swap" rel="stylesheet">
-<script type="importmap">
-{ "imports": { "mediabunny": "https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/dist/bundles/mediabunny.min.mjs" } }
-</script>
 <style>
   :root {
     --ink: #151A2B;
@@ -196,7 +193,7 @@
   </header>
 
   <section class="drop" id="drop">
-    <p><b>Drop videos or photos anywhere on this page.</b> MKV files are turned into MP4 with audio that plays in any browser before they upload.</p>
+    <p><b>Drop videos or photos anywhere on this page.</b> MKV files are turned into MP4 with audio that plays in any browser while they upload.</p>
     <button class="btn" id="pick">Choose files</button>
     <input type="file" id="fileInput" accept="video/*,image/*,.mkv,.avi,.mov,.heic" multiple hidden>
   </section>
@@ -225,6 +222,202 @@
   <input type="password" id="gateInput" autocomplete="current-password" aria-label="Passcode">
   <button class="btn" id="gateGo">Unlock</button>
 </dialog>
+
+<!-- The converter. It is not run here: the page starts it as a background worker,
+     so converting a movie never freezes the page. -->
+<script type="text/plain" id="converterSource">
+// Runs off the main thread: checks the file's audio, converts MKV to MP4,
+// and uploads each chunk as it is produced so the full file never sits in memory.
+const CDN = "https://cdn.jsdelivr.net/npm/";
+const LIB_VERSION = "1.61.3";
+const CORE = `${CDN}mediabunny@${LIB_VERSION}/dist/bundles/mediabunny.min.mjs`;
+const PLAYS = ["aac", "mp3", "opus", "flac", "vorbis"]; // audio browsers play
+const MP4_VIDEO = ["avc", "hevc", "vp9", "av1"];        // video that copies into MP4 as is
+const IN_FLIGHT = 3;                                     // chunks uploading at once
+
+// The add-ons import "mediabunny" by bare name, which a worker can't resolve,
+// so point them at the exact same copy of the library this worker loads.
+async function importAddon(path) {
+  const res = await fetch(CDN + path);
+  if (!res.ok) throw new Error("Couldn't load the converter.");
+  const src = await res.text();
+  const patched = src.replace(/from\s*(["'])mediabunny\1/g, `from"${CORE}"`);
+  if (patched === src) throw new Error("Couldn't load the converter.");
+  const url = URL.createObjectURL(new Blob([patched], { type: "text/javascript" }));
+  try { return await import(url); } finally { URL.revokeObjectURL(url); }
+}
+
+async function loadLib() {
+  const MB = await import(CORE);
+  const [ac3, aac] = await Promise.all([
+    importAddon(`@mediabunny/ac3@${LIB_VERSION}/dist/bundles/mediabunny-ac3.min.mjs`),
+    importAddon(`@mediabunny/aac-encoder@${LIB_VERSION}/dist/bundles/mediabunny-aac-encoder.min.mjs`),
+  ]);
+  ac3.registerAc3Decoder();
+  if (!(await MB.canEncodeAudio("aac"))) aac.registerAacEncoder();
+  return MB;
+}
+
+// Cuts the converter's output into equal chunks and uploads them as they fill.
+// MP4 rewrites a few bytes at the very start when it finishes, so chunk 1 is
+// held back and sent last. Everything else is sent once and forgotten.
+function makeChunker(partSize, sendPart, onSent) {
+  let cur = new Uint8Array(partSize), curStart = 0, curLen = 0, partNo = 1;
+  let first = null, end = 0, failure = null;
+  const inFlight = new Set(), parts = [];
+
+  const dispatch = (n, bytes) => {
+    const p = sendPart(n, bytes)
+      .then((part) => { parts.push(part); onSent(bytes.length); })
+      .catch((err) => { failure = failure || err; })
+      .finally(() => inFlight.delete(p));
+    inFlight.add(p);
+  };
+
+  const append = async (bytes) => {
+    let off = 0;
+    while (off < bytes.length) {
+      const n = Math.min(partSize - curLen, bytes.length - off);
+      cur.set(bytes.subarray(off, off + n), curLen);
+      curLen += n; off += n; end += n;
+      if (curLen < partSize) break;
+      if (partNo === 1) first = cur; else dispatch(partNo, cur);
+      cur = new Uint8Array(partSize); curStart += partSize; curLen = 0; partNo++;
+      while (inFlight.size >= IN_FLIGHT) await Promise.race(inFlight); // wait for the upload to catch up
+      if (failure) throw failure;
+    }
+  };
+
+  const patch = (pos, bytes) => {
+    let off = 0;
+    while (off < bytes.length) {
+      const at = pos + off;
+      let buf, base;
+      if (at >= curStart) { buf = cur; base = curStart; }
+      else if (first && at < partSize) { buf = first; base = 0; }
+      else throw new Error("This file couldn't be converted while uploading.");
+      const n = Math.min(bytes.length - off, base + partSize - at);
+      buf.set(bytes.subarray(off, off + n), at - base);
+      off += n;
+    }
+  };
+
+  return {
+    async write({ data, position }) {
+      if (failure) throw failure;
+      if (position > end) await append(new Uint8Array(position - end));
+      const overlap = Math.max(0, Math.min(data.length, end - position));
+      if (overlap) patch(position, data.subarray(0, overlap));
+      if (overlap < data.length) await append(data.subarray(overlap));
+    },
+    async finish() {
+      if (curLen) dispatch(partNo, cur.subarray(0, curLen));
+      if (first) dispatch(1, first);
+      while (inFlight.size) await Promise.race(inFlight);
+      if (failure) throw failure;
+      return { parts: parts.sort((a, b) => a.partNumber - b.partNumber), size: end };
+    },
+  };
+}
+
+// Decides what to do with a file before anything is uploaded.
+async function makePlan(MB, file) {
+  const input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
+  const video = await input.getPrimaryVideoTrack();
+  const primary = await input.getPrimaryAudioTrack();
+  const isMkv = /\.mkv$/i.test(file.name);
+  const primaryPlays = !primary || PLAYS.includes(primary.codec);
+  if (!isMkv && primaryPlays) return { action: "asis" };
+
+  // Use the main audio track if it can be converted, otherwise the first one that can
+  // (same language first). Movies with DTS often carry a Dolby track alongside it.
+  let audio = null;
+  if (primary) {
+    const usable = async (t) => t.codec === "aac" || (!!t.codec && await t.canDecode().catch(() => false));
+    const others = (await input.getAudioTracks()).filter((t) => t.id !== primary.id);
+    others.sort((a, b) => (b.languageCode === primary.languageCode) - (a.languageCode === primary.languageCode));
+    for (const t of [primary, ...others]) { if (await usable(t)) { audio = t; break; } }
+  }
+
+  const videoOk = !video || MP4_VIDEO.includes(video.codec);
+  if (!videoOk || (primary && !audio)) {
+    if (primaryPlays) return { action: "asis", note: `${file.name} was uploaded as is. Its video format can’t be converted here.` };
+    const kind = primary.codec ? primary.codec.toUpperCase() : "a format like DTS or TrueHD";
+    return {
+      action: "blocked", short: "Audio can’t be converted",
+      note: `${file.name} was not uploaded. Its audio is ${kind}, which can’t be converted in the browser, so it would play silent.`,
+    };
+  }
+  return {
+    action: "convert", input, video, audio,
+    name: file.name.replace(/\.[^.]+$/, "") + ".mp4",
+    note: audio && audio.id !== primary.id
+      ? `${file.name}: the main audio track can’t be converted, so another audio track in the file was used.` : undefined,
+  };
+}
+
+async function convert(MB, plan, partSize, sendPart, onProgress) {
+  let sent = 0, progress = 0;
+  const chunker = makeChunker(partSize, sendPart, (n) => { sent += n; onProgress(progress, sent); });
+  const output = new MB.Output({
+    format: new MB.Mp4OutputFormat({ fastStart: false }),
+    target: new MB.StreamTarget(new WritableStream({ write: (chunk) => chunker.write(chunk) })),
+  });
+  const { input, video, audio } = plan;
+  const conversion = await MB.Conversion.init({
+    input, output,
+    tracks: "all",
+    showWarnings: false,
+    video: (t) => (video && t.id === video.id ? {} : { discard: true }),
+    audio: (t) => {
+      if (!audio || t.id !== audio.id) return { discard: true };
+      if (t.codec === "aac") return {};
+      return { codec: "aac", numberOfChannels: Math.min(2, t.numberOfChannels || 2), bitrate: 192e3, forceTranscode: true };
+    },
+  });
+  const used = (t) => !t || conversion.utilizedTracks.some((u) => u.id === t.id && u.type === t.type);
+  if (!conversion.isValid || !used(video) || !used(audio)) {
+    throw new Error("This file couldn’t be converted in this browser.");
+  }
+  conversion.onProgress = (p) => { progress = p; onProgress(p, sent); };
+  await conversion.execute();
+  return chunker.finish();
+}
+
+let lib, plan;
+self.onmessage = async ({ data: msg }) => {
+  try {
+    if (msg.type === "check") {
+      lib = await loadLib();
+      plan = await makePlan(lib, msg.file);
+      self.postMessage({ type: "plan", action: plan.action, name: plan.name, note: plan.note, short: plan.short });
+    } else if (msg.type === "go") {
+      const sendPart = async (n, bytes) => {
+        for (let attempt = 1; ; attempt++) {
+          try {
+            const res = await fetch(
+              `${msg.api}/api/upload/part?key=${encodeURIComponent(msg.key)}&uploadId=${encodeURIComponent(msg.uploadId)}&n=${n}`,
+              { method: "PUT", headers: { "X-Passcode": msg.passcode }, body: bytes });
+            if (!res.ok) throw new Error(`Chunk ${n} was rejected (${res.status}).`);
+            return await res.json();
+          } catch (err) {
+            if (attempt >= 4) throw err;
+            await new Promise((r) => setTimeout(r, 1500 * attempt));
+          }
+        }
+      };
+      let last = 0;
+      const result = await convert(lib, plan, msg.partSize, sendPart, (p, sent) => {
+        const now = Date.now();
+        if (now - last > 300) { last = now; self.postMessage({ type: "progress", p, sent }); }
+      });
+      self.postMessage({ type: "done", parts: result.parts, size: result.size });
+    }
+  } catch (err) {
+    self.postMessage({ type: "error", message: (err && err.message) || "Conversion failed." });
+  }
+};
+</script>
 
 <script>
 (() => {
@@ -280,7 +473,7 @@
     el.textContent = msg;
     document.body.append(el);
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.remove(), 4500);
+    toastTimer = setTimeout(() => el.remove(), bad ? 9000 : 4500);
   }
 
   // ---------- Talking to the Worker ----------
@@ -472,7 +665,7 @@
         : q.file.size ? Math.floor((q.sent / q.file.size) * 100) : 0;
       stat.textContent = {
         waiting: "Waiting",
-        converting: q.prepStage === "fix" ? `Converting to MP4, ${prepPct}%` : "Checking audio",
+        converting: q.prepStage === "fix" ? `Converting and uploading, ${prepPct}%` : "Checking audio",
         uploading: `${pct}% of ${fmtSize(q.file.size)}`,
         finishing: "Finishing",
         failed: q.error || "Upload failed",
@@ -533,184 +726,155 @@
     });
   }
 
-  // ---------- Convert before upload: MKV to MP4, audio the browser can play ----------
-  // Video is copied untouched (fast, no quality loss). Audio is only re-encoded when it's
-  // a format browsers can't play (Dolby AC-3 / E-AC-3 and similar), into stereo AAC.
-  const LIB_VERSION = "1.61.3";
-  const CDN = "https://cdn.jsdelivr.net/npm/";
+  // ---------- Convert while uploading: MKV to MP4, audio the browser can play ----------
+  // The work happens in a background worker (see converterSource above), so the page
+  // stays responsive. Video is copied untouched. Audio is re-encoded to stereo AAC only
+  // when it's a format browsers can't play (Dolby AC-3 / E-AC-3 and similar). Each chunk
+  // uploads as soon as it's converted, so the finished file never sits in memory.
+  // A file whose audio can't be converted (DTS, TrueHD) is refused instead of uploaded silent.
   const CHECK_EXT = /\.(mkv|mp4|m4v|mov)$/i;
-  const MP4_VIDEO = ["avc", "hevc", "vp9", "av1"]; // can be copied into MP4 as is
-  let mediaLib;
+  let converterUrl;
 
-  function loadMediaLib() {
-    if (!mediaLib) {
-      mediaLib = (async () => {
-        const MB = await import("mediabunny");
-        const [ac3, aac] = await Promise.all([
-          import(`${CDN}@mediabunny/ac3@${LIB_VERSION}/dist/bundles/mediabunny-ac3.min.mjs`),
-          import(`${CDN}@mediabunny/aac-encoder@${LIB_VERSION}/dist/bundles/mediabunny-aac-encoder.min.mjs`),
-        ]);
-        ac3.registerAc3Decoder();
-        if (!(await MB.canEncodeAudio("aac"))) aac.registerAacEncoder();
-        return MB;
-      })();
-      mediaLib.catch(() => { mediaLib = undefined; });
+  function startConverter(q) {
+    if (!converterUrl) {
+      converterUrl = URL.createObjectURL(new Blob([$("converterSource").textContent], { type: "text/javascript" }));
     }
-    return mediaLib;
+    const worker = new Worker(converterUrl, { type: "module" });
+    let waiting = null;
+    const step = (message) => {
+      const p = new Promise((resolve, reject) => { waiting = { resolve, reject }; });
+      p.catch(() => {}); // the caller handles it; this only keeps the console quiet
+      worker.postMessage(message);
+      return p;
+    };
+    worker.onmessage = ({ data }) => {
+      if (data.type === "progress") { q.prep = data.p; renderQueue(); }
+      else if (data.type === "error") waiting && waiting.reject(new Error(data.message));
+      else waiting && waiting.resolve(data);
+    };
+    worker.onerror = (e) => {
+      e.preventDefault();
+      waiting && waiting.reject(new Error("The converter couldn’t start in this browser."));
+    };
+    return {
+      check: () => step({ type: "check", file: q.file }),
+      run: (start) => step({
+        type: "go", api: API, passcode: state.passcode,
+        key: start.key, uploadId: start.uploadId, partSize: start.partSize,
+      }),
+      stop() {
+        worker.terminate(); // also drops any chunk it was sending
+        waiting && waiting.reject(new Error("cancelled"));
+      },
+    };
   }
 
-  // Collects the converter's output on disk-backed Blobs instead of RAM, so movie-sized files fit.
-  function makeSink() {
-    const FLUSH_AT = 8 * 1024 * 1024;
-    const blobs = [], patches = [];
-    let buf = [], bufLen = 0, end = 0;
-    const flush = () => { if (bufLen) { blobs.push(new Blob(buf)); buf = []; bufLen = 0; } };
-    const append = (bytes) => {
-      buf.push(bytes); bufLen += bytes.length; end += bytes.length;
-      if (bufLen >= FLUSH_AT) flush();
-    };
-    const writable = new WritableStream({
-      write({ data, position }) {
-        const bytes = data.slice(); // the library may reuse its buffer
-        if (position > end) append(new Uint8Array(position - end));
-        if (position === end) return append(bytes);
-        const overlap = Math.min(bytes.length, end - position);
-        patches.push({ pos: position, bytes: bytes.subarray(0, overlap) });
-        if (overlap < bytes.length) append(bytes.subarray(overlap));
-      },
-    });
-    const finish = () => {
-      flush();
-      let out = new Blob(blobs);
-      for (const p of patches) {
-        out = new Blob([out.slice(0, p.pos), p.bytes, out.slice(p.pos + p.bytes.length)]);
+  // Returns the uploaded parts and the new name, or null when the file should upload unchanged.
+  async function convertAndUpload(q) {
+    const original = q.file.name;
+    q.status = "converting"; q.prep = 0; q.prepStage = "check"; renderQueue();
+    const conv = q.converter = startConverter(q);
+
+    let plan;
+    try {
+      plan = await conv.check();
+    } catch (err) {
+      if (q.cancelled) throw err;
+      console.warn("Audio check failed", err);
+      if (/\.mkv$/i.test(original)) {
+        toast(`${original} was not uploaded because its audio couldn’t be checked. Reload the page and try again.`, true);
+        throw new Error("Couldn’t check audio");
       }
-      return out;
-    };
-    return { writable, finish };
+      toast(`${original} couldn’t be checked, so it’s uploading as is.`, true);
+      plan = { action: "asis" };
+    }
+    if (plan.note) toast(plan.note, true);
+    if (plan.action === "blocked") throw new Error(plan.short);
+    if (plan.action !== "convert") return null;
+
+    q.prepStage = "fix"; renderQueue();
+    // The converted size isn't known yet. The original's size is a safe ceiling for the
+    // limit check, and the Worker re-checks real usage when the upload finishes.
+    const start = await api("/api/upload/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: plan.name, size: q.file.size, type: "video/mp4" }),
+    });
+    q.key = start.key; q.uploadId = start.uploadId;
+    if (q.cancelled) throw new Error("cancelled");
+    const result = await conv.run(start);
+    return { parts: result.parts, name: plan.name };
   }
 
-  // Returns { file, note }. file is the original when nothing needed fixing or it couldn't be fixed.
-  async function prepare(q) {
+  async function uploadDirect(q) {
     const file = q.file;
-    const MB = await loadMediaLib();
-    const input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
-    const video = await input.getPrimaryVideoTrack();
-    const audio = await input.getPrimaryAudioTrack();
-    const isMkv = /\.mkv$/i.test(file.name);
-    const audioPlays = !audio || ["aac", "mp3", "opus", "flac", "vorbis"].includes(audio.codec);
-    if (!isMkv && audioPlays) return { file }; // already fine
-
-    if (video && !MP4_VIDEO.includes(video.codec)) {
-      return { file, note: `${file.name} was uploaded as is. Its video format can’t be converted here.` };
-    }
-    const copyAudio = !audio || audio.codec === "aac";
-    if (!copyAudio && !(await audio.canDecode())) {
-      const kind = (audio.codec || "an unknown format").toUpperCase();
-      return { file, note: `${file.name} was uploaded as is. Its audio is ${kind}, which can’t be converted in the browser, so it may play silent.` };
-    }
-
-    const sink = makeSink();
-    const output = new MB.Output({
-      format: new MB.Mp4OutputFormat({ fastStart: false }),
-      target: new MB.StreamTarget(sink.writable),
+    q.status = "uploading"; q.sent = 0; renderQueue();
+    const start = await api("/api/upload/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: file.name, size: file.size, type: file.type }),
     });
-    const conversion = await MB.Conversion.init({
-      input, output,
-      tracks: "primary",
-      showWarnings: false,
-      audio: copyAudio ? {} : {
-        codec: "aac",
-        numberOfChannels: Math.min(2, audio.numberOfChannels || 2),
-        bitrate: 192e3,
-        forceTranscode: true,
-      },
-    });
-    const lostAudio = audio && conversion.discardedTracks.some((d) => d.track === audio);
-    const lostVideo = video && conversion.discardedTracks.some((d) => d.track === video);
-    if (!conversion.isValid || lostAudio || lostVideo) {
-      return { file, note: `${file.name} was uploaded as is. It couldn’t be converted in this browser.` };
-    }
+    q.key = start.key; q.uploadId = start.uploadId;
+    const partSize = start.partSize;
+    const total = Math.ceil(file.size / partSize);
+    const done = new Array(total);
+    const progress = new Array(total).fill(0);
+    let cursor = 0;
 
-    q.prepStage = "fix"; q.conversion = conversion;
-    let lastPaint = 0;
-    conversion.onProgress = (p) => {
-      q.prep = p;
-      const now = performance.now();
-      if (now - lastPaint > 300) { lastPaint = now; renderQueue(); }
+    const worker = async () => {
+      while (cursor < total) {
+        if (q.cancelled) throw new Error("cancelled");
+        const i = cursor++;
+        const blob = file.slice(i * partSize, Math.min(file.size, (i + 1) * partSize));
+        let attempt = 0;
+        for (;;) {
+          try {
+            done[i] = await sendPart(q, i + 1, blob, (loaded) => {
+              progress[i] = loaded;
+              q.sent = Math.min(file.size, progress.reduce((a, b) => a + b, 0));
+              renderQueue();
+            });
+            progress[i] = blob.size;
+            break;
+          } catch (e) {
+            if (q.cancelled || e.message === "cancelled" || ++attempt >= 4) throw e;
+            progress[i] = 0;
+            await new Promise((r) => setTimeout(r, 1500 * attempt));
+          }
+        }
+      }
     };
-    renderQueue();
-    await conversion.execute();
-    q.conversion = null;
-    const name = file.name.replace(/\.[^.]+$/, "") + ".mp4";
-    return { file: new File([sink.finish()], name, { type: "video/mp4" }) };
+    await Promise.all(Array.from({ length: Math.min(PARALLEL_PARTS, total) }, worker));
+    return done;
+  }
+
+  function stopConverter(q) {
+    if (q.converter) { q.converter.stop(); q.converter = null; }
   }
 
   async function uploadOne(q) {
     try {
-      if (CHECK_EXT.test(q.file.name)) {
-        q.status = "converting"; q.prep = 0; q.prepStage = "check"; renderQueue();
-        try {
-          const result = await prepare(q);
-          q.file = result.file;
-          if (result.note) toast(result.note, true);
-        } catch (err) {
-          if (q.cancelled) throw err;
-          console.warn("Conversion failed, uploading the original", err);
-          toast(`${q.file.name} couldn’t be converted, so the original is uploading.`, true);
-        }
+      let name = q.file.name, parts;
+      if (CHECK_EXT.test(name)) {
+        const converted = await convertAndUpload(q);
+        stopConverter(q);
         if (q.cancelled) throw new Error("cancelled");
+        if (converted) { parts = converted.parts; name = converted.name; }
       }
-      const file = q.file;
-      q.status = "uploading"; q.sent = 0; renderQueue();
-      const start = await api("/api/upload/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: file.name, size: file.size, type: file.type }),
-      });
-      q.key = start.key; q.uploadId = start.uploadId;
-      const partSize = start.partSize;
-      const total = Math.ceil(file.size / partSize);
-      const done = new Array(total);
-      const progress = new Array(total).fill(0);
-      let cursor = 0;
-
-      const worker = async () => {
-        while (cursor < total) {
-          if (q.cancelled) throw new Error("cancelled");
-          const i = cursor++;
-          const blob = file.slice(i * partSize, Math.min(file.size, (i + 1) * partSize));
-          let attempt = 0;
-          for (;;) {
-            try {
-              done[i] = await sendPart(q, i + 1, blob, (loaded) => {
-                progress[i] = loaded;
-                q.sent = Math.min(file.size, progress.reduce((a, b) => a + b, 0));
-                renderQueue();
-              });
-              progress[i] = blob.size;
-              break;
-            } catch (e) {
-              if (q.cancelled || e.message === "cancelled" || ++attempt >= 4) throw e;
-              progress[i] = 0;
-              await new Promise((r) => setTimeout(r, 1500 * attempt));
-            }
-          }
-        }
-      };
-      await Promise.all(Array.from({ length: Math.min(PARALLEL_PARTS, total) }, worker));
+      if (!parts) parts = await uploadDirect(q);
 
       q.status = "finishing"; renderQueue();
       await api("/api/upload/finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts: done }),
+        body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts }),
       });
       state.queue = state.queue.filter((x) => x !== q);
-      toast(`Uploaded ${q.file.name}`);
+      toast(`Uploaded ${name}`);
       await refresh();
       renderQueue();
     } catch (e) {
+      stopConverter(q);
       q.xhrs.forEach((x) => x.abort());
       if (q.uploadId && e.code !== "LIMIT") {
         api("/api/upload/abort", {
@@ -732,7 +896,7 @@
   function cancelItem(q) {
     if (q.status === "converting" || q.status === "uploading" || q.status === "finishing") {
       q.cancelled = true;
-      if (q.conversion) q.conversion.cancel().catch(() => {});
+      stopConverter(q);
       q.xhrs.forEach((x) => x.abort());
     } else {
       state.queue = state.queue.filter((x) => x !== q);
