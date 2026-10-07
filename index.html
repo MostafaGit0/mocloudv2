@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Stash</title>
+<title>MoCloud</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23151A2B'/><path d='M38 30v40l34-20z' fill='%23F0B34E'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -125,7 +125,13 @@
   .thumb:hover .play { transform: scale(1.1); }
   .tile h3 { margin: 10px 0 0; font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tile .meta { margin: 0; font-size: 13px; color: var(--dim); }
-  .tile .acts { display: flex; gap: 16px; margin-top: 4px; }
+  .tile .acts { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 10px; }
+  .del {
+    border: 1px solid var(--red); border-radius: 8px; padding: 8px 18px;
+    background: transparent; color: var(--red); font-size: 15px; font-weight: 500;
+  }
+  .del:hover, .del.armed { background: var(--red); color: #2A0C07; }
+  .del:disabled { opacity: .5; cursor: default; }
 
   .empty { padding: 56px 0; color: var(--dim); max-width: 46ch; }
   .empty b { display: block; color: var(--paper); font-size: 22px; font-weight: 500; margin-bottom: 6px; }
@@ -173,7 +179,7 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <h1 class="wordmark">Stash</h1>
+    <h1 class="wordmark">MoCloud</h1>
     <div class="gauge" id="gauge" aria-live="polite">
       <div class="gauge-line"><strong id="gaugeUsed">Checking storage</strong><span id="gaugeLeft"></span></div>
       <div class="gauge-bar" role="img" aria-label="Storage used">
@@ -206,14 +212,13 @@
   <div class="p-bar"><h3 id="pTitle"></h3><button class="btn ghost" id="pClose">Close</button></div>
   <div class="p-stage" id="pStage"></div>
   <div class="p-foot">
-    <button class="link" id="pCopy">Copy link</button>
     <a class="link" id="pDownload" href="#">Download</a>
   </div>
 </dialog>
 
 <dialog id="gate">
   <h3>Enter passcode</h3>
-  <p>This stash needs a passcode to show, add, or delete files.</p>
+  <p>MoCloud needs a passcode to show, add, or delete files.</p>
   <input type="password" id="gateInput" autocomplete="current-password" aria-label="Passcode">
   <button class="btn" id="gateGo">Unlock</button>
 </dialog>
@@ -226,7 +231,7 @@
   //  THE ONLY EDIT YOU NEED: paste your Cloudflare Worker URL below.
   //  Example: "https://stash.yourname.workers.dev"   (no slash at the end)
   // =====================================================================
-  const WORKER_URL = "https://crimson-pond-7d8a.benmostafa1010.workers.dev/";
+  const WORKER_URL = "https://crimson-pond-7d8a.benmostafa1010.workers.dev";
 
   const API = WORKER_URL.replace(/\/+$/, "");
   const configured = /^https?:\/\//.test(API);
@@ -261,7 +266,6 @@
   }
   const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   const fileUrl = (key, dl) => `${API}/file/${encodeURIComponent(key)}${dl ? "?dl=1" : ""}`;
-  const shareUrl = (key) => `${location.origin}${location.pathname}#watch=${encodeURIComponent(key)}`;
 
   // ---------- Toast ----------
   let toastTimer;
@@ -365,10 +369,8 @@
     meta.textContent = `${fmtSize(f.size)}, added ${fmtDate(f.uploaded)}`;
 
     const acts = document.createElement("div"); acts.className = "acts";
-    const copy = document.createElement("button"); copy.className = "link"; copy.textContent = "Copy link";
-    copy.addEventListener("click", () => copyLink(f.key));
     const dl = document.createElement("a"); dl.className = "link"; dl.textContent = "Download"; dl.href = fileUrl(f.key, true);
-    const del = document.createElement("button"); del.className = "link danger"; del.textContent = "Delete";
+    const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
     let armed;
     del.addEventListener("click", async () => {
       if (!del.classList.contains("armed")) {
@@ -384,7 +386,7 @@
         await refresh();
       } catch (e) { toast(e.message, true); del.disabled = false; del.textContent = "Delete"; del.classList.remove("armed"); }
     });
-    acts.append(copy, dl, del);
+    acts.append(dl, del);
     el.append(thumb, name, meta, acts);
     return el;
   }
@@ -407,19 +409,12 @@
     renderLibrary();
   }
 
-  async function copyLink(key) {
-    const link = shareUrl(key);
-    try { await navigator.clipboard.writeText(link); toast("Link copied"); }
-    catch { window.prompt("Copy this link", link); }
-  }
-
   // ---------- Player ----------
   function openPlayer(f) {
     const stage = $("pStage");
     stage.replaceChildren();
     $("pTitle").textContent = f.name;
     $("pDownload").href = fileUrl(f.key, true);
-    $("pCopy").onclick = () => copyLink(f.key);
 
     if (isVideo(f)) {
       const v = document.createElement("video");
