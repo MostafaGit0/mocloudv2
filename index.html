@@ -78,6 +78,7 @@
   }
   .drop p { margin: 0; color: var(--dim); }
   .drop p b { color: var(--paper); font-weight: 500; }
+  .drop-btns { display: flex; flex-wrap: wrap; gap: 10px; }
   .btn {
     border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 500;
     background: var(--amber); color: #1B1606;
@@ -112,6 +113,22 @@
   .lib-head span { color: var(--dim); font-size: 14px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px 20px; }
   .tile { min-width: 0; }
+  .group { border-top: 1px solid var(--line); padding: 18px 0 8px; }
+  .group + .group { margin-top: 20px; }
+  .group summary {
+    display: flex; align-items: baseline; gap: 12px; cursor: pointer; list-style: none;
+    font-size: 20px; font-weight: 500; letter-spacing: -0.01em;
+  }
+  .group summary::-webkit-details-marker { display: none; }
+  .group summary::before {
+    content: ""; align-self: center; flex: none;
+    border: solid transparent; border-width: 5px 0 5px 8px; border-left-color: var(--amber);
+    transition: transform .15s;
+  }
+  .group[open] summary::before { transform: rotate(90deg); }
+  .group summary span { color: var(--dim); font-size: 14px; font-weight: 400; letter-spacing: 0; }
+  .season { margin: 22px 0 12px; font-size: 14px; font-weight: 500; color: var(--dim); }
+  .group .grid { margin-bottom: 12px; }
   .thumb {
     position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; border: 0;
     border-radius: var(--radius); overflow: hidden; background: var(--panel);
@@ -193,16 +210,20 @@
   </header>
 
   <section class="drop" id="drop">
-    <p><b>Drop videos or photos anywhere on this page.</b> MKV files are turned into MP4 with audio that plays in any browser while they upload.</p>
-    <button class="btn" id="pick">Choose files</button>
+    <p><b>Drop videos, photos or a whole folder anywhere on this page.</b> MKV files are turned into MP4 with audio that plays in any browser while they upload.</p>
+    <div class="drop-btns">
+      <button class="btn" id="pick">Choose files</button>
+      <button class="btn ghost" id="pickFolder">Choose folder</button>
+    </div>
     <input type="file" id="fileInput" accept="video/*,image/*,.mkv,.avi,.mov,.heic" multiple hidden>
+    <input type="file" id="folderInput" webkitdirectory multiple hidden>
   </section>
 
   <div class="banner" id="fullBanner" hidden>Max amount reached. Delete something to upload more.</div>
   <ul class="queue" id="queue"></ul>
 
   <div class="lib-head"><h2>Your files</h2><span id="count"></span></div>
-  <div class="grid" id="grid"></div>
+  <div id="grid"></div>
   <div class="empty" id="empty" hidden></div>
 </div>
 
@@ -428,10 +449,11 @@ self.onmessage = (e) => {
   const fileUrl = (key, dl) => `${API}/file/${encodeURIComponent(key)}${dl ? "?dl=1" : ""}`;
 
   // ---------- Readable titles ----------
-  // Turns a messy file name into something you'd actually call the video.
-  // Only the title shown on the page changes. The stored file and its download name stay as they were.
+  // Turns a messy file name into something you'd actually call the video, and works out
+  // which show, season and episode it is so the library can sort itself.
+  // Only what the page shows changes. The stored file and its download name stay as they were.
   const JUNK = /(^|[\s._\-\[\(])(2160p|1080[pi]|720p|480p|4k|uhd|hdr\d*|bluray|blu-ray|brrip|bdrip|dvdrip|webrip|web-?dl|web|hdtv|hdrip|remux|x26[45]|h\.?26[45]|hevc|avc|xvid|divx|ac3|eac3|dd[p+]?\d|dts|aac|atmos|truehd|10bit|proper|repack|extended|unrated|multi|dual)(?=$|[\s._\-\]\)])/i;
-  function prettyTitle(fileName) {
+  function parseName(fileName) {
     const stem = String(fileName).replace(/\.[a-z0-9]{2,4}$/i, "");
     const tidy = (s) => {
       let t = s.replace(/[\[\(][^\]\)]*[\]\)]/g, " ")      // [group] and (notes)
@@ -446,14 +468,36 @@ self.onmessage = (e) => {
          || stem.match(/^(.*?)[\s._\-]+Season[\s._\-]*(\d{1,2})[\s._\-]*Episode[\s._\-]*(\d{1,3})/i)
          || stem.match(/^(.*?)[\s._\-]+(\d{1,2})x(\d{2,3})(?!\d)/i);
     if (m) {
-      const show = tidy(m[1]);
-      const tag = `S${+m[2]} EP${+m[3]}`;
-      return show ? `${show} ${tag}` : tag;
+      const show = tidy(m[1]), season = +m[2], episode = +m[3];
+      const tag = `S${season} EP${episode}`;
+      return { title: show ? `${show} ${tag}` : tag, show, season, episode };
     }
     m = stem.match(/^(.+)[\s._\-\(\[]+((?:19|20)\d{2})(?=$|[\s._\-\)\]])/);
-    if (m && tidy(m[1])) return `${tidy(m[1])} (${m[2]})`;
+    if (m && tidy(m[1])) return { title: `${tidy(m[1])} (${m[2]})` };
     const cut = stem.search(JUNK);
-    return tidy(cut > 0 ? stem.slice(0, cut) : stem) || stem;
+    return { title: tidy(cut > 0 ? stem.slice(0, cut) : stem) || stem };
+  }
+  const prettyTitle = (fileName) => parseName(fileName).title;
+
+  // Sorts the library into shows (by season, then episode) and everything else.
+  function groupFiles(files) {
+    const shows = new Map(), other = [];
+    for (const f of files) {
+      const info = isVideo(f) ? parseName(f.name) : null;
+      if (!info || !info.show || info.season === undefined) { other.push(f); continue; }
+      const id = info.show.toLowerCase().replace(/[^a-z0-9]+/g, "");
+      if (!shows.has(id)) shows.set(id, { id, name: info.show, seasons: new Map(), count: 0 });
+      const show = shows.get(id);
+      if (!show.seasons.has(info.season)) show.seasons.set(info.season, []);
+      show.seasons.get(info.season).push({ file: f, episode: info.episode });
+      show.count++;
+    }
+    const list = [...shows.values()].sort((a, b) => a.name.localeCompare(b.name));
+    for (const show of list) {
+      show.seasons = [...show.seasons.entries()].sort((a, b) => a[0] - b[0])
+        .map(([number, eps]) => ({ number, episodes: eps.sort((a, b) => a.episode - b.episode) }));
+    }
+    return { shows: list, other };
   }
   const titleOf = (f) => (isVideo(f) ? prettyTitle(f.name) : f.name);
 
@@ -542,11 +586,11 @@ self.onmessage = (e) => {
     $("gaugeNote").textContent =
       `Uploads stop at ${fmtSize(limit)}. The last ${fmtSize(free - limit)} of the free ${fmtSize(free)} is never used.`;
     $("fullBanner").hidden = !full;
-    $("pick").disabled = full;
+    $("pick").disabled = full; $("pickFolder").disabled = full;
   }
 
   // ---------- Library ----------
-  function tile(f) {
+  function tile(f, label) {
     const el = document.createElement("article");
     el.className = "tile";
     const video = isVideo(f);
@@ -567,7 +611,7 @@ self.onmessage = (e) => {
     }
     thumb.addEventListener("click", () => openPlayer(f));
 
-    const name = document.createElement("h3"); name.textContent = titleOf(f); name.title = f.name;
+    const name = document.createElement("h3"); name.textContent = label || titleOf(f); name.title = f.name;
     const meta = document.createElement("p"); meta.className = "meta";
     meta.textContent = `${fmtSize(f.size)}, added ${fmtDate(f.uploaded)}`;
 
@@ -594,12 +638,46 @@ self.onmessage = (e) => {
     return el;
   }
 
+  // Which show sections are folded shut. Remembered between visits.
+  const folded = new Set((() => { try { return JSON.parse(localStorage.getItem("mocloud-folded")) || []; } catch { return []; } })());
+  function setFolded(id, shut) {
+    if (shut) folded.add(id); else folded.delete(id);
+    try { localStorage.setItem("mocloud-folded", JSON.stringify([...folded])); } catch {}
+  }
+
+  function gridOf(tiles) {
+    const g = document.createElement("div"); g.className = "grid";
+    g.append(...tiles);
+    return g;
+  }
+
+  function section(id, title, count, children) {
+    const d = document.createElement("details"); d.className = "group"; d.open = !folded.has(id);
+    const s = document.createElement("summary"); s.textContent = title;
+    const n = document.createElement("span"); n.textContent = `${count} ${count === 1 ? "file" : "files"}`;
+    s.append(n);
+    d.append(s, ...children);
+    d.addEventListener("toggle", () => setFolded(id, !d.open));
+    return d;
+  }
+
   function renderLibrary() {
     const grid = $("grid"), empty = $("empty");
-    grid.replaceChildren(...state.files.map(tile));
+    const { shows, other } = groupFiles(state.files);
+    if (!shows.length) {
+      grid.replaceChildren(gridOf(other.map((f) => tile(f)))); // nothing to group: plain grid
+    } else {
+      const sections = shows.map((show) => section("show:" + show.id, show.name, show.count,
+        show.seasons.flatMap((season) => {
+          const h = document.createElement("h3"); h.className = "season"; h.textContent = `Season ${season.number}`;
+          return [h, gridOf(season.episodes.map((ep) => tile(ep.file, `Episode ${ep.episode}`)))];
+        })));
+      if (other.length) sections.push(section("other", "Other", other.length, [gridOf(other.map((f) => tile(f)))]));
+      grid.replaceChildren(...sections);
+    }
     $("count").textContent = state.files.length ? `${state.files.length} ${state.files.length === 1 ? "file" : "files"}` : "";
     empty.hidden = state.files.length > 0;
-    if (!state.files.length) empty.innerHTML = "<b>Nothing here yet</b>Drop a video or photo anywhere on this page and it shows up here.";
+    if (!state.files.length) empty.innerHTML = "<b>Nothing here yet</b>Drop a video, photo or folder anywhere on this page and it shows up here.";
   }
 
   async function refresh() {
@@ -689,17 +767,21 @@ self.onmessage = (e) => {
     renderGauge();
   }
 
-  function addFiles(fileList) {
+  function addFiles(fileList, fromFolder) {
     if (!configured) { toast("Connect storage first: paste your Worker URL into index.html.", true); return; }
-    let blocked = false, skipped = 0;
-    for (const file of fileList) {
-      if (!isVideo(file) && !isImage(file)) { skipped++; continue; }
+    let blocked = false, skipped = 0, added = 0;
+    // Name order, so episodes upload 1, 2, 3 ... 10 rather than 1, 10, 2.
+    const files = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    for (const file of files) {
+      if (file.name.startsWith(".") || (!isVideo(file) && !isImage(file))) { skipped++; continue; } // dot files are system leftovers
       // FAIL-SAFE (browser side): never queue past the limit.
       if (state.used + pendingBytes() + file.size > state.limit) { blocked = true; continue; }
       state.queue.push({ file, status: "waiting", sent: 0, xhrs: new Set(), cancelled: false });
+      added++;
     }
-    if (blocked) toast("Max amount reached. Delete something to upload more.", true);
-    else if (skipped) toast("Only videos and photos can be uploaded.", true);
+    if (blocked) toast(added ? "Not everything fits. The rest was left out so storage stays under the limit." : "Max amount reached. Delete something to upload more.", true);
+    else if (fromFolder && !added) toast("No videos or photos found in that folder.", true);
+    else if (skipped && !fromFolder) toast("Only videos and photos can be uploaded.", true); // folders usually carry extras like subtitles
     renderQueue();
     runQueue();
   }
@@ -932,6 +1014,28 @@ self.onmessage = (e) => {
   }
 
   // ---------- Drag and drop (whole page) + file picker ----------
+  // Opens dropped folders (and folders inside them) and returns every file found.
+  function readDrop(dt) {
+    // Both of these must be read right away, before the drop event ends.
+    const loose = Array.from(dt.files || []);
+    const entries = Array.from(dt.items || [])
+      .map((item) => (item.webkitGetAsEntry ? item.webkitGetAsEntry() : null)).filter(Boolean);
+    if (!entries.some((en) => en.isDirectory)) return Promise.resolve({ files: loose, fromFolder: false });
+
+    const found = [];
+    const walk = async (entry) => {
+      if (entry.isFile) { found.push(await new Promise((res, rej) => entry.file(res, rej))); return; }
+      const reader = entry.createReader();
+      for (;;) { // folders are read in batches
+        const batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+        if (!batch.length) break;
+        for (const child of batch) await walk(child).catch(() => {});
+      }
+    };
+    return Promise.all(entries.map((en) => walk(en).catch(() => {})))
+      .then(() => ({ files: found, fromFolder: true }));
+  }
+
   let dragDepth = 0;
   const hasFiles = (e) => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
   window.addEventListener("dragenter", (e) => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; $("veil").hidden = false; });
@@ -940,8 +1044,10 @@ self.onmessage = (e) => {
   window.addEventListener("drop", (e) => {
     if (!hasFiles(e)) return;
     e.preventDefault(); dragDepth = 0; $("veil").hidden = true;
-    addFiles(e.dataTransfer.files);
+    readDrop(e.dataTransfer).then(({ files, fromFolder }) => addFiles(files, fromFolder));
   });
+  $("pickFolder").addEventListener("click", () => $("folderInput").click());
+  $("folderInput").addEventListener("change", (e) => { addFiles(e.target.files, true); e.target.value = ""; });
   $("pick").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
   window.addEventListener("beforeunload", (e) => {
@@ -954,7 +1060,7 @@ self.onmessage = (e) => {
     $("gaugeUsed").textContent = "Storage not connected";
     $("empty").hidden = false;
     $("empty").innerHTML = "<b>Connect your storage</b>Open <code>index.html</code>, find <code>WORKER_URL</code> near the top of the script, and paste in your Cloudflare Worker URL.";
-    $("pick").disabled = true;
+    $("pick").disabled = true; $("pickFolder").disabled = true;
   } else {
     openFromHash(); // shared links play right away, no passcode needed
     refresh().catch((e) => {
