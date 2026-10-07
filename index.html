@@ -603,6 +603,104 @@ self.onmessage = (e) => {
     $("pick").disabled = full; $("pickFolder").disabled = full;
   }
 
+  // ---------- Thumbnails ----------
+  // A still frame is grabbed from each video once, then kept in this browser, so the library
+  // shows pictures straight away on later visits instead of loading every video again.
+  const thumbs = new Map();       // file key -> { url, duration, videoWidth, videoHeight }
+  const thumbJobs = new Map();    // file key -> capture in progress
+  const THUMB_WIDTH = 480, THUMB_AT_ONCE = 2;
+  let thumbDb = null, thumbsRunning = 0;
+  const thumbWaiting = [];
+
+  const thumbsReady = new Promise((resolve) => {
+    try {
+      const open = indexedDB.open("mocloud-thumbs", 1);
+      open.onupgradeneeded = () => open.result.createObjectStore("thumbs");
+      open.onerror = open.onblocked = () => resolve();
+      open.onsuccess = () => {
+        thumbDb = open.result;
+        const cursor = thumbDb.transaction("thumbs").objectStore("thumbs").openCursor();
+        cursor.onerror = () => resolve();
+        cursor.onsuccess = () => {
+          const c = cursor.result;
+          if (!c) return resolve();
+          thumbs.set(c.key, c.value);
+          c.continue();
+        };
+      };
+    } catch { resolve(); } // private windows and the like: thumbnails still work, just not remembered
+  });
+  function thumbStore(key, value) {
+    if (!thumbDb) return;
+    try {
+      const store = thumbDb.transaction("thumbs", "readwrite").objectStore("thumbs");
+      if (value) store.put(value, key); else store.delete(key);
+    } catch {}
+  }
+  // Forget pictures for files that have been deleted.
+  function pruneThumbs() {
+    const live = new Set(state.files.map((f) => f.key));
+    for (const key of [...thumbs.keys()]) if (!live.has(key)) { thumbs.delete(key); thumbStore(key, null); }
+  }
+
+  // Loads just enough of the video to grab one frame, a little way in so it isn't a black intro.
+  function grabFrame(key) {
+    return new Promise((resolve, reject) => {
+      const v = document.createElement("video");
+      v.crossOrigin = "anonymous"; v.muted = true; v.playsInline = true; v.preload = "metadata";
+      let tries = 0;
+      const stop = () => { clearTimeout(timer); v.removeAttribute("src"); try { v.load(); } catch {} };
+      const fail = () => { stop(); reject(new Error("no thumbnail")); };
+      const timer = setTimeout(fail, 45000);
+      const spots = [0.1, 0.3]; // second spot is the retry if the first frame is nearly black
+      const seek = () => {
+        const d = isFinite(v.duration) && v.duration > 0 ? v.duration : 0;
+        v.currentTime = d ? Math.min(d * spots[tries], d - 0.1) : 1;
+      };
+      v.onerror = fail;
+      v.onloadedmetadata = () => { v.preload = "auto"; seek(); };
+      v.onseeked = () => {
+        try {
+          if (!v.videoWidth) return fail();
+          const c = document.createElement("canvas");
+          c.width = THUMB_WIDTH; c.height = Math.round(THUMB_WIDTH * v.videoHeight / v.videoWidth);
+          const ctx = c.getContext("2d");
+          ctx.drawImage(v, 0, 0, c.width, c.height);
+          const px = ctx.getImageData(0, 0, c.width, c.height).data;
+          let light = 0;
+          for (let i = 0; i < px.length; i += 400) light += px[i] + px[i + 1] + px[i + 2];
+          if (light / (px.length / 400 * 3) < 12 && ++tries < spots.length) return seek();
+          const result = { url: c.toDataURL("image/jpeg", 0.72), duration: v.duration, videoWidth: v.videoWidth, videoHeight: v.videoHeight };
+          stop(); resolve(result);
+        } catch { fail(); }
+      };
+      v.src = fileUrl(key);
+    });
+  }
+
+  // At most two videos are sampled at a time so the page and the connection stay free.
+  function getThumb(key) {
+    if (thumbs.has(key)) return Promise.resolve(thumbs.get(key));
+    if (!thumbJobs.has(key)) {
+      thumbJobs.set(key, new Promise((resolve, reject) => {
+        thumbWaiting.push(() => grabFrame(key).then((t) => { thumbs.set(key, t); thumbStore(key, t); resolve(t); }, reject));
+        pumpThumbs();
+      }));
+      thumbJobs.get(key).catch(() => {});
+    }
+    return thumbJobs.get(key);
+  }
+  function pumpThumbs() {
+    while (thumbsRunning < THUMB_AT_ONCE && thumbWaiting.length) {
+      thumbsRunning++;
+      thumbWaiting.shift()().catch(() => {}).then(() => { thumbsRunning--; pumpThumbs(); });
+    }
+  }
+  // Only tiles that are on screen (or close) ask for a picture.
+  const thumbWatcher = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
+    for (const en of entries) if (en.isIntersecting) { thumbWatcher.unobserve(en.target); en.target._wantThumb(); }
+  }, { rootMargin: "300px" }) : null;
+
   // ---------- Library ----------
   function tile(f, label) {
     const el = document.createElement("article");
@@ -613,11 +711,15 @@ self.onmessage = (e) => {
     thumb.className = "thumb";
     thumb.setAttribute("aria-label", `${video ? "Play" : "Open"} ${titleOf(f)}`);
     if (video) {
-      const v = document.createElement("video");
-      v.muted = true; v.playsInline = true; v.preload = "metadata";
-      v.src = fileUrl(f.key) + "#t=1";
+      const img = document.createElement("img"); img.alt = ""; img.hidden = true;
       const p = document.createElement("span"); p.className = "play";
-      thumb.append(v, p);
+      thumb.append(img, p);
+      const show = (t) => { img.src = t.url; img.hidden = false; };
+      if (thumbs.has(f.key)) show(thumbs.get(f.key));
+      else {
+        thumb._wantThumb = () => getThumb(f.key).then(show, () => {}); // no picture: the plain tile stays
+        if (thumbWatcher) thumbWatcher.observe(thumb); else thumb._wantThumb();
+      }
     } else {
       const img = document.createElement("img");
       img.loading = "lazy"; img.alt = ""; img.src = fileUrl(f.key);
@@ -649,7 +751,7 @@ self.onmessage = (e) => {
     });
     const info = document.createElement("button"); info.className = "link"; info.textContent = "Info";
     info.setAttribute("aria-label", `File information for ${titleOf(f)}`);
-    info.addEventListener("click", () => openInfo(f, el.querySelector("video")));
+    info.addEventListener("click", () => openInfo(f, thumbs.get(f.key)));
     const left = document.createElement("div"); left.className = "acts-left";
     left.append(dl, info);
     acts.append(left, del);
@@ -705,6 +807,8 @@ self.onmessage = (e) => {
       files: data.files, used: data.used, limit: data.limit,
       freeTier: data.freeTier, partSize: data.partSize,
     });
+    await thumbsReady;
+    pruneThumbs();
     renderGauge();
     renderLibrary();
   }
@@ -749,7 +853,7 @@ self.onmessage = (e) => {
     stage.replaceChildren();
     $("pTitle").textContent = titleOf(f); $("pTitle").title = f.name;
     $("pDownload").href = fileUrl(f.key, true);
-    $("pInfo").onclick = () => openInfo(f, stage.querySelector("video"));
+    $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || thumbs.get(f.key));
 
     if (isVideo(f)) {
       const v = document.createElement("video");
