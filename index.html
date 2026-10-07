@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": { "mediabunny": "https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/dist/bundles/mediabunny.min.mjs" } }
+</script>
 <style>
   :root {
     --ink: #151A2B;
@@ -193,7 +196,7 @@
   </header>
 
   <section class="drop" id="drop">
-    <p><b>Drop videos or photos anywhere on this page.</b> They play on any device that has the link.</p>
+    <p><b>Drop videos or photos anywhere on this page.</b> MKV files are turned into MP4 with audio that plays in any browser before they upload.</p>
     <button class="btn" id="pick">Choose files</button>
     <input type="file" id="fileInput" accept="video/*,image/*,.mkv,.avi,.mov,.heic" multiple hidden>
   </section>
@@ -321,7 +324,7 @@
 
   // ---------- Storage gauge ----------
   function pendingBytes() {
-    return state.queue.filter((q) => q.status === "waiting" || q.status === "uploading")
+    return state.queue.filter((q) => q.status === "waiting" || q.status === "converting" || q.status === "uploading")
       .reduce((sum, q) => sum + q.file.size, 0);
   }
 
@@ -464,9 +467,12 @@
       if (q.status === "failed") li.className = "failed";
       const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.file.name;
       const stat = document.createElement("span"); stat.className = "q-stat";
-      const pct = q.file.size ? Math.floor((q.sent / q.file.size) * 100) : 0;
+      const prepPct = Math.floor((q.prep || 0) * 100);
+      const pct = q.status === "converting" ? prepPct
+        : q.file.size ? Math.floor((q.sent / q.file.size) * 100) : 0;
       stat.textContent = {
         waiting: "Waiting",
+        converting: q.prepStage === "fix" ? `Converting to MP4, ${prepPct}%` : "Checking audio",
         uploading: `${pct}% of ${fmtSize(q.file.size)}`,
         finishing: "Finishing",
         failed: q.error || "Upload failed",
@@ -527,10 +533,136 @@
     });
   }
 
-  async function uploadOne(q) {
+  // ---------- Convert before upload: MKV to MP4, audio the browser can play ----------
+  // Video is copied untouched (fast, no quality loss). Audio is only re-encoded when it's
+  // a format browsers can't play (Dolby AC-3 / E-AC-3 and similar), into stereo AAC.
+  const LIB_VERSION = "1.61.3";
+  const CDN = "https://cdn.jsdelivr.net/npm/";
+  const CHECK_EXT = /\.(mkv|mp4|m4v|mov)$/i;
+  const MP4_VIDEO = ["avc", "hevc", "vp9", "av1"]; // can be copied into MP4 as is
+  let mediaLib;
+
+  function loadMediaLib() {
+    if (!mediaLib) {
+      mediaLib = (async () => {
+        const MB = await import("mediabunny");
+        const [ac3, aac] = await Promise.all([
+          import(`${CDN}@mediabunny/ac3@${LIB_VERSION}/dist/bundles/mediabunny-ac3.min.mjs`),
+          import(`${CDN}@mediabunny/aac-encoder@${LIB_VERSION}/dist/bundles/mediabunny-aac-encoder.min.mjs`),
+        ]);
+        ac3.registerAc3Decoder();
+        if (!(await MB.canEncodeAudio("aac"))) aac.registerAacEncoder();
+        return MB;
+      })();
+      mediaLib.catch(() => { mediaLib = undefined; });
+    }
+    return mediaLib;
+  }
+
+  // Collects the converter's output on disk-backed Blobs instead of RAM, so movie-sized files fit.
+  function makeSink() {
+    const FLUSH_AT = 8 * 1024 * 1024;
+    const blobs = [], patches = [];
+    let buf = [], bufLen = 0, end = 0;
+    const flush = () => { if (bufLen) { blobs.push(new Blob(buf)); buf = []; bufLen = 0; } };
+    const append = (bytes) => {
+      buf.push(bytes); bufLen += bytes.length; end += bytes.length;
+      if (bufLen >= FLUSH_AT) flush();
+    };
+    const writable = new WritableStream({
+      write({ data, position }) {
+        const bytes = data.slice(); // the library may reuse its buffer
+        if (position > end) append(new Uint8Array(position - end));
+        if (position === end) return append(bytes);
+        const overlap = Math.min(bytes.length, end - position);
+        patches.push({ pos: position, bytes: bytes.subarray(0, overlap) });
+        if (overlap < bytes.length) append(bytes.subarray(overlap));
+      },
+    });
+    const finish = () => {
+      flush();
+      let out = new Blob(blobs);
+      for (const p of patches) {
+        out = new Blob([out.slice(0, p.pos), p.bytes, out.slice(p.pos + p.bytes.length)]);
+      }
+      return out;
+    };
+    return { writable, finish };
+  }
+
+  // Returns { file, note }. file is the original when nothing needed fixing or it couldn't be fixed.
+  async function prepare(q) {
     const file = q.file;
-    q.status = "uploading"; renderQueue();
+    const MB = await loadMediaLib();
+    const input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
+    const video = await input.getPrimaryVideoTrack();
+    const audio = await input.getPrimaryAudioTrack();
+    const isMkv = /\.mkv$/i.test(file.name);
+    const audioPlays = !audio || ["aac", "mp3", "opus", "flac", "vorbis"].includes(audio.codec);
+    if (!isMkv && audioPlays) return { file }; // already fine
+
+    if (video && !MP4_VIDEO.includes(video.codec)) {
+      return { file, note: `${file.name} was uploaded as is. Its video format can’t be converted here.` };
+    }
+    const copyAudio = !audio || audio.codec === "aac";
+    if (!copyAudio && !(await audio.canDecode())) {
+      const kind = (audio.codec || "an unknown format").toUpperCase();
+      return { file, note: `${file.name} was uploaded as is. Its audio is ${kind}, which can’t be converted in the browser, so it may play silent.` };
+    }
+
+    const sink = makeSink();
+    const output = new MB.Output({
+      format: new MB.Mp4OutputFormat({ fastStart: false }),
+      target: new MB.StreamTarget(sink.writable),
+    });
+    const conversion = await MB.Conversion.init({
+      input, output,
+      tracks: "primary",
+      showWarnings: false,
+      audio: copyAudio ? {} : {
+        codec: "aac",
+        numberOfChannels: Math.min(2, audio.numberOfChannels || 2),
+        bitrate: 192e3,
+        forceTranscode: true,
+      },
+    });
+    const lostAudio = audio && conversion.discardedTracks.some((d) => d.track === audio);
+    const lostVideo = video && conversion.discardedTracks.some((d) => d.track === video);
+    if (!conversion.isValid || lostAudio || lostVideo) {
+      return { file, note: `${file.name} was uploaded as is. It couldn’t be converted in this browser.` };
+    }
+
+    q.prepStage = "fix"; q.conversion = conversion;
+    let lastPaint = 0;
+    conversion.onProgress = (p) => {
+      q.prep = p;
+      const now = performance.now();
+      if (now - lastPaint > 300) { lastPaint = now; renderQueue(); }
+    };
+    renderQueue();
+    await conversion.execute();
+    q.conversion = null;
+    const name = file.name.replace(/\.[^.]+$/, "") + ".mp4";
+    return { file: new File([sink.finish()], name, { type: "video/mp4" }) };
+  }
+
+  async function uploadOne(q) {
     try {
+      if (CHECK_EXT.test(q.file.name)) {
+        q.status = "converting"; q.prep = 0; q.prepStage = "check"; renderQueue();
+        try {
+          const result = await prepare(q);
+          q.file = result.file;
+          if (result.note) toast(result.note, true);
+        } catch (err) {
+          if (q.cancelled) throw err;
+          console.warn("Conversion failed, uploading the original", err);
+          toast(`${q.file.name} couldn’t be converted, so the original is uploading.`, true);
+        }
+        if (q.cancelled) throw new Error("cancelled");
+      }
+      const file = q.file;
+      q.status = "uploading"; q.sent = 0; renderQueue();
       const start = await api("/api/upload/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -575,7 +707,7 @@
         body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts: done }),
       });
       state.queue = state.queue.filter((x) => x !== q);
-      toast(`Uploaded ${file.name}`);
+      toast(`Uploaded ${q.file.name}`);
       await refresh();
       renderQueue();
     } catch (e) {
@@ -598,8 +730,9 @@
   }
 
   function cancelItem(q) {
-    if (q.status === "uploading" || q.status === "finishing") {
+    if (q.status === "converting" || q.status === "uploading" || q.status === "finishing") {
       q.cancelled = true;
+      if (q.conversion) q.conversion.cancel().catch(() => {});
       q.xhrs.forEach((x) => x.abort());
     } else {
       state.queue = state.queue.filter((x) => x !== q);
@@ -621,7 +754,7 @@
   $("pick").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
   window.addEventListener("beforeunload", (e) => {
-    if (state.queue.some((q) => q.status === "uploading" || q.status === "finishing")) e.preventDefault();
+    if (state.queue.some((q) => ["converting", "uploading", "finishing"].includes(q.status))) e.preventDefault();
   });
   window.addEventListener("hashchange", openFromHash);
 
