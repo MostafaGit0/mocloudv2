@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Stash</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23151A2B'/><path d='M38 30v40l34-20z' fill='%23F0B34E'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #151A2B;
+    --panel: #1D2440;
+    --panel-2: #262E52;
+    --line: #333D69;
+    --paper: #EEE9DD;
+    --dim: #9AA2C0;
+    --amber: #F0B34E;
+    --red: #F08372;
+    --radius: 12px;
+    --font: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--ink); }
+  body {
+    margin: 0;
+    font: 400 16px/1.5 var(--font);
+    color: var(--paper);
+    background: var(--ink);
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  /* ---------- Header ---------- */
+  .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 40px; }
+  .wordmark { margin: 0; font-size: 44px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
+
+  /* ---------- Storage gauge (the one loud element) ---------- */
+  .gauge { flex: 1 1 340px; max-width: 520px; }
+  .gauge-line { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--dim); margin-bottom: 8px; }
+  .gauge-line strong { color: var(--paper); font-weight: 500; }
+  .gauge-bar {
+    position: relative; height: 26px; border-radius: 7px; overflow: hidden;
+    background: var(--panel); border: 1px solid var(--line);
+  }
+  .gauge-fill {
+    position: absolute; inset: 0 auto 0 0; width: 0%;
+    background: var(--amber); transition: width .5s cubic-bezier(.2,.7,.2,1);
+  }
+  .gauge-pending { position: absolute; inset: 0 auto 0 0; width: 0%; background: var(--amber); opacity: .35; }
+  /* the 2 GB that is never used */
+  .gauge-reserve {
+    position: absolute; inset: 0 0 0 auto; width: 20%;
+    background: repeating-linear-gradient(135deg, transparent 0 5px, rgba(240,131,114,.5) 5px 7px);
+    border-left: 2px solid var(--red);
+  }
+  /* one tick per GB */
+  .gauge-ticks {
+    position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(21,26,43,.55) calc(10% - 1px) 10%);
+  }
+  .gauge-note { margin: 8px 0 0; font-size: 13px; color: var(--dim); }
+  .gauge.is-full .gauge-line strong { color: var(--red); }
+
+  /* ---------- Drop strip ---------- */
+  .drop {
+    margin-top: 32px; padding: 22px 24px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+    border: 1.5px dashed var(--line); border-radius: var(--radius);
+  }
+  .drop p { margin: 0; color: var(--dim); }
+  .drop p b { color: var(--paper); font-weight: 500; }
+  .btn {
+    border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 500;
+    background: var(--amber); color: #1B1606;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.ghost { background: var(--panel-2); color: var(--paper); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+
+  .banner {
+    margin-top: 16px; padding: 14px 18px; border-radius: var(--radius);
+    background: rgba(240,131,114,.12); border: 1px solid var(--red); color: var(--paper);
+  }
+
+  /* ---------- Upload queue ---------- */
+  .queue { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+  .queue li {
+    display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 6px 16px;
+    padding: 12px 16px; background: var(--panel); border-radius: 10px; font-size: 14px;
+  }
+  .queue .q-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .queue .q-stat { color: var(--dim); font-variant-numeric: tabular-nums; }
+  .queue .q-bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--panel-2); overflow: hidden; }
+  .queue .q-bar i { display: block; height: 100%; width: 0%; background: var(--amber); }
+  .queue li.failed .q-stat { color: var(--red); }
+  .link { background: none; border: 0; padding: 2px 0; color: var(--dim); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+  .link:hover { color: var(--paper); }
+  .link.danger:hover, .link.armed { color: var(--red); }
+
+  /* ---------- Library ---------- */
+  .lib-head { display: flex; align-items: baseline; justify-content: space-between; margin: 44px 0 16px; }
+  .lib-head h2 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
+  .lib-head span { color: var(--dim); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px 20px; }
+  .tile { min-width: 0; }
+  .thumb {
+    position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; border: 0;
+    border-radius: var(--radius); overflow: hidden; background: var(--panel);
+  }
+  .thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .thumb .play {
+    position: absolute; left: 12px; bottom: 12px; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--amber); display: grid; place-items: center; transition: transform .15s;
+  }
+  .thumb .play::before { content: ""; border: solid transparent; border-width: 7px 0 7px 12px; border-left-color: #1B1606; margin-left: 3px; }
+  .thumb:hover .play { transform: scale(1.1); }
+  .tile h3 { margin: 10px 0 0; font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tile .meta { margin: 0; font-size: 13px; color: var(--dim); }
+  .tile .acts { display: flex; gap: 16px; margin-top: 4px; }
+
+  .empty { padding: 56px 0; color: var(--dim); max-width: 46ch; }
+  .empty b { display: block; color: var(--paper); font-size: 22px; font-weight: 500; margin-bottom: 6px; }
+  .empty code { background: var(--panel); padding: 2px 6px; border-radius: 5px; font-size: 14px; }
+
+  /* ---------- Drag overlay ---------- */
+  .dragveil {
+    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+    background: rgba(21,26,43,.88); border: 4px dashed var(--amber);
+    font-size: clamp(28px, 6vw, 56px); font-weight: 700; letter-spacing: -0.02em; pointer-events: none;
+  }
+
+  /* ---------- Player ---------- */
+  dialog { border: 0; padding: 0; color: var(--paper); background: transparent; }
+  dialog::backdrop { background: rgba(8,10,18,.92); }
+  #player { width: min(1200px, 100vw); max-width: 100vw; max-height: 100dvh; }
+  .p-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; }
+  .p-bar h3 { margin: 0; font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .p-stage { background: #000; display: grid; place-items: center; min-height: 200px; }
+  .p-stage video, .p-stage img { display: block; width: 100%; max-height: calc(100dvh - 120px); object-fit: contain; background: #000; }
+  .p-error { padding: 40px 24px; max-width: 52ch; color: var(--dim); }
+  .p-error b { display: block; color: var(--paper); font-size: 20px; font-weight: 500; margin-bottom: 6px; }
+  .p-foot { display: flex; gap: 20px; padding: 10px 16px; }
+
+  #gate { background: var(--panel); border-radius: var(--radius); padding: 28px; width: min(380px, 92vw); }
+  #gate h3 { margin: 0 0 4px; font-size: 20px; font-weight: 500; }
+  #gate p { margin: 0 0 16px; color: var(--dim); font-size: 14px; }
+  #gate input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--ink); margin-bottom: 14px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    z-index: 60; max-width: 92vw; padding: 12px 18px; border-radius: 10px;
+    background: var(--paper); color: var(--ink); font-weight: 500; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  }
+  .toast.bad { background: var(--red); color: #2A0C07; }
+
+  @media (max-width: 560px) {
+    .wordmark { font-size: 36px; }
+    .grid { grid-template-columns: 1fr; }
+    .drop { padding: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1 class="wordmark">Stash</h1>
+    <div class="gauge" id="gauge" aria-live="polite">
+      <div class="gauge-line"><strong id="gaugeUsed">Checking storage</strong><span id="gaugeLeft"></span></div>
+      <div class="gauge-bar" role="img" aria-label="Storage used">
+        <div class="gauge-pending" id="gaugePending"></div>
+        <div class="gauge-fill" id="gaugeFill"></div>
+        <div class="gauge-reserve" id="gaugeReserve"></div>
+        <div class="gauge-ticks"></div>
+      </div>
+      <p class="gauge-note" id="gaugeNote"></p>
+    </div>
+  </header>
+
+  <section class="drop" id="drop">
+    <p><b>Drop videos or photos anywhere on this page.</b> They play on any device that has the link.</p>
+    <button class="btn" id="pick">Choose files</button>
+    <input type="file" id="fileInput" accept="video/*,image/*,.mkv,.avi,.mov,.heic" multiple hidden>
+  </section>
+
+  <div class="banner" id="fullBanner" hidden>Max amount reached. Delete something to upload more.</div>
+  <ul class="queue" id="queue"></ul>
+
+  <div class="lib-head"><h2>Your files</h2><span id="count"></span></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden></div>
+</div>
+
+<div class="dragveil" id="veil" hidden>Drop to upload</div>
+
+<dialog id="player">
+  <div class="p-bar"><h3 id="pTitle"></h3><button class="btn ghost" id="pClose">Close</button></div>
+  <div class="p-stage" id="pStage"></div>
+  <div class="p-foot">
+    <button class="link" id="pCopy">Copy link</button>
+    <a class="link" id="pDownload" href="#">Download</a>
+  </div>
+</dialog>
+
+<dialog id="gate">
+  <h3>Enter passcode</h3>
+  <p>This stash needs a passcode to show, add, or delete files.</p>
+  <input type="password" id="gateInput" autocomplete="current-password" aria-label="Passcode">
+  <button class="btn" id="gateGo">Unlock</button>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+
+  // =====================================================================
+  //  THE ONLY EDIT YOU NEED: paste your Cloudflare Worker URL below.
+  //  Example: "https://stash.yourname.workers.dev"   (no slash at the end)
+  // =====================================================================
+  const WORKER_URL = "https://crimson-pond-7d8a.benmostafa1010.workers.dev/";
+
+  const API = WORKER_URL.replace(/\/+$/, "");
+  const configured = /^https?:\/\//.test(API);
+  const PARALLEL_PARTS = 3;
+  const GB = 1000 ** 3;
+
+  const state = {
+    files: [],
+    used: 0,
+    limit: 8 * GB,       // replaced by what the Worker reports
+    freeTier: 10 * GB,
+    partSize: 32 * 1024 * 1024,
+    queue: [],
+    running: false,
+    passcode: readPasscode(),
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const VIDEO_EXT = /\.(mp4|m4v|mov|webm|mkv|avi|ogv)$/i;
+  const IMAGE_EXT = /\.(jpe?g|png|gif|webp|avif|heic|svg)$/i;
+  const isVideo = (f) => (f.type || "").startsWith("video/") || VIDEO_EXT.test(f.name);
+  const isImage = (f) => (f.type || "").startsWith("image/") || IMAGE_EXT.test(f.name);
+
+  function readPasscode() { try { return localStorage.getItem("stash-passcode") || ""; } catch { return ""; } }
+  function savePasscode(v) { try { localStorage.setItem("stash-passcode", v); } catch {} }
+
+  function fmtSize(bytes) {
+    if (bytes >= GB) return parseFloat((bytes / GB).toFixed(2)) + " GB";
+    if (!bytes) return "0 GB";
+    if (bytes >= 1e6) return Math.round(bytes / 1e6) + " MB";
+    return Math.max(1, Math.round(bytes / 1e3)) + " KB";
+  }
+  const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const fileUrl = (key, dl) => `${API}/file/${encodeURIComponent(key)}${dl ? "?dl=1" : ""}`;
+  const shareUrl = (key) => `${location.origin}${location.pathname}#watch=${encodeURIComponent(key)}`;
+
+  // ---------- Toast ----------
+  let toastTimer;
+  function toast(msg, bad) {
+    document.querySelectorAll(".toast").forEach((t) => t.remove());
+    const el = document.createElement("div");
+    el.className = "toast" + (bad ? " bad" : "");
+    el.setAttribute("role", "status");
+    el.textContent = msg;
+    document.body.append(el);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.remove(), 4500);
+  }
+
+  // ---------- Talking to the Worker ----------
+  function askPasscode() {
+    return new Promise((resolve) => {
+      const gate = $("gate"), input = $("gateInput");
+      input.value = "";
+      const done = () => {
+        if (!input.value) return;
+        state.passcode = input.value;
+        savePasscode(input.value);
+        gate.close();
+        $("gateGo").removeEventListener("click", done);
+        input.removeEventListener("keydown", onKey);
+        resolve();
+      };
+      const onKey = (e) => { if (e.key === "Enter") done(); };
+      $("gateGo").addEventListener("click", done);
+      input.addEventListener("keydown", onKey);
+      if (!gate.open) gate.showModal();
+      input.focus();
+    });
+  }
+
+  async function api(path, options = {}) {
+    for (;;) {
+      const res = await fetch(API + path, {
+        ...options,
+        headers: { ...(options.headers || {}), "X-Passcode": state.passcode },
+      });
+      if (res.status === 401) { await askPasscode(); continue; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.error || `Storage returned an error (${res.status}).`);
+        err.code = data.code;
+        throw err;
+      }
+      return data;
+    }
+  }
+
+  // ---------- Storage gauge ----------
+  function pendingBytes() {
+    return state.queue.filter((q) => q.status === "waiting" || q.status === "uploading")
+      .reduce((sum, q) => sum + q.file.size, 0);
+  }
+
+  function renderGauge() {
+    const free = state.freeTier, limit = state.limit;
+    const pct = (n) => Math.min(100, (n / free) * 100) + "%";
+    $("gaugeFill").style.width = pct(Math.min(state.used, limit));
+    $("gaugePending").style.width = pct(Math.min(state.used + pendingBytes(), limit));
+    $("gaugeReserve").style.width = ((free - limit) / free) * 100 + "%";
+    const left = Math.max(0, limit - state.used);
+    const full = left <= 0;
+    $("gauge").classList.toggle("is-full", full);
+    $("gaugeUsed").textContent = full ? "Max amount reached" : `${fmtSize(state.used)} used`;
+    $("gaugeLeft").textContent = `${fmtSize(left)} left of ${fmtSize(limit)}`;
+    $("gaugeNote").textContent =
+      `Uploads stop at ${fmtSize(limit)}. The last ${fmtSize(free - limit)} of the free ${fmtSize(free)} is never used.`;
+    $("fullBanner").hidden = !full;
+    $("pick").disabled = full;
+  }
+
+  // ---------- Library ----------
+  function tile(f) {
+    const el = document.createElement("article");
+    el.className = "tile";
+    const video = isVideo(f);
+
+    const thumb = document.createElement("button");
+    thumb.className = "thumb";
+    thumb.setAttribute("aria-label", `${video ? "Play" : "Open"} ${f.name}`);
+    if (video) {
+      const v = document.createElement("video");
+      v.muted = true; v.playsInline = true; v.preload = "metadata";
+      v.src = fileUrl(f.key) + "#t=1";
+      const p = document.createElement("span"); p.className = "play";
+      thumb.append(v, p);
+    } else {
+      const img = document.createElement("img");
+      img.loading = "lazy"; img.alt = ""; img.src = fileUrl(f.key);
+      thumb.append(img);
+    }
+    thumb.addEventListener("click", () => openPlayer(f));
+
+    const name = document.createElement("h3"); name.textContent = f.name; name.title = f.name;
+    const meta = document.createElement("p"); meta.className = "meta";
+    meta.textContent = `${fmtSize(f.size)}, added ${fmtDate(f.uploaded)}`;
+
+    const acts = document.createElement("div"); acts.className = "acts";
+    const copy = document.createElement("button"); copy.className = "link"; copy.textContent = "Copy link";
+    copy.addEventListener("click", () => copyLink(f.key));
+    const dl = document.createElement("a"); dl.className = "link"; dl.textContent = "Download"; dl.href = fileUrl(f.key, true);
+    const del = document.createElement("button"); del.className = "link danger"; del.textContent = "Delete";
+    let armed;
+    del.addEventListener("click", async () => {
+      if (!del.classList.contains("armed")) {
+        del.classList.add("armed"); del.textContent = "Tap again to delete";
+        armed = setTimeout(() => { del.classList.remove("armed"); del.textContent = "Delete"; }, 3500);
+        return;
+      }
+      clearTimeout(armed);
+      del.disabled = true; del.textContent = "Deleting";
+      try {
+        await api(`/api/files/${encodeURIComponent(f.key)}`, { method: "DELETE" });
+        toast("Deleted");
+        await refresh();
+      } catch (e) { toast(e.message, true); del.disabled = false; del.textContent = "Delete"; del.classList.remove("armed"); }
+    });
+    acts.append(copy, dl, del);
+    el.append(thumb, name, meta, acts);
+    return el;
+  }
+
+  function renderLibrary() {
+    const grid = $("grid"), empty = $("empty");
+    grid.replaceChildren(...state.files.map(tile));
+    $("count").textContent = state.files.length ? `${state.files.length} ${state.files.length === 1 ? "file" : "files"}` : "";
+    empty.hidden = state.files.length > 0;
+    if (!state.files.length) empty.innerHTML = "<b>Nothing here yet</b>Drop a video or photo anywhere on this page and it shows up here.";
+  }
+
+  async function refresh() {
+    const data = await api("/api/files");
+    Object.assign(state, {
+      files: data.files, used: data.used, limit: data.limit,
+      freeTier: data.freeTier, partSize: data.partSize,
+    });
+    renderGauge();
+    renderLibrary();
+  }
+
+  async function copyLink(key) {
+    const link = shareUrl(key);
+    try { await navigator.clipboard.writeText(link); toast("Link copied"); }
+    catch { window.prompt("Copy this link", link); }
+  }
+
+  // ---------- Player ----------
+  function openPlayer(f) {
+    const stage = $("pStage");
+    stage.replaceChildren();
+    $("pTitle").textContent = f.name;
+    $("pDownload").href = fileUrl(f.key, true);
+    $("pCopy").onclick = () => copyLink(f.key);
+
+    if (isVideo(f)) {
+      const v = document.createElement("video");
+      v.controls = true; v.autoplay = true; v.playsInline = true; v.preload = "auto";
+      v.addEventListener("error", () => {
+        const box = document.createElement("div"); box.className = "p-error";
+        box.innerHTML = "<b>This browser can’t play this file</b>The video is fine, but its format (often MKV, AVI or HEVC) isn’t supported here. Download it, or copy the direct link and open it in VLC with Open Network Stream.";
+        const direct = document.createElement("button"); direct.className = "btn ghost"; direct.style.marginTop = "16px";
+        direct.textContent = "Copy direct link for VLC";
+        direct.onclick = async () => {
+          try { await navigator.clipboard.writeText(fileUrl(f.key)); toast("Direct link copied"); }
+          catch { window.prompt("Copy this link", fileUrl(f.key)); }
+        };
+        box.append(document.createElement("br"), direct);
+        stage.replaceChildren(box);
+      });
+      v.src = fileUrl(f.key);
+      stage.append(v);
+    } else {
+      const img = document.createElement("img"); img.alt = f.name; img.src = fileUrl(f.key);
+      stage.append(img);
+    }
+    history.replaceState(null, "", `#watch=${encodeURIComponent(f.key)}`);
+    if (!$("player").open) $("player").showModal();
+  }
+
+  $("player").addEventListener("close", () => {
+    $("pStage").replaceChildren(); // stops playback and the download behind it
+    history.replaceState(null, "", location.pathname + location.search);
+  });
+  $("pClose").addEventListener("click", () => $("player").close());
+  $("player").addEventListener("click", (e) => { if (e.target === $("player")) $("player").close(); });
+
+  function openFromHash() {
+    const m = location.hash.match(/^#watch=(.+)$/);
+    if (!m) return;
+    const key = decodeURIComponent(m[1]);
+    const dash = key.indexOf("-");
+    openPlayer({ key, name: dash === -1 ? key : key.slice(dash + 1), type: "" });
+  }
+
+  // ---------- Uploads ----------
+  function renderQueue() {
+    const list = $("queue");
+    list.replaceChildren(...state.queue.map((q) => {
+      const li = document.createElement("li");
+      if (q.status === "failed") li.className = "failed";
+      const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.file.name;
+      const stat = document.createElement("span"); stat.className = "q-stat";
+      const pct = q.file.size ? Math.floor((q.sent / q.file.size) * 100) : 0;
+      stat.textContent = {
+        waiting: "Waiting",
+        uploading: `${pct}% of ${fmtSize(q.file.size)}`,
+        finishing: "Finishing",
+        failed: q.error || "Upload failed",
+      }[q.status];
+      const btn = document.createElement("button"); btn.className = "link";
+      btn.textContent = q.status === "failed" ? "Dismiss" : "Cancel";
+      btn.addEventListener("click", () => cancelItem(q));
+      const bar = document.createElement("div"); bar.className = "q-bar";
+      const fill = document.createElement("i"); fill.style.width = (q.status === "finishing" ? 100 : pct) + "%";
+      bar.append(fill);
+      li.append(name, stat, btn, bar);
+      return li;
+    }));
+    renderGauge();
+  }
+
+  function addFiles(fileList) {
+    if (!configured) { toast("Connect storage first: paste your Worker URL into index.html.", true); return; }
+    let blocked = false, skipped = 0;
+    for (const file of fileList) {
+      if (!isVideo(file) && !isImage(file)) { skipped++; continue; }
+      // FAIL-SAFE (browser side): never queue past the limit.
+      if (state.used + pendingBytes() + file.size > state.limit) { blocked = true; continue; }
+      state.queue.push({ file, status: "waiting", sent: 0, xhrs: new Set(), cancelled: false });
+    }
+    if (blocked) toast("Max amount reached. Delete something to upload more.", true);
+    else if (skipped) toast("Only videos and photos can be uploaded.", true);
+    renderQueue();
+    runQueue();
+  }
+
+  async function runQueue() {
+    if (state.running) return;
+    state.running = true;
+    let next;
+    while ((next = state.queue.find((q) => q.status === "waiting"))) {
+      await uploadOne(next);
+    }
+    state.running = false;
+  }
+
+  function sendPart(q, n, blob, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      q.xhrs.add(xhr);
+      xhr.open("PUT", `${API}/api/upload/part?key=${encodeURIComponent(q.key)}&uploadId=${encodeURIComponent(q.uploadId)}&n=${n}`);
+      xhr.setRequestHeader("X-Passcode", state.passcode);
+      xhr.upload.onprogress = (e) => onProgress(e.loaded);
+      xhr.onload = () => {
+        q.xhrs.delete(xhr);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try { resolve(JSON.parse(xhr.responseText)); } catch { reject(new Error("Bad reply from storage.")); }
+        } else reject(new Error(`Chunk ${n} was rejected (${xhr.status}).`));
+      };
+      xhr.onerror = () => { q.xhrs.delete(xhr); reject(new Error("Connection dropped.")); };
+      xhr.onabort = () => { q.xhrs.delete(xhr); reject(new Error("cancelled")); };
+      xhr.send(blob);
+    });
+  }
+
+  async function uploadOne(q) {
+    const file = q.file;
+    q.status = "uploading"; renderQueue();
+    try {
+      const start = await api("/api/upload/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, type: file.type }),
+      });
+      q.key = start.key; q.uploadId = start.uploadId;
+      const partSize = start.partSize;
+      const total = Math.ceil(file.size / partSize);
+      const done = new Array(total);
+      const progress = new Array(total).fill(0);
+      let cursor = 0;
+
+      const worker = async () => {
+        while (cursor < total) {
+          if (q.cancelled) throw new Error("cancelled");
+          const i = cursor++;
+          const blob = file.slice(i * partSize, Math.min(file.size, (i + 1) * partSize));
+          let attempt = 0;
+          for (;;) {
+            try {
+              done[i] = await sendPart(q, i + 1, blob, (loaded) => {
+                progress[i] = loaded;
+                q.sent = Math.min(file.size, progress.reduce((a, b) => a + b, 0));
+                renderQueue();
+              });
+              progress[i] = blob.size;
+              break;
+            } catch (e) {
+              if (q.cancelled || e.message === "cancelled" || ++attempt >= 4) throw e;
+              progress[i] = 0;
+              await new Promise((r) => setTimeout(r, 1500 * attempt));
+            }
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(PARALLEL_PARTS, total) }, worker));
+
+      q.status = "finishing"; renderQueue();
+      await api("/api/upload/finish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts: done }),
+      });
+      state.queue = state.queue.filter((x) => x !== q);
+      toast(`Uploaded ${file.name}`);
+      await refresh();
+      renderQueue();
+    } catch (e) {
+      q.xhrs.forEach((x) => x.abort());
+      if (q.uploadId && e.code !== "LIMIT") {
+        api("/api/upload/abort", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: q.key, uploadId: q.uploadId }),
+        }).catch(() => {});
+      }
+      if (q.cancelled) { state.queue = state.queue.filter((x) => x !== q); }
+      else {
+        q.status = "failed";
+        q.error = e.code === "LIMIT" ? "Max amount reached" : e.message;
+        if (e.code === "LIMIT") toast("Max amount reached. Delete something to upload more.", true);
+      }
+      renderQueue();
+      refresh().catch(() => {});
+    }
+  }
+
+  function cancelItem(q) {
+    if (q.status === "uploading" || q.status === "finishing") {
+      q.cancelled = true;
+      q.xhrs.forEach((x) => x.abort());
+    } else {
+      state.queue = state.queue.filter((x) => x !== q);
+      renderQueue();
+    }
+  }
+
+  // ---------- Drag and drop (whole page) + file picker ----------
+  let dragDepth = 0;
+  const hasFiles = (e) => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
+  window.addEventListener("dragenter", (e) => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; $("veil").hidden = false; });
+  window.addEventListener("dragover", (e) => { if (hasFiles(e)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+  window.addEventListener("dragleave", (e) => { if (!hasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $("veil").hidden = true; });
+  window.addEventListener("drop", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault(); dragDepth = 0; $("veil").hidden = true;
+    addFiles(e.dataTransfer.files);
+  });
+  $("pick").addEventListener("click", () => $("fileInput").click());
+  $("fileInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+  window.addEventListener("beforeunload", (e) => {
+    if (state.queue.some((q) => q.status === "uploading" || q.status === "finishing")) e.preventDefault();
+  });
+  window.addEventListener("hashchange", openFromHash);
+
+  // ---------- Start ----------
+  if (!configured) {
+    $("gaugeUsed").textContent = "Storage not connected";
+    $("empty").hidden = false;
+    $("empty").innerHTML = "<b>Connect your storage</b>Open <code>index.html</code>, find <code>WORKER_URL</code> near the top of the script, and paste in your Cloudflare Worker URL.";
+    $("pick").disabled = true;
+  } else {
+    openFromHash(); // shared links play right away, no passcode needed
+    refresh().catch((e) => {
+      $("gaugeUsed").textContent = "Can’t reach storage";
+      toast(`Can’t reach storage: ${e.message}`, true);
+    });
+  }
+})();
+</script>
+</body>
+</html>
