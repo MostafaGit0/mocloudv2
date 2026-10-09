@@ -92,6 +92,17 @@
     background: rgba(240,131,114,.12); border: 1px solid var(--red); color: var(--paper);
   }
 
+  /* ---------- Server status (offline, power, storage warnings) ---------- */
+  .status {
+    margin-top: 16px; padding: 16px 18px; border-radius: var(--radius);
+    background: rgba(240,179,78,.10); border: 1px solid var(--amber); color: var(--paper);
+  }
+  .status.bad { background: rgba(240,131,114,.12); border-color: var(--red); }
+  .status b { display: block; font-weight: 500; font-size: 17px; margin-bottom: 2px; }
+  .status p { margin: 4px 0 0; color: var(--dim); max-width: 70ch; }
+  .status ul { margin: 6px 0 0; padding-left: 18px; color: var(--dim); }
+  .status-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; font-size: 14px; color: var(--dim); }
+
   /* ---------- Upload queue ---------- */
   .queue { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
   .queue li {
@@ -103,6 +114,7 @@
   .queue .q-bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--panel-2); overflow: hidden; }
   .queue .q-bar i { display: block; height: 100%; width: 0%; background: var(--amber); }
   .queue li.failed .q-stat { color: var(--red); }
+  .queue li.paused .q-stat { color: var(--amber); }
   .link { background: none; border: 0; padding: 2px 0; color: var(--dim); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
   .link:hover { color: var(--paper); }
   .link.danger:hover, .link.armed { color: var(--red); }
@@ -149,6 +161,20 @@
   }
   .del:hover, .del.armed { background: var(--red); color: #2A0C07; }
   .del:disabled { opacity: .5; cursor: default; }
+
+  /* Locked while the server is offline: still visible, nothing opens */
+  .tile.locked .thumb { cursor: not-allowed; }
+  .tile.locked .thumb img { filter: grayscale(.7) brightness(.45); }
+  .tile.locked .thumb .play { display: none; }
+  .tile.locked .acts a.link { opacity: .45; pointer-events: none; }
+  .lock {
+    position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  }
+  .lock span {
+    display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
+    background: rgba(21,26,43,.85); border: 1px solid var(--line);
+  }
+  .lock svg { width: 24px; height: 24px; fill: none; stroke: var(--paper); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
   .empty { padding: 56px 0; color: var(--dim); max-width: 46ch; }
   .empty b { display: block; color: var(--paper); font-size: 22px; font-weight: 500; margin-bottom: 6px; }
@@ -226,6 +252,7 @@
     <input type="file" id="folderInput" webkitdirectory multiple hidden>
   </section>
 
+  <div class="status" id="statusBanner" role="status" aria-live="polite" hidden></div>
   <div class="banner" id="fullBanner" hidden>Max amount reached. Delete something to upload more.</div>
   <ul class="queue" id="queue"></ul>
 
@@ -423,12 +450,13 @@ self.onmessage = (e) => {
   "use strict";
 
   // =====================================================================
-  //  THE ONLY EDIT YOU NEED: paste your Cloudflare Worker URL below.
-  //  Example: "https://stash.yourname.workers.dev"   (no slash at the end)
+  //  THE ONLY EDIT YOU NEED: paste your MoCloud server address below.
+  //  The Pi's installer prints it at the end, for example
+  //  "https://mocloud.tail1234.ts.net"   (no slash at the end)
   // =====================================================================
-  const WORKER_URL = "https://crimson-pond-7d8a.benmostafa1010.workers.dev";
+  const SERVER_URL = "https://mocloud.tail47b571.ts.net";
 
-  const API = WORKER_URL.replace(/\/+$/, "");
+  const API = SERVER_URL.replace(/\/+$/, "");
   const configured = /^https?:\/\//.test(API);
   const PARALLEL_PARTS = 3;
   const GB = 1000 ** 3;
@@ -442,7 +470,14 @@ self.onmessage = (e) => {
     queue: [],
     running: false,
     passcode: readPasscode(),
+    offline: false,        // true while the server can't be reached; the library is shown locked
+    offlineReason: "",     // "internet" (this device), "server" (the Pi) or "drive" (the Pi's USB stick)
+    driveMissing: false,
+    offlineSince: 0,
+    fromCache: false,      // library shown is the copy remembered by this browser
+    health: null,          // the Pi's own report: storage, power, temperature
   };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const $ = (id) => document.getElementById(id);
   const VIDEO_EXT = /\.(mp4|m4v|mov|webm|mkv|avi|ogv)$/i;
@@ -562,6 +597,14 @@ self.onmessage = (e) => {
     });
   }
 
+  // Answers that mean "the server itself isn't there", as opposed to it saying no.
+  const GATEWAY = [502, 503, 504, 520, 521, 522, 523, 524, 530];
+  function offlineError() {
+    const err = new Error("MoCloud is offline");
+    err.code = "OFFLINE";
+    return err;
+  }
+
   async function api(path, options = {}) {
     let dropped = 0;
     for (;;) {
@@ -572,15 +615,15 @@ self.onmessage = (e) => {
           headers: { ...(options.headers || {}), "X-Passcode": state.passcode },
         });
       } catch (e) {
-        // No answer at all (connection blip, or Cloudflare itself refused). Try a few times,
-        // then say which step it was so the failure isn't a mystery.
-        if (++dropped >= 4) {
-          const step = path.split("?")[0].replace(/^\/api\//, "").replace(/\/[^/]*-.*$/, "");
-          throw new Error(`No answer from storage (${step})`);
-        }
-        await new Promise((r) => setTimeout(r, 1500 * dropped));
-        continue;
+        res = null; // no answer at all
       }
+      if (!res || GATEWAY.includes(res.status)) {
+        // Try a couple of times in case it was a blip, then switch the page to offline mode.
+        if (++dropped < 3) { await sleep(1200 * dropped); continue; }
+        goOffline();
+        throw offlineError();
+      }
+      if (state.offline) goOnline(); // it answered, so it's back
       if (res.status === 401) { await askPasscode(); continue; }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -594,7 +637,7 @@ self.onmessage = (e) => {
 
   // ---------- Storage gauge ----------
   function pendingBytes() {
-    return state.queue.filter((q) => q.status === "waiting" || q.status === "converting" || q.status === "uploading")
+    return state.queue.filter((q) => ["waiting", "paused", "converting", "uploading"].includes(q.status))
       .reduce((sum, q) => sum + q.file.size, 0);
   }
 
@@ -609,9 +652,10 @@ self.onmessage = (e) => {
     $("gauge").classList.toggle("is-full", full);
     $("gaugeUsed").textContent = full ? "Max amount reached" : `${fmtSize(state.used)} used`;
     $("gaugeLeft").textContent = `${fmtSize(left)} left of ${fmtSize(limit)}`;
-    $("gaugeNote").textContent =
-      `Uploads stop at ${fmtSize(limit)}. The last ${fmtSize(free - limit)} of the free ${fmtSize(free)} is never used.`;
-    $("fullBanner").hidden = !full;
+    $("gaugeNote").textContent = state.offline
+      ? (state.fromCache ? "Last known numbers. MoCloud is offline right now." : "MoCloud is offline right now.")
+      : `Uploads stop at ${fmtSize(limit)}, so the Pi always keeps ${fmtSize(free - limit)} free for itself.`;
+    $("fullBanner").hidden = !full || state.offline;
     $("pick").disabled = full; $("pickFolder").disabled = full;
   }
 
@@ -698,7 +742,7 @@ self.onmessage = (e) => {
         thumbWaiting.push(() => grabFrame(key).then((t) => { thumbs.set(key, t); thumbStore(key, t); resolve(t); }, reject));
         pumpThumbs();
       }));
-      thumbJobs.get(key).catch(() => {});
+      thumbJobs.get(key).catch(() => thumbJobs.delete(key)); // try again next time instead of giving up for good
     }
     return thumbJobs.get(key);
   }
@@ -729,7 +773,7 @@ self.onmessage = (e) => {
       const show = (t) => { img.src = t.url; img.hidden = false; };
       if (thumbs.has(f.key)) show(thumbs.get(f.key));
       else {
-        thumb._wantThumb = () => getThumb(f.key).then(show, () => {}); // no picture: the plain tile stays
+        thumb._wantThumb = () => { if (!state.offline) getThumb(f.key).then(show, () => {}); }; // no picture: the plain tile stays
         if (thumbWatcher) thumbWatcher.observe(thumb); else thumb._wantThumb();
       }
     } else {
@@ -737,7 +781,17 @@ self.onmessage = (e) => {
       img.loading = "lazy"; img.alt = ""; img.src = fileUrl(f.key);
       thumb.append(img);
     }
-    thumb.addEventListener("click", () => openPlayer(f));
+    thumb.addEventListener("click", () => {
+      if (state.offline) return toast("Locked until MoCloud is back online. Nothing has been deleted.", true);
+      openPlayer(f);
+    });
+    if (state.offline) {
+      el.classList.add("locked");
+      thumb.setAttribute("aria-label", `${titleOf(f)}, locked while MoCloud is offline`);
+      const lock = document.createElement("div"); lock.className = "lock";
+      lock.innerHTML = '<span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>';
+      thumb.append(lock);
+    }
 
     const name = document.createElement("h3"); name.textContent = label || titleOf(f); name.title = f.name;
     const meta = document.createElement("p"); meta.className = "meta";
@@ -746,6 +800,7 @@ self.onmessage = (e) => {
     const acts = document.createElement("div"); acts.className = "acts";
     const dl = document.createElement("a"); dl.className = "link"; dl.textContent = "Download"; dl.href = fileUrl(f.key, true);
     const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
+    del.disabled = state.offline;
     let armed;
     del.addEventListener("click", async () => {
       if (!del.classList.contains("armed")) {
@@ -817,12 +872,214 @@ self.onmessage = (e) => {
     const data = await api("/api/files");
     Object.assign(state, {
       files: data.files, used: data.used, limit: data.limit,
-      freeTier: data.freeTier, partSize: data.partSize,
+      freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
     });
+    saveLibrary();
     await thumbsReady;
     pruneThumbs();
     renderGauge();
     renderLibrary();
+  }
+
+  // ---------- When the server can't be reached ----------
+  // The library (names, sizes, thumbnails) is remembered in this browser, so when the Pi is
+  // unplugged the page still shows everything, just locked. Nothing is ever deleted because of
+  // it: the files live on the Pi and come back the moment it does.
+  const LIBRARY_KEY = "mocloud-library";
+  function saveLibrary() {
+    try {
+      localStorage.setItem(LIBRARY_KEY, JSON.stringify({
+        files: state.files, used: state.used, limit: state.limit, freeTier: state.freeTier, at: Date.now(),
+      }));
+    } catch {}
+  }
+  function loadLibrary() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LIBRARY_KEY));
+      if (saved && Array.isArray(saved.files)) {
+        Object.assign(state, { files: saved.files, used: saved.used, limit: saved.limit, freeTier: saved.freeTier, fromCache: true });
+        return saved;
+      }
+    } catch {}
+    return null;
+  }
+
+  // Asks the server how it's doing. Resolves with its report when it's ready to use, or null if
+  // there's no answer or its USB stick is missing (state.driveMissing says which).
+  async function ping() {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    state.driveMissing = false;
+    try {
+      const res = await fetch(API + "/api/health", { cache: "no-store", signal: ctrl.signal });
+      if (!res.ok) return null;
+      const data = await res.json();
+      state.driveMissing = !!(data && data.driveMissing);
+      return data && data.ok && !data.driveMissing ? data : null;
+    } catch { return null; } finally { clearTimeout(timer); }
+  }
+
+  // Works out why MoCloud can't be used: the Pi's USB stick, the Pi itself, or this device's internet.
+  async function diagnose() {
+    if (state.driveMissing) return "drive";
+    return (await internetWorks()) ? "server" : "internet";
+  }
+
+  // Tells "your internet is down" apart from "the Pi is down".
+  async function internetWorks() {
+    if (navigator.onLine === false) return false;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    try {
+      await fetch("https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/package.json", { cache: "no-store", signal: ctrl.signal });
+      return true;
+    } catch { return false; } finally { clearTimeout(timer); }
+  }
+
+  const CHECK_EVERY = 15000;
+  let checkTimer = null, countdownTimer = null, nextCheckAt = 0, checking = false;
+
+  function goOffline() {
+    if (state.offline) return;
+    state.offline = true;
+    state.offlineSince = Date.now();
+    state.offlineReason = "";
+    if (!state.files.length) loadLibrary();
+    renderLibrary(); renderGauge(); renderQueue(); showStatus();
+    clearInterval(countdownTimer);
+    countdownTimer = setInterval(showStatus, 1000);
+    checkSoon(CHECK_EVERY);
+    ping().then(async (report) => {
+      if (report) return goOnline();
+      state.offlineReason = await diagnose();
+      showStatus();
+    });
+  }
+
+  function checkSoon(ms) {
+    clearTimeout(checkTimer);
+    nextCheckAt = Date.now() + ms;
+    checkTimer = setTimeout(checkNow, ms);
+  }
+
+  async function checkNow() {
+    if (checking) return;
+    checking = true; clearTimeout(checkTimer); showStatus();
+    const report = await ping();
+    if (report) {
+      state.health = report;
+      checking = false;
+      goOnline();
+      return;
+    }
+    state.offlineReason = await diagnose();
+    checking = false;
+    checkSoon(CHECK_EVERY);
+    showStatus();
+  }
+
+  async function goOnline() {
+    if (!state.offline) return;
+    state.offline = false;
+    clearTimeout(checkTimer); clearInterval(countdownTimer);
+    const wasDown = Date.now() - state.offlineSince > 5000;
+    showStatus();
+    try { await refresh(); } catch {}
+    if (state.offline) return; // dropped again straight away
+    // Uploads that were waiting for the server go back in line.
+    state.queue.forEach((q) => { if (q.status === "paused") q.status = "waiting"; });
+    renderQueue();
+    runQueue();
+    checkHealth();
+    if (wasDown) toast("MoCloud is back online. Everything is unlocked.");
+  }
+
+  // Waits (without giving up) until the server is back. Used by uploads so a dropped Pi pauses them.
+  async function waitForServer(q) {
+    renderQueue();
+    while (state.offline) {
+      if (q && q.cancelled) throw new Error("cancelled");
+      await sleep(1000);
+    }
+    renderQueue();
+  }
+
+  // While online, check the Pi's own health now and then so problems show up before they bite.
+  async function checkHealth() {
+    if (state.offline || !configured) return;
+    const report = await ping();
+    if (report) { state.health = report; showStatus(); }
+    else if (state.driveMissing) goOffline();
+    else if (!state.offline) {
+      // No answer to a health check: confirm with a real request, which switches to offline mode if needed.
+      api("/api/files").then(() => {}, () => {});
+    }
+  }
+
+  function showStatus() {
+    const box = $("statusBanner");
+    const h = state.health;
+    let tone = "", title = "", lines = [], foot = false;
+
+    if (state.offline) {
+      tone = "bad"; foot = true;
+      const since = new Date(state.offlineSince).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      if (state.offlineReason === "internet") {
+        title = "You're offline";
+        lines.push("This device has no internet connection, so MoCloud can't be reached. Your files are safe on the Pi.");
+      } else if (state.offlineReason === "drive") {
+        title = "MoCloud's USB stick is disconnected";
+        lines.push("The Pi is on, but it can't find the USB stick that holds your files. Plug it back into one of the Pi's blue USB ports.");
+        lines.push("Your files are safe on the stick. Nothing has been deleted, they're just locked. This page unlocks on its own within about 30 seconds of the stick going back in.");
+      } else if (state.offlineReason === "server") {
+        title = "MoCloud server is offline";
+        lines.push(`The Pi stopped answering at ${since}. It may be unplugged, restarting, or its internet may be down.`);
+        lines.push("Your files are safe on it. Nothing has been deleted, they're just locked until it's back. Plug it back in and this page unlocks on its own, usually within 2 minutes of it starting.");
+      } else {
+        title = "Can't reach MoCloud";
+        lines.push("Working out whether it's your internet or the Pi…");
+      }
+      if (!state.files.length) lines.push("This browser hasn't loaded your library before, so there's nothing to show until MoCloud is back.");
+      if (state.queue.some((q) => ["paused", "uploading", "converting", "finishing"].includes(q.status))) {
+        lines.push("Uploads are paused and pick up where they left off once it's back. Keep this tab open.");
+      }
+    } else if (h) {
+      const problems = [];
+      if (h.readOnly) { tone = "bad"; problems.push("The Pi's storage has gone read-only, which usually means the card or drive is failing. New uploads won't save. Copy off anything important."); }
+      if (h.diskLow) problems.push("The Pi's storage is almost full. Delete something to keep uploads working.");
+      if (h.underVoltage) problems.push("The Pi isn't getting enough power right now. Use the official 5.1V 3A power supply, or it may restart on its own.");
+      else if (h.underVoltageEarlier) problems.push("The Pi's power dipped too low at some point since it started. If it keeps happening, switch to the official 5.1V 3A power supply.");
+      if (h.tempC != null && h.tempC >= 80) problems.push(`The Pi is running hot (${Math.round(h.tempC)}°C) and slowing itself down. Give it more airflow.`);
+      if (problems.length) {
+        title = problems.length === 1 ? "MoCloud needs attention" : "MoCloud has a few problems";
+        lines = problems;
+      }
+    }
+
+    if (!title) { box.hidden = true; box.replaceChildren(); return; }
+    box.hidden = false;
+    box.className = "status" + (tone ? " " + tone : "");
+    const b = document.createElement("b"); b.textContent = title;
+    const parts = [b];
+    if (lines.length === 1 || state.offline) {
+      lines.forEach((l) => { const p = document.createElement("p"); p.textContent = l; parts.push(p); });
+    } else {
+      const ul = document.createElement("ul");
+      lines.forEach((l) => { const li = document.createElement("li"); li.textContent = l; ul.append(li); });
+      parts.push(ul);
+    }
+    if (foot) {
+      const f = document.createElement("div"); f.className = "status-foot";
+      const left = Math.max(0, Math.ceil((nextCheckAt - Date.now()) / 1000));
+      const t = document.createElement("span");
+      t.textContent = checking ? "Checking now…" : `Checking again in ${left}s`;
+      const btn = document.createElement("button"); btn.className = "link"; btn.textContent = "Check now";
+      btn.disabled = checking;
+      btn.addEventListener("click", checkNow);
+      f.append(t, btn);
+      parts.push(f);
+    }
+    box.replaceChildren(...parts);
   }
 
   // ---------- File information ----------
@@ -913,13 +1170,15 @@ self.onmessage = (e) => {
     const list = $("queue");
     list.replaceChildren(...state.queue.map((q) => {
       const li = document.createElement("li");
+      const held = q.status === "paused" || (state.offline && ["uploading", "converting", "finishing"].includes(q.status));
       if (q.status === "failed") li.className = "failed";
+      else if (held) li.className = "paused";
       const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.file.name;
       const stat = document.createElement("span"); stat.className = "q-stat";
       const prepPct = Math.floor((q.prep || 0) * 100);
       const pct = q.status === "converting" ? prepPct
         : q.file.size ? Math.floor((q.sent / q.file.size) * 100) : 0;
-      stat.textContent = {
+      stat.textContent = held ? "Paused until MoCloud is back" : {
         waiting: "Waiting",
         converting: q.prepStage === "fix" ? `Converting and uploading, ${prepPct}%` : "Checking audio",
         uploading: `${pct}% of ${fmtSize(q.file.size)}`,
@@ -939,7 +1198,7 @@ self.onmessage = (e) => {
   }
 
   function addFiles(fileList, fromFolder) {
-    if (!configured) { toast("Connect storage first: paste your Worker URL into index.html.", true); return; }
+    if (!configured) { toast("Connect storage first: paste your MoCloud server address into index.html.", true); return; }
     let blocked = false, skipped = 0, added = 0;
     // Name order, so episodes upload 1, 2, 3 ... 10 rather than 1, 10, 2.
     const files = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
@@ -950,7 +1209,8 @@ self.onmessage = (e) => {
       state.queue.push({ file, status: "waiting", sent: 0, xhrs: new Set(), cancelled: false });
       added++;
     }
-    if (blocked) toast(added ? "Not everything fits. The rest was left out so storage stays under the limit." : "Max amount reached. Delete something to upload more.", true);
+    if (added && state.offline) toast("MoCloud is offline. These will upload by themselves once it's back. Keep this tab open.", true);
+    else if (blocked) toast(added ? "Not everything fits. The rest was left out so storage stays under the limit." : "Max amount reached. Delete something to upload more.", true);
     else if (fromFolder && !added) toast("No videos or photos found in that folder.", true);
     else if (skipped && !fromFolder) toast("Only videos and photos can be uploaded.", true); // folders usually carry extras like subtitles
     renderQueue();
@@ -961,8 +1221,12 @@ self.onmessage = (e) => {
     if (state.running) return;
     state.running = true;
     let next;
-    while ((next = state.queue.find((q) => q.status === "waiting"))) {
+    while (!state.offline && (next = state.queue.find((q) => q.status === "waiting"))) {
       await uploadOne(next);
+    }
+    if (state.offline) { // hold everything that hasn't started until the server is back
+      state.queue.forEach((q) => { if (q.status === "waiting") q.status = "paused"; });
+      renderQueue();
     }
     state.running = false;
   }
@@ -978,23 +1242,43 @@ self.onmessage = (e) => {
         q.xhrs.delete(xhr);
         if (xhr.status >= 200 && xhr.status < 300) {
           try { resolve(JSON.parse(xhr.responseText)); } catch { reject(new Error("Bad reply from storage.")); }
-        } else reject(new Error(`Chunk ${n} was rejected (${xhr.status}).`));
+          return;
+        }
+        let info = {};
+        try { info = JSON.parse(xhr.responseText); } catch {}
+        const err = new Error(info.error || `Chunk ${n} was rejected (${xhr.status}).`);
+        err.code = info.code;
+        err.offline = GATEWAY.includes(xhr.status);
+        reject(err);
       };
-      xhr.onerror = () => { q.xhrs.delete(xhr); reject(new Error("Connection dropped.")); };
+      xhr.onerror = () => {
+        q.xhrs.delete(xhr);
+        const err = new Error("Connection dropped.");
+        err.offline = true;
+        reject(err);
+      };
       xhr.onabort = () => { q.xhrs.delete(xhr); reject(new Error("cancelled")); };
       xhr.send(blob);
     });
   }
 
-  // Sends one chunk, trying again a few times if the connection hiccups.
+  // Sends one chunk. A hiccup is retried a few times. If the server itself has gone away, the
+  // upload pauses right here and carries on from this chunk once it's back, however long that takes.
   async function sendPartRetry(q, n, blob, onProgress) {
     let attempt = 0;
     for (;;) {
       try { return await sendPart(q, n, blob, onProgress); }
       catch (e) {
-        if (q.cancelled || e.message === "cancelled" || ++attempt >= 4) throw e;
+        if (q.cancelled || e.message === "cancelled") throw e;
+        if (e.offline && (state.offline || !(await ping()))) {
+          goOffline();
+          onProgress(0);
+          await waitForServer(q);
+          continue;
+        }
+        if (e.code === "LIMIT" || e.code === "UPLOAD_GONE" || ++attempt >= 4) throw e;
         onProgress(0);
-        await new Promise((r) => setTimeout(r, 1500 * attempt));
+        await sleep(1500 * attempt);
       }
     }
   }
@@ -1125,6 +1409,7 @@ self.onmessage = (e) => {
   }
 
   async function uploadOne(q) {
+    if (state.offline) { q.status = "paused"; renderQueue(); return; }
     try {
       let parts = null;
       if (CHECK_EXT.test(q.file.name)) {
@@ -1137,18 +1422,24 @@ self.onmessage = (e) => {
       if (!parts) parts = await uploadWhole(q);
 
       q.status = "finishing"; renderQueue();
-      try {
-        await api("/api/upload/finish", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts }),
-        });
-      } catch (e) {
-        // The reply can get lost even though storage did finish. Check before calling it failed.
-        if (e.code === "LIMIT") throw e;
-        const saved = await refresh().then(() => state.files.some((f) => f.key === q.key), () => false);
-        if (!saved) throw e;
-        q.uploadId = null;
+      for (;;) {
+        try {
+          await api("/api/upload/finish", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts }),
+          });
+          break;
+        } catch (e) {
+          // Every chunk is already safe on the server, so if it dropped, just wait and finish later.
+          if (e.code === "OFFLINE") { await waitForServer(q); continue; }
+          // The reply can get lost even though storage did finish. Check before calling it failed.
+          if (e.code === "LIMIT") throw e;
+          const saved = await refresh().then(() => state.files.some((f) => f.key === q.key), () => false);
+          if (!saved) throw e;
+          q.uploadId = null;
+          break;
+        }
       }
       state.queue = state.queue.filter((x) => x !== q);
       toast(`Uploaded ${prettyTitle(q.outName || q.file.name)}`);
@@ -1157,6 +1448,13 @@ self.onmessage = (e) => {
     } catch (e) {
       if (q.stopConvert) q.stopConvert(e);
       q.xhrs.forEach((x) => x.abort());
+      if (e.code === "OFFLINE" && !q.cancelled) {
+        // Couldn't start because the server is offline. Nothing is lost: it goes back in line
+        // and starts again by itself once MoCloud is back.
+        Object.assign(q, { status: "paused", sent: 0, prep: 0, key: null, uploadId: null });
+        renderQueue();
+        return;
+      }
       if (q.uploadId && e.code !== "LIMIT") {
         api("/api/upload/abort", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -1223,7 +1521,7 @@ self.onmessage = (e) => {
   $("pick").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
   window.addEventListener("beforeunload", (e) => {
-    if (state.queue.some((q) => ["converting", "uploading", "finishing"].includes(q.status))) e.preventDefault();
+    if (state.queue.some((q) => ["paused", "converting", "uploading", "finishing"].includes(q.status))) e.preventDefault();
   });
   window.addEventListener("hashchange", openFromHash);
 
@@ -1231,13 +1529,20 @@ self.onmessage = (e) => {
   if (!configured) {
     $("gaugeUsed").textContent = "Storage not connected";
     $("empty").hidden = false;
-    $("empty").innerHTML = "<b>Connect your storage</b>Open <code>index.html</code>, find <code>WORKER_URL</code> near the top of the script, and paste in your Cloudflare Worker URL.";
+    $("empty").innerHTML = "<b>Connect your storage</b>Open <code>index.html</code>, find <code>SERVER_URL</code> near the top of the script, and paste in the address the Pi's installer printed.";
     $("pick").disabled = true; $("pickFolder").disabled = true;
   } else {
     openFromHash(); // shared links play right away, no passcode needed
-    refresh().catch((e) => {
+    refresh().then(checkHealth, (e) => {
+      if (e.code === "OFFLINE") return; // the page has already switched to offline mode
       $("gaugeUsed").textContent = "Can’t reach storage";
       toast(`Can’t reach storage: ${e.message}`, true);
+    });
+    setInterval(checkHealth, 60000);
+    // Coming back to the tab, or the device reconnecting, checks straight away.
+    window.addEventListener("online", () => { if (state.offline) checkNow(); });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") (state.offline ? checkNow() : checkHealth());
     });
   }
 })();
