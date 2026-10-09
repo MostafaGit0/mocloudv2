@@ -637,7 +637,11 @@ self.onmessage = (e) => {
   // Answers that mean "the server itself isn't there", as opposed to it saying no.
   const GATEWAY = [502, 503, 504, 520, 521, 522, 523, 524, 530];
   const API_TIMEOUT = 8000;      // ms to wait for the server before treating it as offline
-  const STALL_TIMEOUT = 30000;   // ms an upload chunk may go without progress before it counts as dropped
+  const STALL_TIMEOUT = 45000;   // ms an upload chunk may go without moving before it counts as dropped
+  const SAVE_TIMEOUT = 240000;   // ms the server may take to save a chunk once it has all of it (slow USB sticks)
+  // How many chunks go up at once. The Pi writes to a USB stick, which copes far better with one
+  // or two steady streams than with several at once.
+  const partsAtOnce = () => (backend.id === "pi" ? 2 : PARALLEL_PARTS);
   function offlineError() {
     const err = new Error("MoCloud is offline");
     err.code = "OFFLINE";
@@ -652,14 +656,15 @@ self.onmessage = (e) => {
 
   async function api(path, options = {}) {
     const from = backend;
-    let dropped = 0;
+    const limit = options.timeout || API_TIMEOUT; // slow steps (saving a finished upload) pass a longer limit
+    let dropped = 0, slow = 0;
     for (;;) {
       if (from !== backend) throw switchedError();
       let res;
       // When the Pi is off, the Tailscale relay can hold a request open instead of failing it,
       // so every request gets a time limit. No answer in time counts as "offline".
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), API_TIMEOUT);
+      const timer = setTimeout(() => ctrl.abort(), limit);
       let timedOut = false;
       try {
         res = await fetch(API + path, {
@@ -676,6 +681,9 @@ self.onmessage = (e) => {
       if (from !== backend) throw switchedError(); // the answer is for the storage you just left
       if (!res || GATEWAY.includes(res.status)) {
         // One quick retry in case it was a blip, then switch the page to offline mode.
+        // No answer in time, but the server still answers its quick health check: it's just busy
+        // (usually a slow USB stick saving). Wait and try again instead of calling it offline.
+        if (timedOut && ++slow <= 3 && (await ping())) { await sleep(3000); continue; }
         // A request that hung for the full time limit isn't retried: the server is clearly not there.
         if (!timedOut && ++dropped < 2) { await sleep(1000); continue; }
         goOffline(!res);
@@ -972,7 +980,7 @@ self.onmessage = (e) => {
   // there's no answer or its USB stick is missing (state.driveMissing says which).
   async function ping() {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const timer = setTimeout(() => ctrl.abort(), 5000); // the Pi answers this instantly when it's up
     state.driveMissing = false;
     try {
       if (backend.id === "cloud") { // the Cloudflare Worker has no health report, just check it answers
@@ -1328,13 +1336,13 @@ self.onmessage = (e) => {
       xhr.setRequestHeader("X-Passcode", state.passcode);
       // A chunk that stops moving (Pi unplugged mid-upload, relay holding the line) is dropped
       // after a while, which pauses the upload instead of leaving it frozen.
-      let lastMove = Date.now(), stalled = false;
+      let lastMove = Date.now(), stalled = false, sent = false;
       const watchdog = setInterval(() => {
-        if (Date.now() - lastMove > STALL_TIMEOUT) { stalled = true; xhr.abort(); }
+        if (Date.now() - lastMove > (sent ? SAVE_TIMEOUT : STALL_TIMEOUT)) { stalled = true; xhr.abort(); }
       }, 2000);
       const done = () => { clearInterval(watchdog); q.xhrs.delete(xhr); };
       xhr.upload.onprogress = (e) => { lastMove = Date.now(); onProgress(e.loaded); };
-      xhr.upload.onload = () => { lastMove = Date.now(); }; // all sent; give the Pi time to save it
+      xhr.upload.onload = () => { lastMove = Date.now(); sent = true; }; // all sent; give the Pi time to save it
       xhr.onload = () => {
         done();
         if (xhr.status >= 200 && xhr.status < 300) {
@@ -1368,7 +1376,25 @@ self.onmessage = (e) => {
 
   // Sends one chunk. A hiccup is retried a few times. If the server itself has gone away, the
   // upload pauses right here and carries on from this chunk once it's back, however long that takes.
+  // Limits how many chunks are in the air at once (see partsAtOnce).
+  let slotsUsed = 0;
+  const slotWaiters = [];
+  async function takeSlot() {
+    while (slotsUsed >= partsAtOnce()) await new Promise((r) => slotWaiters.push(r));
+    slotsUsed++;
+  }
+  function freeSlot() {
+    slotsUsed--;
+    const next = slotWaiters.shift();
+    if (next) next();
+  }
+
   async function sendPartRetry(q, n, blob, onProgress) {
+    await takeSlot();
+    try { return await sendPartRetryInner(q, n, blob, onProgress); } finally { freeSlot(); }
+  }
+
+  async function sendPartRetryInner(q, n, blob, onProgress) {
     let attempt = 0;
     for (;;) {
       try { return await sendPart(q, n, blob, onProgress); }
@@ -1380,9 +1406,12 @@ self.onmessage = (e) => {
           await waitForServer(q);
           continue;
         }
-        if (e.code === "LIMIT" || e.code === "UPLOAD_GONE" || ++attempt >= 4) throw e;
+        // The server is up but this chunk stalled (usually a slow USB stick catching up): give it
+        // more tries and more breathing room before calling the upload failed.
+        const tries = e.message === "Connection stalled." ? 8 : 4;
+        if (e.code === "LIMIT" || e.code === "UPLOAD_GONE" || ++attempt >= tries) throw e;
         onProgress(0);
-        await sleep(1500 * attempt);
+        await sleep(Math.min(20000, 2000 * attempt));
       }
     }
   }
@@ -1510,7 +1539,7 @@ self.onmessage = (e) => {
         progress[i] = blob.size;
       }
     };
-    await Promise.all(Array.from({ length: Math.min(PARALLEL_PARTS, total) }, worker));
+    await Promise.all(Array.from({ length: Math.min(partsAtOnce(), total) }, worker));
     return done;
   }
 
@@ -1532,6 +1561,7 @@ self.onmessage = (e) => {
         try {
           await api("/api/upload/finish", {
             method: "POST",
+            timeout: SAVE_TIMEOUT, // the Pi makes sure the whole file is safely on the stick first
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts }),
           });
