@@ -42,6 +42,17 @@
   /* ---------- Header ---------- */
   .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 40px; }
   .wordmark { margin: 0; font-size: 44px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
+  .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+
+  /* Pi / Cloudflare storage switch */
+  .source { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); }
+  .source button {
+    border: 0; border-radius: 999px; padding: 6px 14px; background: transparent;
+    color: var(--dim); font-size: 14px; font-weight: 500;
+  }
+  .source button[aria-pressed="true"] { background: var(--amber); color: #1B1606; }
+  .source button:not([aria-pressed="true"]):hover { color: var(--paper); }
+  .source-note { font-size: 13px; color: var(--dim); margin: -6px 0 0; }
 
   /* ---------- Storage gauge (the one loud element) ---------- */
   .gauge { flex: 1 1 340px; max-width: 520px; }
@@ -101,6 +112,7 @@
   .status b { display: block; font-weight: 500; font-size: 17px; margin-bottom: 2px; }
   .status p { margin: 4px 0 0; color: var(--dim); max-width: 70ch; }
   .status ul { margin: 6px 0 0; padding-left: 18px; color: var(--dim); }
+  .status-foot .btn { padding: 7px 14px; font-size: 14px; }
   .status-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; font-size: 14px; color: var(--dim); }
 
   /* ---------- Upload queue ---------- */
@@ -229,7 +241,14 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <h1 class="wordmark">MoCloud</h1>
+    <div class="brand">
+      <h1 class="wordmark">MoCloud</h1>
+      <div class="source" role="group" aria-label="Which storage to use">
+        <button type="button" data-source="pi" aria-pressed="true">Pi</button>
+        <button type="button" data-source="cloud" aria-pressed="false">Cloudflare</button>
+      </div>
+      <p class="source-note" id="sourceNote"></p>
+    </div>
     <div class="gauge" id="gauge" aria-live="polite">
       <div class="gauge-line"><strong id="gaugeUsed">Checking storage</strong><span id="gaugeLeft"></span></div>
       <div class="gauge-bar" role="img" aria-label="Storage used">
@@ -280,7 +299,7 @@
 
 <dialog id="gate">
   <h3>Enter passcode</h3>
-  <p>MoCloud needs a passcode to show, add, or delete files.</p>
+  <p id="gateText">MoCloud needs a passcode to show, add, or delete files.</p>
   <input type="password" id="gateInput" autocomplete="current-password" aria-label="Passcode">
   <button class="btn" id="gateGo">Unlock</button>
 </dialog>
@@ -456,8 +475,21 @@ self.onmessage = (e) => {
   // =====================================================================
   const SERVER_URL = "https://mocloud.tail47b571.ts.net";
 
-  const API = SERVER_URL.replace(/\/+$/, "");
-  const configured = /^https?:\/\//.test(API);
+  // Your old Cloudflare storage. The switch at the top of the page flips between the two,
+  // for example when the Pi is offline and you still want what's on Cloudflare.
+  const CLOUD_URL = "https://crimson-pond-7d8a.benmostafa1010.workers.dev";
+
+  const BACKENDS = {
+    pi: { id: "pi", name: "Pi", url: SERVER_URL.replace(/\/+$/, "") },
+    cloud: { id: "cloud", name: "Cloudflare", url: CLOUD_URL.replace(/\/+$/, "") },
+  };
+  const isUrl = (u) => /^https?:\/\//.test(u);
+  let backend = (() => {
+    try { const saved = localStorage.getItem("mocloud-source"); if (BACKENDS[saved] && isUrl(BACKENDS[saved].url)) return BACKENDS[saved]; } catch {}
+    return BACKENDS.pi;
+  })();
+  let API = backend.url;
+  let configured = isUrl(API);
   const PARALLEL_PARTS = 3;
   const GB = 1000 ** 3;
 
@@ -485,8 +517,12 @@ self.onmessage = (e) => {
   const isVideo = (f) => (f.type || "").startsWith("video/") || VIDEO_EXT.test(f.name);
   const isImage = (f) => (f.type || "").startsWith("image/") || IMAGE_EXT.test(f.name);
 
-  function readPasscode() { try { return localStorage.getItem("stash-passcode") || ""; } catch { return ""; } }
-  function savePasscode(v) { try { localStorage.setItem("stash-passcode", v); } catch {} }
+  // Each storage has its own passcode, remembered separately in this browser.
+  function readPasscode() {
+    try { return localStorage.getItem("mocloud-passcode-" + backend.id) || localStorage.getItem("stash-passcode") || ""; }
+    catch { return ""; }
+  }
+  function savePasscode(v) { try { localStorage.setItem("mocloud-passcode-" + backend.id, v); } catch {} }
 
   function fmtSize(bytes) {
     if (bytes >= GB) return parseFloat((bytes / GB).toFixed(2)) + " GB";
@@ -580,6 +616,7 @@ self.onmessage = (e) => {
     return new Promise((resolve) => {
       const gate = $("gate"), input = $("gateInput");
       input.value = "";
+      $("gateText").textContent = `Enter the passcode for your ${backend.name} storage. It's remembered on this device after that.`;
       const done = () => {
         if (!input.value) return;
         state.passcode = input.value;
@@ -599,28 +636,49 @@ self.onmessage = (e) => {
 
   // Answers that mean "the server itself isn't there", as opposed to it saying no.
   const GATEWAY = [502, 503, 504, 520, 521, 522, 523, 524, 530];
+  const API_TIMEOUT = 8000;      // ms to wait for the server before treating it as offline
+  const STALL_TIMEOUT = 30000;   // ms an upload chunk may go without progress before it counts as dropped
   function offlineError() {
     const err = new Error("MoCloud is offline");
     err.code = "OFFLINE";
     return err;
   }
 
+  function switchedError() {
+    const err = new Error("switched");
+    err.code = "SWITCHED";
+    return err;
+  }
+
   async function api(path, options = {}) {
+    const from = backend;
     let dropped = 0;
     for (;;) {
+      if (from !== backend) throw switchedError();
       let res;
+      // When the Pi is off, the Tailscale relay can hold a request open instead of failing it,
+      // so every request gets a time limit. No answer in time counts as "offline".
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), API_TIMEOUT);
+      let timedOut = false;
       try {
         res = await fetch(API + path, {
           ...options,
+          signal: ctrl.signal,
           headers: { ...(options.headers || {}), "X-Passcode": state.passcode },
         });
       } catch (e) {
-        res = null; // no answer at all
+        res = null; // no answer at all, or no answer in time
+        timedOut = ctrl.signal.aborted;
+      } finally {
+        clearTimeout(timer);
       }
+      if (from !== backend) throw switchedError(); // the answer is for the storage you just left
       if (!res || GATEWAY.includes(res.status)) {
-        // Try a couple of times in case it was a blip, then switch the page to offline mode.
-        if (++dropped < 3) { await sleep(1200 * dropped); continue; }
-        goOffline();
+        // One quick retry in case it was a blip, then switch the page to offline mode.
+        // A request that hung for the full time limit isn't retried: the server is clearly not there.
+        if (!timedOut && ++dropped < 2) { await sleep(1000); continue; }
+        goOffline(!res);
         throw offlineError();
       }
       if (state.offline) goOnline(); // it answered, so it's back
@@ -654,7 +712,9 @@ self.onmessage = (e) => {
     $("gaugeLeft").textContent = `${fmtSize(left)} left of ${fmtSize(limit)}`;
     $("gaugeNote").textContent = state.offline
       ? (state.fromCache ? "Last known numbers. MoCloud is offline right now." : "MoCloud is offline right now.")
-      : `Uploads stop at ${fmtSize(limit)}, so the Pi always keeps ${fmtSize(free - limit)} free for itself.`;
+      : backend.id === "cloud"
+        ? `Uploads stop at ${fmtSize(limit)}. The last ${fmtSize(free - limit)} of Cloudflare's free ${fmtSize(free)} is never used.`
+        : `Uploads stop at ${fmtSize(limit)}, so the Pi always keeps ${fmtSize(free - limit)} free for itself.`;
     $("fullBanner").hidden = !full || state.offline;
     $("pick").disabled = full; $("pickFolder").disabled = full;
   }
@@ -696,7 +756,10 @@ self.onmessage = (e) => {
   // Forget pictures for files that have been deleted.
   function pruneThumbs() {
     const live = new Set(state.files.map((f) => f.key));
-    for (const key of [...thumbs.keys()]) if (!live.has(key)) { thumbs.delete(key); thumbStore(key, null); }
+    for (const [key, t] of [...thumbs.entries()]) {
+      if ((t.src || "pi") !== backend.id) continue; // belongs to the other storage
+      if (!live.has(key)) { thumbs.delete(key); thumbStore(key, null); }
+    }
   }
 
   // Loads just enough of the video to grab one frame, a little way in so it isn't a black intro.
@@ -739,7 +802,8 @@ self.onmessage = (e) => {
     if (thumbs.has(key)) return Promise.resolve(thumbs.get(key));
     if (!thumbJobs.has(key)) {
       thumbJobs.set(key, new Promise((resolve, reject) => {
-        thumbWaiting.push(() => grabFrame(key).then((t) => { thumbs.set(key, t); thumbStore(key, t); resolve(t); }, reject));
+        const src = backend.id;
+        thumbWaiting.push(() => grabFrame(key).then((t) => { t.src = src; thumbs.set(key, t); thumbStore(key, t); resolve(t); }, reject));
         pumpThumbs();
       }));
       thumbJobs.get(key).catch(() => thumbJobs.delete(key)); // try again next time instead of giving up for good
@@ -885,17 +949,17 @@ self.onmessage = (e) => {
   // The library (names, sizes, thumbnails) is remembered in this browser, so when the Pi is
   // unplugged the page still shows everything, just locked. Nothing is ever deleted because of
   // it: the files live on the Pi and come back the moment it does.
-  const LIBRARY_KEY = "mocloud-library";
+  const libraryKey = () => "mocloud-library-" + backend.id;
   function saveLibrary() {
     try {
-      localStorage.setItem(LIBRARY_KEY, JSON.stringify({
+      localStorage.setItem(libraryKey(), JSON.stringify({
         files: state.files, used: state.used, limit: state.limit, freeTier: state.freeTier, at: Date.now(),
       }));
     } catch {}
   }
   function loadLibrary() {
     try {
-      const saved = JSON.parse(localStorage.getItem(LIBRARY_KEY));
+      const saved = JSON.parse(localStorage.getItem(libraryKey()) || (backend.id === "pi" ? localStorage.getItem("mocloud-library") : "null"));
       if (saved && Array.isArray(saved.files)) {
         Object.assign(state, { files: saved.files, used: saved.used, limit: saved.limit, freeTier: saved.freeTier, fromCache: true });
         return saved;
@@ -911,6 +975,10 @@ self.onmessage = (e) => {
     const timer = setTimeout(() => ctrl.abort(), 8000);
     state.driveMissing = false;
     try {
+      if (backend.id === "cloud") { // the Cloudflare Worker has no health report, just check it answers
+        const res = await fetch(API + "/", { cache: "no-store", signal: ctrl.signal });
+        return res.ok ? { ok: true } : null;
+      }
       const res = await fetch(API + "/api/health", { cache: "no-store", signal: ctrl.signal });
       if (!res.ok) return null;
       const data = await res.json();
@@ -931,15 +999,18 @@ self.onmessage = (e) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 6000);
     try {
-      await fetch("https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/package.json", { cache: "no-store", signal: ctrl.signal });
+      // no-cors: any answer at all proves the internet works; only a network failure throws
+      await fetch("https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/package.json", { mode: "no-cors", cache: "no-store", signal: ctrl.signal });
       return true;
     } catch { return false; } finally { clearTimeout(timer); }
   }
 
   const CHECK_EVERY = 15000;
   let checkTimer = null, countdownTimer = null, nextCheckAt = 0, checking = false;
+  let generation = 0; // goes up on every storage switch, so late answers from the old one are ignored
 
-  function goOffline() {
+  // unreachable = we already know the server gave no answer at all, so skip asking it again
+  function goOffline(unreachable) {
     if (state.offline) return;
     state.offline = true;
     state.offlineSince = Date.now();
@@ -949,9 +1020,13 @@ self.onmessage = (e) => {
     clearInterval(countdownTimer);
     countdownTimer = setInterval(showStatus, 1000);
     checkSoon(CHECK_EVERY);
-    ping().then(async (report) => {
+    const g = generation;
+    (unreachable ? Promise.resolve(null) : ping()).then(async (report) => {
+      if (g !== generation) return;
       if (report) return goOnline();
-      state.offlineReason = await diagnose();
+      const reason = await diagnose();
+      if (g !== generation) return;
+      state.offlineReason = reason;
       showStatus();
     });
   }
@@ -965,15 +1040,19 @@ self.onmessage = (e) => {
   async function checkNow() {
     if (checking) return;
     checking = true; clearTimeout(checkTimer); showStatus();
+    const g = generation;
     const report = await ping();
+    if (g !== generation) { checking = false; return; }
     if (report) {
       state.health = report;
       checking = false;
       goOnline();
       return;
     }
-    state.offlineReason = await diagnose();
+    const reason = await diagnose();
     checking = false;
+    if (g !== generation) return;
+    state.offlineReason = reason;
     checkSoon(CHECK_EVERY);
     showStatus();
   }
@@ -1026,11 +1105,14 @@ self.onmessage = (e) => {
       const since = new Date(state.offlineSince).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       if (state.offlineReason === "internet") {
         title = "You're offline";
-        lines.push("This device has no internet connection, so MoCloud can't be reached. Your files are safe on the Pi.");
+        lines.push(`This device has no internet connection, so MoCloud can't be reached. Your files are safe on ${backend.id === "cloud" ? "Cloudflare" : "the Pi"}.`);
       } else if (state.offlineReason === "drive") {
         title = "MoCloud's USB stick is disconnected";
         lines.push("The Pi is on, but it can't find the USB stick that holds your files. Plug it back into one of the Pi's blue USB ports.");
         lines.push("Your files are safe on the stick. Nothing has been deleted, they're just locked. This page unlocks on its own within about 30 seconds of the stick going back in.");
+      } else if (state.offlineReason === "server" && backend.id === "cloud") {
+        title = "Can't reach your Cloudflare storage";
+        lines.push(`Cloudflare stopped answering at ${since}. This is usually brief. Your files there are safe.`);
       } else if (state.offlineReason === "server") {
         title = "MoCloud server is offline";
         lines.push(`The Pi stopped answering at ${since}. It may be unplugged, restarting, or its internet may be down.`);
@@ -1077,6 +1159,13 @@ self.onmessage = (e) => {
       btn.disabled = checking;
       btn.addEventListener("click", checkNow);
       f.append(t, btn);
+      const other = backend.id === "pi" ? BACKENDS.cloud : BACKENDS.pi;
+      if (isUrl(other.url)) {
+        const sw = document.createElement("button"); sw.className = "btn ghost";
+        sw.textContent = `Switch to ${other.name}`;
+        sw.addEventListener("click", () => switchSource(other.id));
+        f.append(sw);
+      }
       parts.push(f);
     }
     box.replaceChildren(...parts);
@@ -1237,9 +1326,17 @@ self.onmessage = (e) => {
       q.xhrs.add(xhr);
       xhr.open("PUT", `${API}/api/upload/part?key=${encodeURIComponent(q.key)}&uploadId=${encodeURIComponent(q.uploadId)}&n=${n}`);
       xhr.setRequestHeader("X-Passcode", state.passcode);
-      xhr.upload.onprogress = (e) => onProgress(e.loaded);
+      // A chunk that stops moving (Pi unplugged mid-upload, relay holding the line) is dropped
+      // after a while, which pauses the upload instead of leaving it frozen.
+      let lastMove = Date.now(), stalled = false;
+      const watchdog = setInterval(() => {
+        if (Date.now() - lastMove > STALL_TIMEOUT) { stalled = true; xhr.abort(); }
+      }, 2000);
+      const done = () => { clearInterval(watchdog); q.xhrs.delete(xhr); };
+      xhr.upload.onprogress = (e) => { lastMove = Date.now(); onProgress(e.loaded); };
+      xhr.upload.onload = () => { lastMove = Date.now(); }; // all sent; give the Pi time to save it
       xhr.onload = () => {
-        q.xhrs.delete(xhr);
+        done();
         if (xhr.status >= 200 && xhr.status < 300) {
           try { resolve(JSON.parse(xhr.responseText)); } catch { reject(new Error("Bad reply from storage.")); }
           return;
@@ -1252,12 +1349,19 @@ self.onmessage = (e) => {
         reject(err);
       };
       xhr.onerror = () => {
-        q.xhrs.delete(xhr);
+        done();
         const err = new Error("Connection dropped.");
         err.offline = true;
         reject(err);
       };
-      xhr.onabort = () => { q.xhrs.delete(xhr); reject(new Error("cancelled")); };
+      xhr.onabort = () => {
+        done();
+        if (stalled) {
+          const err = new Error("Connection stalled.");
+          err.offline = true;
+          reject(err);
+        } else reject(new Error("cancelled"));
+      };
       xhr.send(blob);
     });
   }
@@ -1289,8 +1393,10 @@ self.onmessage = (e) => {
   // format browsers can't play (Dolby AC-3 / E-AC-3), into stereo AAC. Each finished
   // piece of the MP4 is uploaded straight away, so the whole file never sits in memory.
   // Files whose audio can't be fixed here (DTS, TrueHD) are refused instead of going up silent.
-  // Only MKV files go through the audio check and conversion. Everything else uploads straight away, as is.
-  const CHECK_EXT = /\.mkv$/i;
+  // MKV, MP4, M4V and MOV get an audio check (a quick read of the file's header). Many MP4s carry
+  // Dolby audio that browsers play silent, so those get their audio converted too. Videos whose
+  // audio already plays (AAC, MP3...) upload straight away, untouched.
+  const CHECK_EXT = /\.(mkv|mp4|m4v|mov)$/i;
   let converterUrl;
 
   // Resolves with { mode: "asis", note } when the file is fine as it is (upload it normally),
@@ -1525,6 +1631,45 @@ self.onmessage = (e) => {
   });
   window.addEventListener("hashchange", openFromHash);
 
+  // ---------- Pi / Cloudflare switch ----------
+  function renderSource() {
+    const group = document.querySelector(".source");
+    group.hidden = !isUrl(BACKENDS.cloud.url) || !isUrl(BACKENDS.pi.url); // only one storage set up: nothing to switch
+    group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.source === backend.id)));
+    $("sourceNote").textContent = backend.id === "cloud" ? "Showing your Cloudflare storage" : "";
+    document.title = backend.id === "cloud" ? "MoCloud (Cloudflare)" : "MoCloud";
+  }
+
+  function switchSource(id) {
+    const next = BACKENDS[id];
+    if (!next || next === backend) return;
+    if (!isUrl(next.url)) { toast(`${next.name} storage isn't set up in index.html.`, true); return; }
+    const active = state.queue.filter((q) => ["converting", "uploading", "finishing"].includes(q.status));
+    if (active.length && !window.confirm(`An upload is in progress to your ${backend.name} storage. Switching stops it, and you'd need to upload it again. Switch anyway?`)) return;
+    active.forEach((q) => { q.cancelled = true; if (q.stopConvert) q.stopConvert(new Error("cancelled")); q.xhrs.forEach((x) => x.abort()); });
+
+    generation++;
+    backend = next; API = next.url; configured = true;
+    try { localStorage.setItem("mocloud-source", id); } catch {}
+    clearTimeout(checkTimer); clearInterval(countdownTimer); checking = false;
+    if ($("player").open) $("player").close();
+    thumbJobs.clear();
+    Object.assign(state, {
+      files: [], used: 0, queue: [], offline: false, offlineReason: "", driveMissing: false,
+      health: null, fromCache: false, passcode: readPasscode(),
+    });
+    renderSource(); showStatus(); renderQueue();
+    if (loadLibrary()) renderGauge(); // show the last known library straight away while it checks
+    renderLibrary();
+    $("gaugeUsed").textContent = "Checking storage"; $("gaugeLeft").textContent = ""; $("gaugeNote").textContent = "";
+    const g = generation;
+    refresh().then(() => { if (g === generation) { checkHealth(); toast(`Now using your ${next.name} storage`); } }, (e) => {
+      if (e.code === "OFFLINE" || e.code === "SWITCHED" || g !== generation) return;
+      toast(`Can't reach ${next.name} storage: ${e.message}`, true);
+    });
+  }
+  document.querySelectorAll(".source button").forEach((b) => b.addEventListener("click", () => switchSource(b.dataset.source)));
+
   // ---------- Start ----------
   if (!configured) {
     $("gaugeUsed").textContent = "Storage not connected";
@@ -1532,13 +1677,15 @@ self.onmessage = (e) => {
     $("empty").innerHTML = "<b>Connect your storage</b>Open <code>index.html</code>, find <code>SERVER_URL</code> near the top of the script, and paste in the address the Pi's installer printed.";
     $("pick").disabled = true; $("pickFolder").disabled = true;
   } else {
+    renderSource();
+    if (loadLibrary()) { renderGauge(); renderLibrary(); $("gaugeUsed").textContent = "Checking storage"; } // instant paint while it checks
     openFromHash(); // shared links play right away, no passcode needed
     refresh().then(checkHealth, (e) => {
-      if (e.code === "OFFLINE") return; // the page has already switched to offline mode
+      if (e.code === "OFFLINE" || e.code === "SWITCHED") return; // the page has already switched to offline mode
       $("gaugeUsed").textContent = "Can’t reach storage";
       toast(`Can’t reach storage: ${e.message}`, true);
     });
-    setInterval(checkHealth, 60000);
+    setInterval(checkHealth, 20000);
     // Coming back to the tab, or the device reconnecting, checks straight away.
     window.addEventListener("online", () => { if (state.offline) checkNow(); });
     document.addEventListener("visibilitychange", () => {
