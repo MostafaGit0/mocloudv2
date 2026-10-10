@@ -103,6 +103,32 @@
     background: rgba(240,131,114,.12); border: 1px solid var(--red); color: var(--paper);
   }
 
+  /* ---------- Offline downloads ---------- */
+  .brand-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .dl-badge {
+    position: absolute; top: 10px; right: 10px; padding: 3px 9px; border-radius: 999px;
+    background: rgba(21,26,43,.85); border: 1px solid var(--amber); color: var(--amber);
+    font-size: 12px; font-weight: 500; pointer-events: none;
+  }
+  .acts-left { flex-wrap: wrap; row-gap: 4px; }
+  .acts a.link.off { opacity: .45; pointer-events: none; }
+  #downloads { background: var(--panel); border-radius: var(--radius); padding: 24px; width: min(620px, 94vw); max-height: 86dvh; }
+  .dl-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .dl-head h3 { margin: 0; font-size: 20px; font-weight: 500; }
+  .dl-sum { color: var(--dim); font-size: 14px; margin: 10px 0 14px; }
+  .dl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .dl-list li {
+    display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;
+    padding: 12px 14px; border-radius: 10px; background: var(--panel-2);
+  }
+  .dl-list b { font-weight: 500; overflow-wrap: anywhere; }
+  .dl-src { justify-self: end; font-size: 12px; color: var(--dim); }
+  .dl-stat { font-size: 13px; color: var(--dim); }
+  .dl-acts { display: flex; align-items: center; gap: 14px; justify-self: end; }
+  .dl-acts .btn { padding: 6px 14px; font-size: 14px; }
+  .dl-note { color: var(--dim); font-size: 13px; margin: 14px 0 0; }
+  .p-src { color: var(--amber); font-size: 14px; }
+
   /* ---------- Server status (offline, power, storage warnings) ---------- */
   .status {
     margin-top: 16px; padding: 16px 18px; border-radius: var(--radius);
@@ -243,9 +269,12 @@
   <header class="top">
     <div class="brand">
       <h1 class="wordmark">MoCloud</h1>
-      <div class="source" role="group" aria-label="Which storage to use">
-        <button type="button" data-source="pi" aria-pressed="true">Pi</button>
-        <button type="button" data-source="cloud" aria-pressed="false">Cloudflare</button>
+      <div class="brand-row">
+        <div class="source" role="group" aria-label="Which storage to use">
+          <button type="button" data-source="pi" aria-pressed="true">Pi</button>
+          <button type="button" data-source="cloud" aria-pressed="false">Cloudflare</button>
+        </div>
+        <button type="button" class="link" id="dlOpen">Downloads</button>
       </div>
       <p class="source-note" id="sourceNote"></p>
     </div>
@@ -286,8 +315,9 @@
   <div class="p-bar"><h3 id="pTitle"></h3><button class="btn ghost" id="pClose">Close</button></div>
   <div class="p-stage" id="pStage"></div>
   <div class="p-foot">
-    <a class="link" id="pDownload" href="#">Download</a>
+    <a class="link" id="pDownload" href="#">Save file</a>
     <button class="link" id="pInfo">Info</button>
+    <span class="p-src" id="pSource"></span>
   </div>
 </dialog>
 
@@ -295,6 +325,13 @@
   <h3 id="infoTitle"></h3>
   <dl id="infoList"></dl>
   <button class="btn ghost" id="infoClose">Close</button>
+</dialog>
+
+<dialog id="downloads" aria-labelledby="dlTitle">
+  <div class="dl-head"><h3 id="dlTitle">Downloads on this device</h3><button class="btn ghost" id="dlClose">Close</button></div>
+  <p class="dl-sum" id="dlSum"></p>
+  <ul class="dl-list" id="dlList"></ul>
+  <p class="dl-note" id="dlNote"></p>
 </dialog>
 
 <dialog id="gate">
@@ -460,6 +497,70 @@ self.onmessage = (e) => {
   if (m.type === "ack") partUploaded();
   else if (m.type === "start") {
     run(m.file, m.partSize).catch((err) => post({ type: "error", message: String((err && err.message) || err) }));
+  }
+};
+</script>
+
+<!-- The downloader for offline viewing. Also runs in a background worker. -->
+<script type="text/plain" id="dlWorker">
+// Saves one MoCloud video into this site's private storage on the device (a sealed area only
+// MoCloud can use). Writes straight to disk as it arrives, never more than the video's real size.
+let ctrl = null;
+self.onmessage = async (e) => {
+  const m = e.data;
+  if (m.type === "cancel") { if (ctrl) ctrl.abort(); return; }
+  if (m.type !== "start") return;
+  const FLUSH_EVERY = 16 * 1024 * 1024;
+  let handle = null;
+  try {
+    const root = await navigator.storage.getDirectory();
+    const dir = await root.getDirectoryHandle("mocloud-downloads", { create: true });
+    const fh = await dir.getFileHandle(m.name, { create: true });
+    handle = await fh.createSyncAccessHandle();
+    let pos = handle.getSize();
+    if (pos > m.total) { handle.truncate(0); pos = 0; } // never keep more than the video's size
+    ctrl = new AbortController();
+    if (pos < m.total) {
+      let res = await fetch(m.url, { headers: pos ? { Range: "bytes=" + pos + "-" } : {}, signal: ctrl.signal, cache: "no-store" });
+      if (pos && res.status === 206) {
+        const cr = /bytes (\d+)-\d+\/(\d+)/.exec(res.headers.get("Content-Range") || "");
+        if (!cr || +cr[1] !== pos || +cr[2] !== m.total) {
+          // The video changed on the server since this download started: start it over cleanly.
+          ctrl.abort(); ctrl = new AbortController();
+          handle.truncate(0); pos = 0;
+          res = await fetch(m.url, { signal: ctrl.signal, cache: "no-store" });
+        }
+      } else if (pos && res.status === 200) {
+        handle.truncate(0); pos = 0; // the server sent the whole file again, so start from the top
+      }
+      if (!res.ok) throw new Error("the server answered " + res.status);
+      const reader = res.body.getReader();
+      let unflushed = 0, lastPost = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (pos + value.length > m.total) throw new Error("the video is bigger than MoCloud said, so it was stopped to protect your storage");
+        handle.write(value, { at: pos });
+        pos += value.length;
+        unflushed += value.length;
+        if (unflushed >= FLUSH_EVERY) { handle.flush(); unflushed = 0; }
+        const now = Date.now();
+        if (now - lastPost > 300) { lastPost = now; self.postMessage({ type: "progress", got: pos }); }
+      }
+      handle.flush();
+    }
+    const size = handle.getSize();
+    handle.close(); handle = null;
+    self.postMessage({ type: "done", size });
+  } catch (err) {
+    let size = 0;
+    try { if (handle) { handle.flush(); size = handle.getSize(); handle.close(); } } catch (_) {}
+    self.postMessage({
+      type: "error",
+      aborted: !!(err && err.name === "AbortError"),
+      message: String((err && err.message) || err),
+      size,
+    });
   }
 };
 </script>
@@ -853,11 +954,17 @@ self.onmessage = (e) => {
       img.loading = "lazy"; img.alt = ""; img.src = fileUrl(f.key);
       thumb.append(img);
     }
+    const saved = video && isDownloaded(f);
+    const locked = state.offline && !saved; // downloaded videos keep playing offline
+    if (saved) {
+      const badge = document.createElement("span"); badge.className = "dl-badge"; badge.textContent = "Downloaded";
+      thumb.append(badge);
+    }
     thumb.addEventListener("click", () => {
-      if (state.offline) return toast("Locked until MoCloud is back online. Nothing has been deleted.", true);
+      if (locked) return toast("Locked until MoCloud is back online. Nothing has been deleted.", true);
       openPlayer(f);
     });
-    if (state.offline) {
+    if (locked) {
       el.classList.add("locked");
       thumb.setAttribute("aria-label", `${titleOf(f)}, locked while MoCloud is offline`);
       const lock = document.createElement("div"); lock.className = "lock";
@@ -870,7 +977,8 @@ self.onmessage = (e) => {
     meta.textContent = `${fmtSize(f.size)}, added ${fmtDate(f.uploaded)}`;
 
     const acts = document.createElement("div"); acts.className = "acts";
-    const dl = document.createElement("a"); dl.className = "link"; dl.textContent = "Download"; dl.href = fileUrl(f.key, true);
+    const save = document.createElement("a"); save.className = "link" + (state.offline ? " off" : ""); save.textContent = "Save file"; save.href = fileUrl(f.key, true);
+    save.title = "Save a copy of the file to your computer";
     const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
     del.disabled = state.offline;
     let armed;
@@ -884,7 +992,9 @@ self.onmessage = (e) => {
       del.disabled = true; del.textContent = "Deleting";
       try {
         await api(`/api/files/${encodeURIComponent(f.key)}`, { method: "DELETE" });
-        toast("Deleted");
+        const local = dl.items.get(dlId(backend.id, f.key));
+        if (local) await removeDownload(local.id, true); // its saved copy goes too, so no space is left behind
+        toast(local ? "Deleted from MoCloud, and its download on this device was removed too." : "Deleted");
         await refresh();
       } catch (e) { toast(e.message, true); del.disabled = false; del.textContent = "Delete"; del.classList.remove("armed"); }
     });
@@ -892,7 +1002,8 @@ self.onmessage = (e) => {
     info.setAttribute("aria-label", `File information for ${titleOf(f)}`);
     info.addEventListener("click", () => openInfo(f, thumbs.get(f.key)));
     const left = document.createElement("div"); left.className = "acts-left";
-    left.append(dl, info);
+    if (video) left.append(dlButton(f));
+    left.append(save, info);
     acts.append(left, del);
     el.append(thumb, name, meta, acts);
     return el;
@@ -1129,6 +1240,7 @@ self.onmessage = (e) => {
         title = "Can't reach MoCloud";
         lines.push("Working out whether it's your internet or the Pi…");
       }
+      if ([...dl.items.values()].some((i) => i.done)) lines.push("Videos you've downloaded to this device still play. They're the ones marked Downloaded.");
       if (!state.files.length) lines.push("This browser hasn't loaded your library before, so there's nothing to show until MoCloud is back.");
       if (state.queue.some((q) => ["paused", "uploading", "converting", "finishing"].includes(q.status))) {
         lines.push("Uploads are paused and pick up where they left off once it's back. Keep this tab open.");
@@ -1220,6 +1332,8 @@ self.onmessage = (e) => {
     stage.replaceChildren();
     $("pTitle").textContent = titleOf(f); $("pTitle").title = f.name;
     $("pDownload").href = fileUrl(f.key, true);
+    $("pDownload").classList.toggle("off", state.offline);
+    $("pSource").textContent = "";
     $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || thumbs.get(f.key));
 
     if (isVideo(f)) {
@@ -1237,8 +1351,13 @@ self.onmessage = (e) => {
         box.append(document.createElement("br"), direct);
         stage.replaceChildren(box);
       });
-      v.src = fileUrl(f.key);
       stage.append(v);
+      localVideoUrl(f).then((url) => {
+        if (!v.isConnected) { if (url) URL.revokeObjectURL(url); return; }
+        if (url) { v._local = url; v.src = url; $("pSource").textContent = "Playing from this device"; }
+        else if (f._dl) { v.remove(); stage.textContent = "This download isn't on this device anymore."; }
+        else v.src = fileUrl(f.key);
+      });
     } else {
       const img = document.createElement("img"); img.alt = f.name; img.src = fileUrl(f.key);
       stage.append(img);
@@ -1248,6 +1367,7 @@ self.onmessage = (e) => {
   }
 
   $("player").addEventListener("close", () => {
+    $("pStage").querySelectorAll("video").forEach((v) => { if (v._local) URL.revokeObjectURL(v._local); });
     $("pStage").replaceChildren(); // stops playback and the download behind it
     history.replaceState(null, "", location.pathname + location.search);
   });
@@ -1661,6 +1781,302 @@ self.onmessage = (e) => {
   });
   window.addEventListener("hashchange", openFromHash);
 
+  // ---------- Offline downloads ----------
+  // Like Netflix downloads: a video is saved inside this browser's private storage for MoCloud, a
+  // sealed area only this site can use. It plays right here with no internet, never appears in your
+  // Downloads folder, and removing it deletes only that one saved video (never anything on MoCloud).
+  const DL_DIR = "mocloud-downloads";
+  const DL_MARGIN = 300 * 1000 * 1000; // always leave this much room free on the device
+  const dl = {
+    items: new Map(),   // id -> { id, src, key, name, size, got, done, added, fname, error }
+    queue: [],          // ids waiting their turn (one download at a time)
+    active: null,       // { id, w, removeAfter }
+    db: null,
+    persisted: null,
+    supported: !!(window.isSecureContext && window.crypto && crypto.subtle && navigator.storage &&
+                  navigator.storage.getDirectory && window.Worker && window.indexedDB),
+  };
+  const dlId = (src, key) => src + "|" + key;
+  const dlItemFor = (f) => dl.items.get(f._dl || dlId(backend.id, f.key));
+  const isDownloaded = (f) => { const it = dlItemFor(f); return !!(it && it.done); };
+  const dlPct = (it) => (it && it.size ? Math.floor((it.got / it.size) * 100) : 0);
+  const VIDEO_TYPES = { mp4: "video/mp4", m4v: "video/mp4", mov: "video/quicktime", webm: "video/webm", ogv: "video/ogg", mkv: "video/x-matroska" };
+  const typeOfName = (n) => VIDEO_TYPES[(n.match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase()] || "";
+
+  function idbReq(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+  function dlDb() {
+    if (!dl.db) dl.db = new Promise((resolve, reject) => {
+      const open = indexedDB.open("mocloud-downloads", 1);
+      open.onupgradeneeded = () => open.result.createObjectStore("items", { keyPath: "id" });
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    return dl.db;
+  }
+  async function dlSave(it) {
+    const db = await dlDb();
+    const { error, ...rec } = it;
+    await idbReq(db.transaction("items", "readwrite").objectStore("items").put(rec));
+  }
+  async function dlForget(id) {
+    const db = await dlDb();
+    await idbReq(db.transaction("items", "readwrite").objectStore("items").delete(id));
+  }
+  const dlDir = () => navigator.storage.getDirectory().then((r) => r.getDirectoryHandle(DL_DIR, { create: true }));
+  async function dlFileName(id) {
+    const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(id));
+    return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("") + ".video";
+  }
+
+  // On every visit: line up the saved files with MoCloud's own list of downloads, so nothing is
+  // ever taking up space without showing in the Downloads panel.
+  const dlReady = (async () => {
+    if (!dl.supported) return;
+    try {
+      const db = await dlDb();
+      const recs = await idbReq(db.transaction("items").objectStore("items").getAll());
+      const dir = await dlDir();
+      const onDisk = new Map();
+      for await (const [name, h] of dir.entries()) if (h.kind === "file") onDisk.set(name, h);
+      for (const r of recs) {
+        const h = onDisk.get(r.fname);
+        onDisk.delete(r.fname);
+        if (!h) {
+          if (r.done) { await dlForget(r.id); continue; } // the browser cleared it: nothing left to show
+          r.got = 0;
+        } else {
+          r.got = (await h.getFile()).size;
+          r.done = r.done && r.got === r.size;
+        }
+        dl.items.set(r.id, r);
+      }
+      // Anything in MoCloud's private folder that isn't on the list is a leftover: clear it.
+      for (const name of onDisk.keys()) await dir.removeEntry(name).catch(() => {});
+      if (navigator.storage.persisted) dl.persisted = await navigator.storage.persisted();
+    } catch (e) {
+      console.warn("Offline downloads aren't available in this browser", e);
+      dl.supported = false;
+    }
+  })();
+
+  async function startDownload(f) {
+    await dlReady;
+    if (!dl.supported) { toast("This browser can't save videos for offline viewing. Try Chrome or Safari.", true); return; }
+    if (state.offline) { toast("MoCloud is offline, so new downloads can't start right now.", true); return; }
+    const id = dlId(backend.id, f.key);
+    let it = dl.items.get(id);
+    if ((it && it.done) || dl.queue.includes(id) || (dl.active && dl.active.id === id)) return;
+    const need = f.size - (it && it.size === f.size ? it.got : 0);
+    try {
+      const est = await navigator.storage.estimate();
+      const room = (est.quota || 0) - (est.usage || 0);
+      if (est.quota && room < need + DL_MARGIN) {
+        toast(`Not enough space on this device. This video needs ${fmtSize(need)}, and about ${fmtSize(Math.max(0, room - DL_MARGIN))} is free for MoCloud.`, true);
+        return;
+      }
+    } catch {}
+    if (navigator.storage.persist && dl.persisted !== true) {
+      navigator.storage.persist().then((ok) => { dl.persisted = ok; renderDownloadsPanel(); }).catch(() => {});
+    }
+    if (!it) {
+      it = { id, src: backend.id, key: f.key, name: f.name, size: f.size, got: 0, done: false, added: Date.now(), fname: await dlFileName(id) };
+      dl.items.set(id, it);
+    }
+    it.size = f.size; it.error = "";
+    await dlSave(it);
+    dl.queue.push(id);
+    renderDlState();
+    pumpDownloads();
+  }
+
+  let dlWorkerUrl = null;
+  function pumpDownloads() {
+    if (dl.active || !dl.queue.length) return;
+    const id = dl.queue.shift();
+    const it = dl.items.get(id);
+    const base = it && BACKENDS[it.src] ? BACKENDS[it.src].url : "";
+    if (!it || !isUrl(base)) { pumpDownloads(); return; }
+    if (!dlWorkerUrl) dlWorkerUrl = URL.createObjectURL(new Blob([$("dlWorker").textContent], { type: "text/javascript" }));
+    const w = new Worker(dlWorkerUrl);
+    const job = { id, w, removeAfter: false };
+    dl.active = job;
+    let lastSave = 0;
+    const finish = async (m) => {
+      w.terminate();
+      dl.active = null;
+      it.got = m.size || 0;
+      const label = titleOf({ name: it.name, type: "" });
+      if (m.type === "done" && m.size === it.size) {
+        it.done = true; it.error = "";
+        if (!job.removeAfter) toast(`Downloaded ${label}. It plays on this device even without internet.`);
+      } else if (m.type === "done") {
+        it.error = "The download didn't come out complete, so it was discarded. Try again.";
+        await dlDeleteFile(it).catch(() => {});
+        it.got = 0;
+      } else if (!m.aborted) {
+        it.error = m.message;
+        toast(`Download of ${label} stopped (${m.message}). Tap Resume to carry on.`, true);
+      }
+      if (job.removeAfter) await dlRemoveNow(it).catch((e) => toast(`Couldn't remove the download: ${e.message}`, true));
+      else await dlSave(it).catch(() => {});
+      renderDlState(true);
+      pumpDownloads();
+    };
+    w.onmessage = ({ data: m }) => {
+      if (m.type === "progress") {
+        it.got = m.got;
+        renderDlState();
+        if (Date.now() - lastSave > 5000) { lastSave = Date.now(); dlSave(it).catch(() => {}); }
+        return;
+      }
+      finish(m);
+    };
+    w.onerror = () => finish({ type: "error", message: "the downloader couldn't run in this browser", size: it.got });
+    w.postMessage({ type: "start", name: it.fname, url: `${base}/file/${encodeURIComponent(it.key)}`, total: it.size });
+    renderDlState();
+  }
+
+  function pauseDownload(id) {
+    dl.queue = dl.queue.filter((x) => x !== id);
+    if (dl.active && dl.active.id === id) dl.active.w.postMessage({ type: "cancel" });
+    renderDlState();
+  }
+
+  async function dlDeleteFile(it) {
+    try {
+      const dir = await dlDir();
+      await dir.removeEntry(it.fname); // only this one saved video, inside MoCloud's private folder
+    } catch (e) {
+      if (e.name !== "NotFoundError") throw e;
+    }
+  }
+  async function dlRemoveNow(it) {
+    await dlDeleteFile(it);
+    await dlForget(it.id);
+    dl.items.delete(it.id);
+  }
+
+  // Removes the saved copy from this device only. The video stays on MoCloud.
+  async function removeDownload(id, quiet) {
+    const it = dl.items.get(id);
+    if (!it) return;
+    dl.queue = dl.queue.filter((x) => x !== id);
+    if (dl.active && dl.active.id === id) { dl.active.removeAfter = true; dl.active.w.postMessage({ type: "cancel" }); return; }
+    try {
+      await dlRemoveNow(it);
+      if (!quiet) toast("Removed from this device. The video is still on MoCloud.");
+    } catch (e) {
+      toast(`Couldn't remove the download: ${e.message}`, true);
+    }
+    renderDlState(true);
+  }
+
+  // Plays a downloaded video straight from the device: no internet needed, instant skipping.
+  async function localVideoUrl(f) {
+    await dlReady;
+    const it = dlItemFor(f);
+    if (!it || !it.done) return null;
+    try {
+      const dir = await dlDir();
+      const file = await (await dir.getFileHandle(it.fname)).getFile();
+      if (file.size !== it.size) return null;
+      return URL.createObjectURL(file.slice(0, file.size, typeOfName(it.name)));
+    } catch { return null; }
+  }
+
+  function dlLabel(id) {
+    const it = dl.items.get(id);
+    if (dl.active && dl.active.id === id) return `Downloading ${dlPct(it)}%`;
+    if (dl.queue.includes(id)) return "Waiting to download";
+    if (it && it.done) return "Remove download";
+    if (it && it.got > 0) return `Resume download (${dlPct(it)}%)`;
+    return "Download";
+  }
+  function dlButton(f) {
+    const id = dlId(backend.id, f.key);
+    const b = document.createElement("button");
+    b.className = "link dl-btn"; b.dataset.dl = id;
+    b.textContent = dlLabel(id);
+    b.addEventListener("click", () => {
+      const it = dl.items.get(id);
+      if (dl.active && dl.active.id === id) pauseDownload(id);
+      else if (dl.queue.includes(id)) pauseDownload(id);
+      else if (it && it.done) removeDownload(id);
+      else startDownload(f);
+    });
+    return b;
+  }
+
+  // Updates download buttons and the Downloads panel. Re-draws the library when something finished
+  // or was removed (that changes which tiles are playable offline).
+  let dlPaint = 0;
+  function renderDlState(full) {
+    if (full) { renderLibrary(); renderDownloadsPanel(); return; }
+    const now = performance.now();
+    if (now - dlPaint < 250) return;
+    dlPaint = now;
+    document.querySelectorAll("[data-dl]").forEach((b) => { b.textContent = dlLabel(b.dataset.dl); });
+    renderDownloadsPanel();
+  }
+
+  function renderDownloadsPanel() {
+    const items = [...dl.items.values()].sort((a, b) => b.added - a.added);
+    const done = items.filter((i) => i.done).length;
+    $("dlOpen").textContent = items.length ? `Downloads (${done}${done < items.length ? "+" : ""})` : "Downloads";
+    if (!$("downloads").open) return;
+    const list = $("dlList");
+    list.replaceChildren(...items.map((it) => {
+      const li = document.createElement("li");
+      const name = document.createElement("b"); name.textContent = titleOf({ name: it.name, type: "" });
+      const src = document.createElement("span"); src.className = "dl-src"; src.textContent = BACKENDS[it.src] ? BACKENDS[it.src].name : it.src;
+      const stat = document.createElement("span"); stat.className = "dl-stat";
+      const busy = dl.active && dl.active.id === it.id;
+      stat.textContent = it.done ? fmtSize(it.size)
+        : busy ? `Downloading, ${fmtSize(it.got)} of ${fmtSize(it.size)}`
+        : dl.queue.includes(it.id) ? "Waiting to download"
+        : it.error ? `Stopped at ${dlPct(it)}%: ${it.error}`
+        : `Paused at ${dlPct(it)}% (${fmtSize(it.got)} of ${fmtSize(it.size)})`;
+      const acts = document.createElement("div"); acts.className = "dl-acts";
+      if (it.done) {
+        const play = document.createElement("button"); play.className = "btn"; play.textContent = "Play";
+        play.addEventListener("click", () => { $("downloads").close(); openPlayer({ key: it.key, name: it.name, size: it.size, type: "", _dl: it.id }); });
+        acts.append(play);
+      } else if (busy || dl.queue.includes(it.id)) {
+        const p = document.createElement("button"); p.className = "btn ghost"; p.textContent = "Pause";
+        p.addEventListener("click", () => pauseDownload(it.id));
+        acts.append(p);
+      } else if (it.src === backend.id) {
+        const r = document.createElement("button"); r.className = "btn ghost"; r.textContent = "Resume";
+        r.addEventListener("click", () => startDownload({ key: it.key, name: it.name, size: it.size }));
+        acts.append(r);
+      }
+      const rm = document.createElement("button"); rm.className = "link"; rm.textContent = "Remove from device";
+      rm.addEventListener("click", () => removeDownload(it.id));
+      acts.append(rm);
+      li.append(name, src, stat, acts);
+      return li;
+    }));
+    const used = items.reduce((s, i) => s + (i.got || 0), 0);
+    $("dlSum").textContent = items.length
+      ? `MoCloud downloads take up ${fmtSize(used)} on this device. Removing one frees its space straight away.`
+      : "Nothing downloaded yet. Tap Download under any video to keep it on this device for watching without internet.";
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then((est) => {
+        if (!est.quota) return;
+        $("dlSum").textContent += ` About ${fmtSize(Math.max(0, est.quota - est.usage - DL_MARGIN))} more is available for downloads.`;
+      }).catch(() => {});
+    }
+    const notes = [];
+    if (!dl.supported) notes.push("This browser can't save videos for offline viewing. Chrome and Safari can.");
+    if (dl.persisted === false && items.length) notes.push("Your browser may clear downloads if this device runs very low on space.");
+    if (/iPhone|iPad/.test(navigator.userAgent)) notes.push("On iPhone or iPad, add MoCloud to your Home Screen (Share, then Add to Home Screen), or Safari may clear downloads if you don't open MoCloud for a week.");
+    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) notes.push("To open MoCloud with no internet at all, sw.js needs to sit next to index.html on your site.");
+    $("dlNote").textContent = notes.join(" ");
+  }
+  $("dlOpen").addEventListener("click", () => { $("downloads").showModal(); renderDownloadsPanel(); });
+  $("dlClose").addEventListener("click", () => $("downloads").close());
+  $("downloads").addEventListener("click", (e) => { if (e.target === $("downloads")) $("downloads").close(); });
+
   // ---------- Pi / Cloudflare switch ----------
   function renderSource() {
     const group = document.querySelector(".source");
@@ -1701,6 +2117,11 @@ self.onmessage = (e) => {
   document.querySelectorAll(".source button").forEach((b) => b.addEventListener("click", () => switchSource(b.dataset.source)));
 
   // ---------- Start ----------
+  // Lets the page itself open with no internet (needs sw.js next to index.html).
+  if ("serviceWorker" in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+  dlReady.then(() => { renderDownloadsPanel(); if ([...dl.items.values()].some((i) => i.done)) renderLibrary(); });
   if (!configured) {
     $("gaugeUsed").textContent = "Storage not connected";
     $("empty").hidden = false;
