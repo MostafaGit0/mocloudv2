@@ -167,10 +167,46 @@
   }
   .crumb:hover { color: var(--paper); }
   .crumb-sep { color: var(--dim); }
-  .lib-tools { display: flex; align-items: center; gap: 14px; }
+  .lib-tools { flex: 1 1 auto; display: flex; align-items: center; justify-content: flex-end; gap: 10px 14px; min-width: 0; }
+  .lib-tools #count { white-space: nowrap; }
+  @media (max-width: 640px) {
+    .lib-tools { flex-wrap: wrap; justify-content: flex-start; }
+    .lib-tools .search { flex: 1 1 100%; width: auto; }
+  }
   .lib-tools span { color: var(--dim); font-size: 14px; }
   .btn.small { padding: 7px 14px; font-size: 14px; }
   .link:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* Search, progress, descriptions */
+  .search {
+    flex: 0 1 320px; min-width: 150px; padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--paper); font-size: 15px;
+  }
+  .search::placeholder { color: var(--dim); }
+  .thumb .prog { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(21,26,43,.75); pointer-events: none; }
+  .thumb .prog i { display: block; height: 100%; background: var(--amber); }
+  .seen {
+    position: absolute; top: 10px; left: 10px; padding: 3px 9px; border-radius: 999px; pointer-events: none;
+    background: rgba(21,26,43,.85); border: 1px solid var(--line); color: var(--paper); font-size: 12px; font-weight: 500;
+  }
+  .tile .desc {
+    margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: var(--dim);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .continue { margin-bottom: 34px; }
+  .row-title { margin: 0 0 14px; font-size: 18px; font-weight: 500; }
+  .show-src { margin: 8px 0 0; font-size: 13px; color: var(--dim); }
+  .show-src a { color: var(--dim); text-underline-offset: 3px; }
+  .show-src a:hover { color: var(--paper); }
+  .show-src .link { font-size: 13px; }
+  .p-resume { display: inline-flex; align-items: center; gap: 10px; color: var(--dim); font-size: 14px; }
+  .p-desc { margin: 2px 16px 14px; color: var(--dim); font-size: 14px; line-height: 1.55; max-width: 85ch; }
+  .p-desc b { display: block; color: var(--paper); font-weight: 500; margin-bottom: 2px; }
+  #showDlg { background: var(--panel); border-radius: var(--radius); padding: 24px; width: min(460px, 92vw); }
+  #showDlg h3 { margin: 0 0 14px; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
+  .show-find { display: flex; gap: 8px; margin-bottom: 12px; }
+  .show-find input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--ink); }
+  .show-note { margin: 4px 0; color: var(--dim); font-size: 14px; }
 
   /* Folders */
   .grid.folder-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 30px; }
@@ -363,7 +399,10 @@
 
   <div class="lib-head" id="libTop">
     <h2 class="crumbs" id="crumbs">Your files</h2>
-    <div class="lib-tools"><span id="count"></span><button class="btn ghost small" id="newFolder">New folder</button></div>
+    <div class="lib-tools">
+      <input type="search" id="search" class="search" placeholder="Search shows, episodes, folders" aria-label="Search your library" autocomplete="off">
+      <span id="count"></span><button class="btn ghost small" id="newFolder">New folder</button>
+    </div>
   </div>
   <div id="grid"></div>
   <div class="empty" id="empty" hidden></div>
@@ -380,6 +419,7 @@
       <a class="link" id="pDownload" href="#">Save file</a>
       <button class="link" id="pInfo">Info</button>
       <span class="p-src" id="pSource"></span>
+      <span class="p-resume" id="pResume" hidden><span id="pResumeText"></span><button class="link" id="pStartOver">Start over</button></span>
     </div>
     <div class="p-ctrls" id="pCtrls">
       <label class="chip fit">Screen
@@ -394,7 +434,15 @@
       <button type="button" class="chip" id="fsBtn">Full screen</button>
     </div>
   </div>
+  <p class="p-desc" id="pDesc" hidden><b id="pDescName"></b><span id="pDescText"></span></p>
   </div>
+</dialog>
+
+<dialog id="showDlg">
+  <h3 id="showTitle">Which show is it?</h3>
+  <div class="show-find"><input type="search" id="showQuery" aria-label="Show name" autocomplete="off"><button class="btn ghost" id="showSearch">Search</button></div>
+  <div class="move-list" id="showList"></div>
+  <div class="dlg-acts"><button class="btn ghost push" id="showNone">No episode info</button><button class="btn ghost" id="showCancel">Cancel</button></div>
 </dialog>
 
 <dialog id="nameDlg">
@@ -698,9 +746,10 @@ self.onmessage = async (e) => {
     fromCache: false,      // library shown is the copy remembered by this browser
     health: null,          // the Pi's own report: storage, power, temperature
     sysFiles: [],          // MoCloud's own small files in storage (the folder list)
-    meta: { v: 1, folders: {}, place: {} }, // folders, and which folder each video or show is in
+    meta: { v: 1, folders: {}, place: {}, tvmaze: {} }, // folders, which folder each video or show is in, shows picked by hand
     metaKey: null,         // the stored copy of the folder list that's been loaded
     view: "",              // the folder being looked at ("" is the top)
+    q: "",                 // what's typed in the search box
   };
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -789,7 +838,13 @@ self.onmessage = async (e) => {
     }
     return { shows: list, other };
   }
-  const titleOf = (f) => (isVideo(f) ? prettyTitle(f.name) : f.name);
+  // The name shown for a file. Episodes without a name in the file get theirs from TVmaze.
+  const titleOf = (f) => {
+    if (!isVideo(f)) return f.name;
+    const title = prettyTitle(f.name), info = parseName(f.name);
+    if (info.season !== undefined && !info.episodeName) { const ep = tvEpisode(f); if (ep && ep.name) return `${title}: ${ep.name}`; }
+    return title;
+  };
 
   // ---------- Toast ----------
   let toastTimer;
@@ -1026,8 +1081,8 @@ self.onmessage = async (e) => {
   // It's kept in your storage right next to the videos (on the Pi or on Cloudflare), so folders are
   // the same on every device. It's hidden from the library.
   const META_NAME = "mocloud-folders.json";
-  const isSys = (f) => f.name === META_NAME || /^mocloud-subs-[0-9a-f]+\.vtt$/.test(f.name); // MoCloud's own files stay out of the library
-  const emptyMeta = () => ({ v: 1, folders: {}, place: {} });
+  const isSys = (f) => f.name === META_NAME || f.name === "mocloud-progress.json" || /^mocloud-subs-[0-9a-f]+\.vtt$/.test(f.name); // MoCloud's own files stay out of the library
+  const emptyMeta = () => ({ v: 1, folders: {}, place: {}, tvmaze: {} });
   const newestFirst = (a, b) => new Date(b.uploaded) - new Date(a.uploaded) || (a.key < b.key ? 1 : -1);
 
   // Saves a small text file into the current storage, using the same upload steps as a video.
@@ -1063,6 +1118,7 @@ self.onmessage = async (e) => {
         if (f && typeof f.name === "string") out.folders[id] = { name: f.name.slice(0, 80), parent: typeof f.parent === "string" ? f.parent : "" };
       }
       for (const [k, id] of Object.entries(m.place || {})) if (typeof id === "string") out.place[k] = id;
+      for (const [k, id] of Object.entries(m.tvmaze || {})) if (typeof id === "string") out.tvmaze[k] = id; // show picked by hand
     }
     for (const f of Object.values(out.folders)) if (f.parent && !out.folders[f.parent]) f.parent = "";
     return out;
@@ -1274,6 +1330,7 @@ self.onmessage = async (e) => {
 
   function renderCrumbs() {
     const box = $("crumbs");
+    if (state.q) { box.textContent = `Search: “${state.q}”`; return; }
     const path = folderPath(state.view);
     const parts = [];
     const home = document.createElement(path.length ? "button" : "span");
@@ -1344,6 +1401,334 @@ self.onmessage = async (e) => {
   document.addEventListener("webkitfullscreenchange", onFs);
 
 
+  // ---------- Pick up where you left off ----------
+  // Where you stopped in each video is kept on this device straight away and also saved in your
+  // storage (a small file next to the folder list), so you can stop on one device and carry on
+  // on another. Each storage (Pi, Cloudflare) has its own.
+  const PROG_NAME = "mocloud-progress.json";
+  const prog = { map: {}, remoteKey: null, dirty: false, timer: null, saving: false, again: false };
+  const progLocalKey = () => "mocloud-progress-" + backend.id;
+  function progLoadLocal() {
+    try {
+      const s = JSON.parse(localStorage.getItem(progLocalKey()) || "null");
+      Object.assign(prog, { map: (s && s.map) || {}, remoteKey: (s && s.remoteKey) || null, dirty: !!(s && s.dirty) });
+    } catch { Object.assign(prog, { map: {}, remoteKey: null, dirty: false }); }
+  }
+  function progSaveLocal() {
+    try { localStorage.setItem(progLocalKey(), JSON.stringify({ map: prog.map, remoteKey: prog.remoteKey, dirty: prog.dirty })); } catch {}
+  }
+  const getProg = (key) => prog.map[key] || null;
+  // "Finished" means within the last 2 minutes (or last 8% of a short video).
+  function setProg(key, t, d) {
+    if (!(d > 0) || !isFinite(t)) return;
+    const old = prog.map[key];
+    const done = t >= d - Math.min(120, d * 0.08);
+    if (!done && t < 10) { // only a few seconds in: not worth remembering (but going back to the start is)
+      if (!old || !old.t) return;
+      t = 0;
+    }
+    prog.map[key] = { t: done ? 0 : Math.floor(t), d: Math.round(d), at: Date.now(), done: done || !!(old && old.done) };
+    prog.dirty = true;
+    progSaveLocal();
+  }
+  function scheduleProgSync(ms) {
+    clearTimeout(prog.timer);
+    prog.timer = setTimeout(syncProgress, ms);
+  }
+  // Brings in what other devices saved (newest wins, video by video) and saves ours.
+  async function syncProgress() {
+    prog.timer = null;
+    if (prog.saving) { prog.again = true; return; }
+    prog.saving = true;
+    const from = backend;
+    try {
+      const copies = state.sysFiles.filter((f) => f.name === PROG_NAME).sort(newestFirst);
+      const newest = copies[0];
+      if (newest && newest.key !== prog.remoteKey && !state.offline) {
+        const res = await fetch(fileUrl(newest.key), { cache: "no-store" });
+        if (from !== backend) return;
+        if (res.ok) {
+          const remote = ((await res.json()) || {}).map || {};
+          let changed = false;
+          for (const [k, r] of Object.entries(remote)) {
+            const mine = prog.map[k];
+            if (r && (!mine || (r.at || 0) > (mine.at || 0))) { prog.map[k] = r; changed = true; }
+          }
+          for (const k of Object.keys(prog.map)) if (!(k in remote)) { prog.dirty = true; break; }
+          for (const [k, mine] of Object.entries(prog.map)) if (remote[k] && (mine.at || 0) > (remote[k].at || 0)) prog.dirty = true;
+          prog.remoteKey = newest.key;
+          progSaveLocal();
+          if (changed && !$("player").open) renderLibrary();
+        }
+      }
+      if (prog.dirty && !state.offline) {
+        if (!state.fromCache) { // forget videos that were deleted
+          const live = new Set(state.files.map((f) => f.key));
+          for (const k of Object.keys(prog.map)) if (!k.startsWith("dismiss:") && !live.has(k)) delete prog.map[k];
+        }
+        prog.dirty = false;
+        const rec = await putSmallFile(PROG_NAME, JSON.stringify({ v: 1, map: prog.map }), "application/json");
+        if (from !== backend) return;
+        prog.remoteKey = rec.key;
+        progSaveLocal();
+        for (const f of state.sysFiles.filter((x) => x.name === PROG_NAME && x.key !== rec.key)) await deleteSysFile(f.key).catch(() => {});
+      }
+    } catch (e) {
+      prog.dirty = true; progSaveLocal(); // tried again on the next save
+    } finally {
+      prog.saving = false;
+      if (prog.again) { prog.again = false; scheduleProgSync(1000); }
+    }
+  }
+
+  // Keeps track while a video plays, and starts it where you left off.
+  function trackProgress(f, v) {
+    const p = getProg(f.key);
+    const resumeAt = p && p.t > 10 ? p.t : 0;
+    let ready = !resumeAt, lastSave = 0;
+    const note = $("pResume");
+    note.hidden = true;
+    if (resumeAt) {
+      v.addEventListener("loadedmetadata", () => {
+        if (resumeAt < v.duration - 5) {
+          v.currentTime = resumeAt;
+          note.hidden = false;
+          $("pResumeText").textContent = `Picked up at ${fmtLength(resumeAt)}`;
+        }
+        ready = true;
+      }, { once: true });
+    }
+    $("pStartOver").onclick = () => { v.currentTime = 0; note.hidden = true; v.play().catch(() => {}); };
+    const save = (force) => {
+      if (!ready || !(v.duration > 0) || v.seeking) return;
+      const now = Date.now();
+      if (!force && now - lastSave < 5000) return;
+      lastSave = now;
+      setProg(f.key, v.currentTime, v.duration);
+    };
+    v.addEventListener("timeupdate", () => { save(false); if (Date.now() - (prog.lastSync || 0) > 60000 && !v.paused) { prog.lastSync = Date.now(); scheduleProgSync(500); } });
+    v.addEventListener("pause", () => { save(true); scheduleProgSync(1500); });
+    v.addEventListener("ended", () => { if (v.duration > 0) setProg(f.key, v.duration, v.duration); scheduleProgSync(500); });
+    v._saveProgress = () => save(true);
+  }
+
+  // The row at the top: videos you're partway through, and the next episode of a show you're watching.
+  function continueItems() {
+    const byKey = new Map(state.files.filter(isVideo).map((f) => [f.key, f]));
+    const latest = new Map(); // show (or single video) -> its most recently watched video
+    for (const [key, p] of Object.entries(prog.map)) {
+      const f = byKey.get(key);
+      if (!f || !p) continue;
+      const group = showIdOfName(f.name) || key;
+      const cur = latest.get(group);
+      if (!cur || p.at > cur.p.at) latest.set(group, { f, p, group });
+    }
+    const out = [];
+    for (const { f, p, group } of latest.values()) {
+      if (((prog.map["dismiss:" + group] || {}).at || 0) >= p.at) continue; // removed from the row
+      if (p.t > 0) { out.push({ f, at: p.at, kind: "resume", p }); continue; }
+      if (!p.done || !showIdOfName(f.name)) continue;
+      const info = parseName(f.name); // finished: suggest the next episode, if it's here and not started
+      const eps = state.files.filter((x) => isVideo(x) && showIdOfName(x.name) === group).map((x) => ({ x, i: parseName(x.name) }))
+        .sort((a, b) => a.i.season - b.i.season || a.i.episode - b.i.episode);
+      const at = eps.findIndex((e) => e.x.key === f.key);
+      const next = eps.slice(at + 1).find((e) => !(getProg(e.x.key) || {}).done && (e.i.season > info.season || e.i.episode > info.episode));
+      if (next) out.push({ f: next.x, at: p.at, kind: "next", group });
+    }
+    return out.sort((a, b) => b.at - a.at).slice(0, 8);
+  }
+  function continueRow() {
+    const items = continueItems();
+    if (!items.length) return null;
+    const wrap = document.createElement("section"); wrap.className = "continue";
+    const h = document.createElement("h3"); h.className = "row-title"; h.textContent = "Continue watching";
+    const g = gridOf(items.map(({ f, kind, p }) => {
+      const el = tile(f, (kind === "next" ? "Up next: " : "") + titleOf(f));
+      const meta = el.querySelector(".meta");
+      if (meta) meta.textContent = kind === "next" ? "Next episode" : `${fmtLength(Math.max(0, p.d - p.t))} left`;
+      const rm = document.createElement("button"); rm.className = "link"; rm.textContent = "Remove from row";
+      rm.addEventListener("click", () => {
+        prog.map["dismiss:" + (showIdOfName(f.name) || f.key)] = { at: Date.now() };
+        prog.dirty = true; progSaveLocal(); scheduleProgSync(1500);
+        renderLibrary();
+      });
+      el.querySelector(".acts").replaceChildren(rm);
+      return el;
+    }));
+    g.classList.add("row-grid");
+    wrap.append(h, g);
+    return wrap;
+  }
+
+  // ---------- Search ----------
+  const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  function searchText(f) {
+    const parts = [titleOf(f), f.name];
+    const info = isVideo(f) ? parseName(f.name) : null;
+    if (info && info.show) parts.push(info.show, `s${info.season}e${info.episode}`, `season ${info.season}`);
+    const ep = tvEpisode(f);
+    if (ep) parts.push(ep.name, ep.summary);
+    for (const id of folderPath(folderOf(f))) parts.push(state.meta.folders[id].name);
+    return " " + norm(parts.join(" ")) + " ";
+  }
+  function searchMatches(q) {
+    const words = norm(q).split(" ").filter(Boolean);
+    const hit = (text) => words.every((w) => text.includes(" " + w) || text.includes(w));
+    return {
+      files: state.files.filter((f) => hit(searchText(f))),
+      folders: Object.keys(state.meta.folders).filter((id) => hit(" " + norm(state.meta.folders[id].name) + " ")),
+    };
+  }
+  let searchTimer;
+  $("search").addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { state.q = $("search").value.trim(); renderLibrary(); }, 120);
+  });
+  $("search").addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { $("search").value = ""; state.q = ""; renderLibrary(); }
+  });
+
+  // ---------- Episode descriptions (from TVmaze, a free TV database) ----------
+  // Looked up once per show and kept on this device. Only descriptions and episode names are used.
+  const TVMAZE = "https://api.tvmaze.com";
+  const tv = {
+    cache: (() => { try { return JSON.parse(localStorage.getItem("mocloud-tvmaze")) || {}; } catch { return {}; } })(),
+    queue: [], busy: false, asked: new Set(), paint: null,
+  };
+  const DAY = 86400000;
+  function tvSave() {
+    for (let i = 0; i < 5; i++) {
+      try { localStorage.setItem("mocloud-tvmaze", JSON.stringify(tv.cache)); return; }
+      catch { // full: forget the show looked at longest ago
+        const oldest = Object.entries(tv.cache).sort((a, b) => (a[1].at || 0) - (b[1].at || 0))[0];
+        if (!oldest) return;
+        delete tv.cache[oldest[0]];
+      }
+    }
+  }
+  const htmlText = (html) => (html ? new DOMParser().parseFromString(html, "text/html").body.textContent.trim() : "");
+  const tvChoice = (showId) => (state.meta.tvmaze || {})[showId];
+  function tvShow(showId) {
+    const c = tv.cache[showId];
+    if (!c) return null;
+    const choice = tvChoice(showId);
+    if (choice === "none") return null;
+    if (choice && String(c.id) !== String(choice)) return null; // a different show was picked; it's being looked up
+    return c.none ? null : c;
+  }
+  function tvEpisode(f) {
+    if (!isVideo(f)) return null;
+    const info = parseName(f.name);
+    if (!info.show || info.season === undefined) return null;
+    const show = tvShow(showIdOfName(f.name));
+    return show ? show.eps[`${info.season}x${info.episode}`] || null : null;
+  }
+  // Asks TVmaze about a show if it hasn't been asked recently.
+  function tvWant(showId, name) {
+    if (!showId || tv.asked.has(showId)) return;
+    const c = tv.cache[showId], choice = tvChoice(showId);
+    if (choice === "none") return;
+    const fresh = c && Date.now() - (c.at || 0) < (c.none ? 3 : 7) * DAY && (!choice || String(c.id) === String(choice));
+    if (fresh) return;
+    tv.asked.add(showId);
+    tv.queue.push({ showId, name, choice });
+    tvPump();
+  }
+  const retryLater = (showId) => setTimeout(() => tv.asked.delete(showId), 5 * 60000); // TVmaze unreachable: ask again in a few minutes
+  async function tvPump() {
+    if (tv.busy) return;
+    tv.busy = true;
+    while (tv.queue.length) {
+      const job = tv.queue.shift();
+      try {
+        const url = job.choice ? `${TVMAZE}/shows/${encodeURIComponent(job.choice)}?embed=episodes`
+          : `${TVMAZE}/singlesearch/shows?q=${encodeURIComponent(job.name)}&embed=episodes`;
+        const res = await fetch(url);
+        if (res.status === 404) tv.cache[job.showId] = { none: true, at: Date.now() };
+        else if (res.status === 429) { tv.queue.unshift(job); await sleep(5000); continue; }
+        else if (res.ok) {
+          const s = await res.json();
+          const eps = {};
+          for (const e of (s._embedded && s._embedded.episodes) || []) {
+            eps[`${e.season}x${e.number}`] = { name: e.name || "", summary: htmlText(e.summary) };
+          }
+          tv.cache[job.showId] = { id: s.id, name: s.name, year: (s.premiered || "").slice(0, 4), url: s.url, eps, at: Date.now() };
+        } else retryLater(job.showId);
+        tvSave();
+        clearTimeout(tv.paint);
+        tv.paint = setTimeout(() => { if (!$("player").open) renderLibrary(); else paintPlayerDesc(); }, 300);
+      } catch { retryLater(job.showId); } // offline or blocked: just no descriptions for now
+      await sleep(600); // TVmaze allows 20 requests every 10 seconds
+    }
+    tv.busy = false;
+  }
+
+  // The line under a show's name: where the descriptions came from, and a way to pick the right show.
+  function tvLine(show) {
+    const p = document.createElement("p"); p.className = "show-src";
+    const c = tvShow(show.id), choice = tvChoice(show.id);
+    if (c) {
+      p.append("Episode info from ");
+      const a = document.createElement("a"); a.href = c.url || "https://www.tvmaze.com"; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = `TVmaze: ${c.name}${c.year ? ` (${c.year})` : ""}`;
+      p.append(a);
+    } else {
+      const msg = choice === "none" ? "Episode info turned off for this show." : tv.cache[show.id] && tv.cache[show.id].none ? "No episode info found." : "";
+      if (msg) p.append(msg);
+    }
+    const b = document.createElement("button"); b.className = "link"; b.textContent = c ? "Wrong show?" : choice === "none" ? "Turn back on" : "Find it";
+    b.disabled = state.offline;
+    b.addEventListener("click", () => openShowPicker(show));
+    if (c || choice === "none" || (tv.cache[show.id] && tv.cache[show.id].none)) p.append(" ", b);
+    return p.childNodes.length ? p : null;
+  }
+
+  function openShowPicker(show) {
+    const d = $("showDlg"), input = $("showQuery"), list = $("showList");
+    $("showTitle").textContent = `Which show is “${show.name}”?`;
+    input.value = show.name;
+    const search = async () => {
+      list.replaceChildren(Object.assign(document.createElement("p"), { className: "show-note", textContent: "Searching TVmaze…" }));
+      try {
+        const res = await fetch(`${TVMAZE}/search/shows?q=${encodeURIComponent(input.value.trim())}`);
+        const results = res.ok ? await res.json() : [];
+        const rows = results.slice(0, 8).map(({ show: s }) => {
+          const b = document.createElement("button"); b.className = "move-row";
+          const where = (s.network && s.network.name) || (s.webChannel && s.webChannel.name) || "";
+          b.textContent = `${s.name}${s.premiered ? ` (${s.premiered.slice(0, 4)})` : ""}${where ? `, ${where}` : ""}`;
+          b.addEventListener("click", () => pick(String(s.id)));
+          return b;
+        });
+        list.replaceChildren(...(rows.length ? rows : [Object.assign(document.createElement("p"), { className: "show-note", textContent: "Nothing found. Try a different name." })]));
+      } catch {
+        list.replaceChildren(Object.assign(document.createElement("p"), { className: "show-note", textContent: "Couldn't reach TVmaze. Check your internet connection." }));
+      }
+    };
+    const pick = (id) => {
+      d.close();
+      changeMeta((m) => { m.tvmaze = m.tvmaze || {}; m.tvmaze[show.id] = id; });
+      tv.asked.delete(show.id);
+      if (id !== "none") tvWant(show.id, show.name);
+    };
+    $("showSearch").onclick = search;
+    input.onkeydown = (e) => { if (e.key === "Enter") search(); };
+    $("showNone").onclick = () => pick("none");
+    $("showCancel").onclick = () => d.close();
+    d.showModal();
+    search();
+  }
+
+  function paintPlayerDesc() {
+    const box = $("pDesc");
+    const f = player.f;
+    const ep = f && tvEpisode(f);
+    box.hidden = !(ep && (ep.summary || ep.name));
+    if (box.hidden) return;
+    const info = parseName(f.name);
+    $("pDescName").textContent = `S${info.season} EP${info.episode}${ep.name ? `: ${ep.name}` : ""}`;
+    $("pDescText").textContent = ep.summary || "";
+  }
+
   // ---------- Library ----------
   function tile(f, label) {
     const el = document.createElement("article");
@@ -1373,6 +1758,16 @@ self.onmessage = async (e) => {
     if (saved) {
       const badge = document.createElement("span"); badge.className = "dl-badge"; badge.textContent = "Downloaded";
       thumb.append(badge);
+    }
+    if (video) {
+      const p = getProg(f.key);
+      if (p && p.t > 0 && p.d) {
+        const bar = document.createElement("span"); bar.className = "prog";
+        const fill = document.createElement("i"); fill.style.width = Math.min(100, (p.t / p.d) * 100) + "%";
+        bar.append(fill); thumb.append(bar);
+      } else if (p && p.done) {
+        const seen = document.createElement("span"); seen.className = "seen"; seen.textContent = "Watched"; thumb.append(seen);
+      }
     }
     thumb.addEventListener("click", () => {
       if (locked) return toast("Locked until MoCloud is back online. Nothing has been deleted.", true);
@@ -1423,7 +1818,10 @@ self.onmessage = async (e) => {
     if (video) left.append(dlButton(f));
     left.append(save, info, mv);
     acts.append(left, del);
-    el.append(thumb, name, meta, acts);
+    el.append(thumb, name, meta);
+    const ep = tvEpisode(f);
+    if (ep && ep.summary) { const desc = document.createElement("p"); desc.className = "desc"; desc.textContent = ep.summary; desc.title = ep.summary; el.append(desc); }
+    el.append(acts);
     return el;
   }
 
@@ -1462,29 +1860,38 @@ self.onmessage = async (e) => {
     const grid = $("grid"), empty = $("empty");
     if (state.view && !state.meta.folders[state.view]) state.view = "";
     const view = state.view;
+    const found = state.q ? searchMatches(state.q) : null; // searching looks through every folder
     renderCrumbs();
-    const here = state.files.filter((f) => folderOf(f) === view); // what's in the folder being looked at
+    const here = found ? found.files : state.files.filter((f) => folderOf(f) === view); // what's in the folder being looked at
     const parts = [];
-    const subfolders = childFolders(view);
+    if (!found && !view) { const row = continueRow(); if (row) parts.push(row); }
+    const subfolders = found ? found.folders : childFolders(view);
     if (subfolders.length) { const g = gridOf(subfolders.map(folderCard)); g.classList.add("folder-grid"); parts.push(g); }
     const { shows, other } = groupFiles(here);
+    for (const show of shows) tvWant(show.id, show.name);
     if (!shows.length) {
       if (other.length) parts.push(gridOf(other.map((f) => tile(f)))); // nothing to group: plain grid
     } else {
-      parts.push(...shows.map((show) => section("show:" + show.id, show.name, show.count,
+      parts.push(...shows.map((show) => section("show:" + show.id, show.name, show.count, [tvLine(show), ...
         show.seasons.flatMap((season) => {
           const h = document.createElement("h3"); h.className = "season"; h.textContent = `Season ${season.number}`;
-          return [h, gridOf(season.episodes.map((ep) => tile(ep.file, `Episode ${ep.episode}${ep.name ? ": " + ep.name : ""}`)))];
-        }), moveShowButton(show))));
+          return [h, gridOf(season.episodes.map((ep) => {
+            const name = ep.name || (tvEpisode(ep.file) || {}).name || "";
+            return tile(ep.file, `Episode ${ep.episode}${name ? ": " + name : ""}`);
+          }))];
+        })].filter(Boolean), moveShowButton(show))));
       if (other.length) parts.push(section("other", "Other", other.length, [gridOf(other.map((f) => tile(f)))]));
     }
     grid.replaceChildren(...parts);
-    const n = view ? countIn(view) : state.files.length;
-    $("count").textContent = n ? `${n} ${n === 1 ? "file" : "files"}` : "";
+    const n = found ? here.length : view ? countIn(view) : state.files.length;
+    $("count").textContent = found ? `${n} found` : n ? `${n} ${n === 1 ? "file" : "files"}` : "";
     $("newFolder").disabled = state.offline;
     const nothing = !here.length && !subfolders.length;
-    empty.hidden = !nothing;
-    if (nothing) {
+    empty.hidden = !nothing || (!found && parts.length > 0);
+    if (nothing && found) {
+      empty.replaceChildren(Object.assign(document.createElement("b"), { textContent: `Nothing matches “${state.q}”` }),
+        "Try a show name, an episode name, a folder, or a word from an episode's description.");
+    } else if (nothing) {
       empty.innerHTML = view
         ? "<b>This folder is empty</b>Tap Move under any video to put it here. Videos you upload while this folder is open land here too."
         : "<b>Nothing here yet</b>Drop videos or photos anywhere on this page and they show up here.";
@@ -1499,6 +1906,7 @@ self.onmessage = async (e) => {
       freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
     });
     await loadMeta();
+    syncProgress(); // where you left off, from your other devices
     saveLibrary();
     await thumbsReady;
     pruneThumbs();
@@ -1754,7 +2162,8 @@ self.onmessage = async (e) => {
       ["File name", full.name],
       ["Show", parsed.season !== undefined && parsed.show ? parsed.show : ""],
       ["Episode", parsed.season !== undefined ? `Season ${parsed.season}, episode ${parsed.episode}` : ""],
-      ["Episode name", parsed.episodeName || ""],
+      ["Episode name", parsed.episodeName || (tvEpisode(full) || {}).name || ""],
+      ["About", (tvEpisode(full) || {}).summary || ""],
       ["Type", ext ? `${ext.toUpperCase()} ${video ? "video" : "photo"}` : ""],
       ["Size", full.size ? fmtSize(full.size) : ""],
       ["Length", videoEl && isFinite(videoEl.duration) && videoEl.duration > 0 ? fmtLength(videoEl.duration) : ""],
@@ -1783,6 +2192,8 @@ self.onmessage = async (e) => {
     $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || thumbs.get(f.key));
     $("pCtrls").hidden = !isVideo(f);
     player.f = isVideo(f) ? f : null;
+    $("pResume").hidden = true;
+    paintPlayerDesc();
     const fit = isVideo(f) ? readJson("mocloud-fit", {})[fitKey(f)] || {} : {};
     applyFit(fit.mode || "default", fit.zoom);
 
@@ -1803,6 +2214,7 @@ self.onmessage = async (e) => {
         stage.replaceChildren(box);
       });
       stage.append(v);
+      trackProgress(f, v);
       localVideoUrl(f).then((url) => {
         if (!v.isConnected) { if (url) URL.revokeObjectURL(url); return; }
         if (url) { v._local = url; v.src = url; $("pSource").textContent = "Playing from this device"; }
@@ -1818,6 +2230,9 @@ self.onmessage = async (e) => {
   }
 
   $("player").addEventListener("close", () => {
+    let watched = false;
+    $("pStage").querySelectorAll("video").forEach((v) => { if (v._saveProgress) { v._saveProgress(); watched = true; } });
+    if (watched) { scheduleProgSync(800); setTimeout(renderLibrary, 0); } // progress bars and Continue watching
     if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
     player.f = null;
     $("pStage").querySelectorAll("video").forEach((v) => { if (v._local) URL.revokeObjectURL(v._local); });
@@ -2542,11 +2957,14 @@ self.onmessage = async (e) => {
     if ($("player").open) $("player").close();
     thumbJobs.clear();
     clearTimeout(metaTimer); metaTimer = null;
+    clearTimeout(prog.timer); prog.timer = null;
     Object.assign(state, {
       files: [], used: 0, queue: [], offline: false, offlineReason: "", driveMissing: false,
       health: null, fromCache: false, passcode: readPasscode(),
-      sysFiles: [], meta: emptyMeta(), metaKey: null, view: readView(),
+      sysFiles: [], meta: emptyMeta(), metaKey: null, view: readView(), q: "",
     });
+    $("search").value = "";
+    progLoadLocal();
     renderSource(); showStatus(); renderQueue();
     if (loadLibrary()) renderGauge(); // show the last known library straight away while it checks
     renderLibrary();
@@ -2558,6 +2976,12 @@ self.onmessage = async (e) => {
     });
   }
   document.querySelectorAll(".source button").forEach((b) => b.addEventListener("click", () => switchSource(b.dataset.source)));
+  // Leaving the page or switching apps: save where you are right away.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "hidden") return;
+    $("pStage").querySelectorAll("video").forEach((v) => v._saveProgress && v._saveProgress());
+    if (prog.dirty && !state.offline) syncProgress();
+  });
 
   // ---------- Start ----------
   // Lets the page itself open with no internet (needs sw.js next to index.html).
@@ -2572,6 +2996,7 @@ self.onmessage = async (e) => {
     $("pick").disabled = true; $("newFolder").disabled = true;
   } else {
     state.view = readView();
+    progLoadLocal();
     renderSource();
     if (loadLibrary()) { renderGauge(); renderLibrary(); $("gaugeUsed").textContent = "Checking storage"; } // instant paint while it checks
     openFromHash(); // shared links play right away, no passcode needed
