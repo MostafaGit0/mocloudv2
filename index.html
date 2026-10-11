@@ -193,7 +193,8 @@
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
   .tile .desc.open { display: block; overflow: visible; }
-  .tile .more { font-size: 13px; margin-top: 2px; }
+  .tile .more { font-size: 13px; margin-top: 2px; color: rgba(240,179,78,.72); text-decoration-color: rgba(240,179,78,.35); }
+  .tile .more:hover { color: var(--amber); text-decoration-color: currentColor; }
   .continue { margin-bottom: 34px; }
   .row-title { margin: 0 0 14px; font-size: 18px; font-weight: 500; }
   .show-src { margin: 8px 0 0; font-size: 13px; color: var(--dim); }
@@ -221,8 +222,17 @@
   .folder-open span { color: var(--dim); font-size: 13px; }
   .folder-open:hover b { color: var(--amber); }
   .folder-card .acts { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .group summary .sum-move { margin-left: auto; font-size: 14px; font-weight: 400; letter-spacing: 0; }
   #nameDlg, #moveDlg { background: var(--panel); border-radius: var(--radius); padding: 24px; width: min(420px, 92vw); }
+  #moveDlg { width: min(500px, 94vw); }
+  .move-filter { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--ink); margin-bottom: 10px; }
+  .move-item {
+    display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center;
+    background: var(--panel-2); border-radius: 8px; padding: 9px 14px; cursor: pointer;
+  }
+  .move-item input { grid-row: 1 / 3; width: 16px; height: 16px; margin: 0; accent-color: var(--amber); }
+  .move-item b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .move-item span { color: var(--dim); font-size: 13px; }
+  .move-item:has(input:checked) { box-shadow: inset 0 0 0 1px var(--amber); }
   #nameDlg h3, #moveDlg h3 { margin: 0 0 14px; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
   #nameInput { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--ink); margin-bottom: 16px; }
   .move-list { display: grid; gap: 4px; max-height: 50dvh; overflow: auto; margin: 0 0 16px; }
@@ -230,7 +240,7 @@
   .move-row:hover:not(:disabled) { background: var(--line); }
   .move-row:disabled { opacity: .55; cursor: default; }
   .dlg-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; }
-  .dlg-acts .push { margin-right: auto; }
+  .dlg-acts .push { margin-right: auto; display: flex; gap: 10px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px 20px; }
   .tile { min-width: 0; }
   .group { border-top: 1px solid var(--line); padding: 18px 0 8px; }
@@ -386,7 +396,7 @@
   </header>
 
   <section class="drop" id="drop">
-    <p><b>Drop videos or photos anywhere on this page.</b> MKV files are turned into MP4 with audio that plays in any browser while they upload. </p>
+    <p><b>Drop videos or photos anywhere on this page.</b></p>
     <div class="drop-btns">
       <button class="btn" id="pick">Choose files</button>
     </div>
@@ -400,8 +410,8 @@
   <div class="lib-head" id="libTop">
     <h2 class="crumbs" id="crumbs">Your files</h2>
     <div class="lib-tools">
-      <input type="search" id="search" class="search" placeholder="Search shows, episodes, folders" aria-label="Search your library" autocomplete="off">
-      <span id="count"></span><button class="btn ghost small" id="newFolder">New folder</button>
+      <input type="search" id="search" class="search" placeholder="Search stuff" aria-label="Search your library" autocomplete="off">
+      <span id="count"></span><button class="btn ghost small" id="newFolder">New folder</button><button class="btn ghost small" id="moveBtn">Move</button>
     </div>
   </div>
   <div id="grid"></div>
@@ -451,9 +461,16 @@
 </dialog>
 
 <dialog id="moveDlg">
-  <h3 id="moveTitle">Move to</h3>
-  <div class="move-list" id="moveList"></div>
-  <div class="dlg-acts"><button class="btn ghost push" id="moveNew">New folder</button><button class="btn ghost" id="moveCancel">Cancel</button></div>
+  <h3 id="moveTitle">What we moving?</h3>
+  <div id="movePick">
+    <input type="search" id="moveFilter" class="move-filter" placeholder="Find something" aria-label="Find what to move" autocomplete="off">
+    <div class="move-list" id="moveItems"></div>
+  </div>
+  <div class="move-list" id="moveDest" hidden></div>
+  <div class="dlg-acts">
+    <div class="push"><button class="btn ghost" id="moveBack" hidden>Back</button><button class="btn ghost" id="moveNew" hidden>New folder</button></div>
+    <button class="btn ghost" id="moveCancel">Cancel</button><button class="btn" id="moveNext" disabled>Next</button>
+  </div>
 </dialog>
 
 <dialog id="info">
@@ -968,8 +985,8 @@ self.onmessage = async (e) => {
     $("gaugeNote").textContent = state.offline
       ? (state.fromCache ? "Last known numbers. MoCloud is offline right now." : "MoCloud is offline right now.")
       : backend.id === "cloud"
-        ? `Uploads stop at ${fmtSize(limit)}. The last ${fmtSize(free - limit)} of Cloudflare's free ${fmtSize(free)} is never used.`
-        : `Uploads stop at ${fmtSize(limit)}, so the Pi always keeps ${fmtSize(free - limit)} free for itself.`;
+        ? `Uploads stop at ${fmtSize(limit)}. I dont got money like dat unfort.`
+        : `Uploads stop at ${fmtSize(limit)}, so the Pi doesn't eventually explode.`;
     $("fullBanner").hidden = !full || state.offline;
     $("pick").disabled = full;
   }
@@ -1247,49 +1264,101 @@ self.onmessage = async (e) => {
     toast("Folder deleted. Everything that was in it is still here, one level up.");
   }
 
+  // ----- Move: pick what (folders, shows, videos, several at once), then where -----
   // what: { kind: "file", f } | { kind: "show", id, name } | { kind: "folder", id }
-  function moveTo(what, dest) {
+  const moveSel = new Map();
+  const whereName = (id) => (id ? state.meta.folders[id].name : "Your files");
+  function moveAll(items, dest) {
     changeMeta((m) => {
-      if (what.kind === "file") m.place[what.f.key] = dest;
-      else if (what.kind === "show") {
-        m.place["show:" + what.id] = dest;
-        for (const f of state.files) if (showIdOfName(f.name) === what.id) delete m.place[f.key]; // the whole show moves together
-      } else if (what.kind === "folder") m.folders[what.id].parent = dest;
+      for (const what of items) {
+        if (what.kind === "file") m.place[what.f.key] = dest;
+        else if (what.kind === "show") {
+          m.place["show:" + what.id] = dest;
+          for (const f of state.files) if (showIdOfName(f.name) === what.id) delete m.place[f.key]; // the whole show moves together
+        } else if (what.kind === "folder") m.folders[what.id].parent = dest;
+      }
     });
-    const where = dest ? `“${state.meta.folders[dest].name}”` : "Your files";
-    toast(`Moved to ${where}`);
+    toast(items.length === 1 ? `Moved to ${whereName(dest)}` : `Moved ${items.length} things to ${whereName(dest)}`);
   }
-
-  function openMove(what) {
-    if (state.offline) { toast("MoCloud is offline, so things can't be moved right now.", true); return; }
-    const d = $("moveDlg"), list = $("moveList");
-    const label = what.kind === "file" ? titleOf(what.f) : what.kind === "show" ? what.name : state.meta.folders[what.id].name;
-    $("moveTitle").textContent = `Move “${label}” to`;
-    const current = what.kind === "file" ? folderOf(what.f)
-      : what.kind === "show" ? (state.meta.place["show:" + what.id] && state.meta.folders[state.meta.place["show:" + what.id]] ? state.meta.place["show:" + what.id] : "")
-      : state.meta.folders[what.id].parent || "";
-    const blocked = (id) => what.kind === "folder" && folderPath(id).includes(what.id); // not into itself
+  function moveChoices() {
+    const words = norm($("moveFilter").value).split(" ").filter(Boolean);
+    const fits = (text) => words.every((w) => norm(text).includes(w));
+    const out = [];
+    const walk = (parent) => { for (const id of childFolders(parent)) { out.push({ key: "folder:" + id, what: { kind: "folder", id }, label: state.meta.folders[id].name, sub: `Folder, in ${whereName(state.meta.folders[id].parent || "")}` }); walk(id); } };
+    walk("");
+    const { shows, other } = groupFiles(state.files);
+    for (const show of shows) {
+      const at = state.meta.place["show:" + show.id];
+      out.push({ key: "show:" + show.id, what: { kind: "show", id: show.id, name: show.name }, label: show.name,
+        sub: `Show, ${show.count} ${show.count === 1 ? "episode" : "episodes"}, in ${whereName(at && state.meta.folders[at] ? at : "")}` });
+      if (words.length) { // single episodes only come up when you look for them
+        for (const season of show.seasons) for (const ep of season.episodes) {
+          out.push({ key: "file:" + ep.file.key, what: { kind: "file", f: ep.file }, label: titleOf(ep.file), sub: `Episode, in ${whereName(folderOf(ep.file))}` });
+        }
+      }
+    }
+    for (const f of other) out.push({ key: "file:" + f.key, what: { kind: "file", f }, label: titleOf(f), sub: `${isVideo(f) ? "Video" : "Photo"}, in ${whereName(folderOf(f))}` });
+    return words.length ? out.filter((c) => fits(c.label)) : out;
+  }
+  function paintMoveItems() {
+    const rows = moveChoices().map((c) => {
+      const row = document.createElement("label"); row.className = "move-item";
+      const box = document.createElement("input"); box.type = "checkbox"; box.checked = moveSel.has(c.key);
+      box.addEventListener("change", () => { if (box.checked) moveSel.set(c.key, c.what); else moveSel.delete(c.key); paintMoveNext(); });
+      const b = document.createElement("b"); b.textContent = c.label;
+      const s = document.createElement("span"); s.textContent = c.sub;
+      row.append(box, b, s);
+      return row;
+    });
+    $("moveItems").replaceChildren(...(rows.length ? rows : [Object.assign(document.createElement("p"), { className: "show-note", textContent: state.files.length || Object.keys(state.meta.folders).length ? "Nothing matches that." : "Nothing here to move yet." })]));
+    paintMoveNext();
+  }
+  function paintMoveNext() {
+    $("moveNext").disabled = !moveSel.size;
+    $("moveNext").textContent = moveSel.size ? `Next (${moveSel.size})` : "Next";
+  }
+  function moveStep(where) {
+    const picking = where === "pick";
+    $("movePick").hidden = !picking; $("moveDest").hidden = picking;
+    $("moveNext").hidden = !picking; $("moveBack").hidden = picking; $("moveNew").hidden = picking;
+    if (picking) { $("moveTitle").textContent = "What we moving?"; paintMoveItems(); return; }
+    const items = [...moveSel.values()];
+    $("moveTitle").textContent = items.length === 1 ? "Move it where?" : `Move ${items.length} things where?`;
+    const moving = items.filter((w) => w.kind === "folder").map((w) => w.id);
+    const current = (w) => w.kind === "file" ? folderOf(w.f) : w.kind === "folder" ? state.meta.folders[w.id].parent || ""
+      : (state.meta.folders[state.meta.place["show:" + w.id]] ? state.meta.place["show:" + w.id] : "");
     const row = (id, depth) => {
       const b = document.createElement("button");
       b.className = "move-row"; b.style.paddingLeft = 14 + depth * 20 + "px";
       b.textContent = id ? state.meta.folders[id].name : "Your files (no folder)";
-      if (id === current) { b.disabled = true; b.textContent += "  (here now)"; }
-      if (blocked(id)) b.disabled = true;
-      b.addEventListener("click", () => { d.close(); moveTo(what, id); });
+      if (items.every((w) => current(w) === id)) { b.disabled = true; b.textContent += "  (already here)"; }
+      if (moving.some((m) => folderPath(id).includes(m))) b.disabled = true; // a folder can't go inside itself
+      b.addEventListener("click", () => { $("moveDlg").close(); moveAll(items, id); });
       return b;
     };
     const rows = [row("", 0)];
     const walk = (parent, depth) => { for (const id of childFolders(parent)) { rows.push(row(id, depth)); walk(id, depth + 1); } };
     walk("", 1);
-    list.replaceChildren(...rows);
-    $("moveNew").onclick = async () => {
-      d.close();
-      const id = await createFolder(what.kind === "folder" ? state.meta.folders[what.id].parent : state.view);
-      if (id) moveTo(what, id);
-    };
-    $("moveCancel").onclick = () => d.close();
-    d.showModal();
+    $("moveDest").replaceChildren(...rows);
   }
+  function openMoveDialog() {
+    if (state.offline) { toast("MoCloud is offline, so nothing can be moved right now.", true); return; }
+    moveSel.clear();
+    $("moveFilter").value = "";
+    moveStep("pick");
+    $("moveDlg").showModal();
+  }
+  $("moveBtn").addEventListener("click", openMoveDialog);
+  $("moveFilter").addEventListener("input", paintMoveItems);
+  $("moveNext").addEventListener("click", () => moveStep("dest"));
+  $("moveBack").addEventListener("click", () => moveStep("pick"));
+  $("moveCancel").addEventListener("click", () => $("moveDlg").close());
+  $("moveNew").addEventListener("click", async () => {
+    const items = [...moveSel.values()];
+    $("moveDlg").close();
+    const id = await createFolder(state.view);
+    if (id) moveAll(items, id);
+  });
 
   const FOLDER_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4.4l2 2h8.6A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>';
   function folderCard(id) {
@@ -1307,9 +1376,7 @@ self.onmessage = async (e) => {
     const left = document.createElement("div"); left.className = "acts-left";
     const ren = document.createElement("button"); ren.className = "link"; ren.textContent = "Rename";
     ren.addEventListener("click", () => renameFolder(id));
-    const mv = document.createElement("button"); mv.className = "link"; mv.textContent = "Move";
-    mv.addEventListener("click", () => openMove({ kind: "folder", id }));
-    left.append(ren, mv);
+    left.append(ren);
     const del = document.createElement("button"); del.className = "link danger"; del.textContent = "Delete folder";
     let armed;
     del.addEventListener("click", () => {
@@ -1321,7 +1388,7 @@ self.onmessage = async (e) => {
       clearTimeout(armed);
       deleteFolder(id);
     });
-    [ren, mv, del].forEach((b) => { b.disabled = state.offline; });
+    [ren, del].forEach((b) => { b.disabled = state.offline; });
     acts.append(left, del);
     el.append(open, acts);
     return el;
@@ -1811,20 +1878,16 @@ self.onmessage = async (e) => {
         await api(`/api/files/${encodeURIComponent(f.key)}`, { method: "DELETE" });
         const local = dl.items.get(dlId(backend.id, f.key));
         if (local) await removeDownload(local.id, true); // its saved copy goes too, so no space is left behind
-        toast(local ? "Deleted from MoCloud, and its download on this device was removed too." : "Deleted");
+        toast(local ? "Deleted from MoCloud and downloads" : "Deleted");
         await refresh();
       } catch (e) { toast(e.message, true); del.disabled = false; del.textContent = "Delete"; del.classList.remove("armed"); }
     });
     const info = document.createElement("button"); info.className = "link"; info.textContent = "Info";
     info.setAttribute("aria-label", `File information for ${titleOf(f)}`);
     info.addEventListener("click", () => openInfo(f, thumbs.get(f.key)));
-    const mv = document.createElement("button"); mv.className = "link"; mv.textContent = "Move";
-    mv.disabled = state.offline;
-    mv.setAttribute("aria-label", `Move ${titleOf(f)} to a folder`);
-    mv.addEventListener("click", () => openMove({ kind: "file", f }));
     const left = document.createElement("div"); left.className = "acts-left";
     if (video) left.append(dlButton(f));
-    left.append(info, mv);
+    left.append(info);
     acts.append(left, del);
     el.append(thumb, name, meta);
     const ep = tvEpisode(f);
@@ -1857,22 +1920,14 @@ self.onmessage = async (e) => {
     return g;
   }
 
-  function section(id, title, count, children, extra) {
+  function section(id, title, count, children) {
     const d = document.createElement("details"); d.className = "group"; d.open = !folded.has(id);
     const s = document.createElement("summary"); s.textContent = title;
     const n = document.createElement("span"); n.textContent = `${count} ${count === 1 ? "file" : "files"}`;
     s.append(n);
-    if (extra) s.append(extra);
     d.append(s, ...children);
     d.addEventListener("toggle", () => { setFolded(id, !d.open); if (d.open) fitDescs(); });
     return d;
-  }
-
-  function moveShowButton(show) {
-    const b = document.createElement("button"); b.className = "link sum-move"; b.textContent = "Move show";
-    b.disabled = state.offline;
-    b.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openMove({ kind: "show", id: show.id, name: show.name }); });
-    return b;
   }
 
   function renderLibrary() {
@@ -1898,7 +1953,7 @@ self.onmessage = async (e) => {
             const name = ep.name || (tvEpisode(ep.file) || {}).name || "";
             return tile(ep.file, `Episode ${ep.episode}${name ? ": " + name : ""}`);
           }))];
-        })].filter(Boolean), moveShowButton(show))));
+        })].filter(Boolean))));
       if (other.length) parts.push(section("other", "Other", other.length, [gridOf(other.map((f) => tile(f)))]));
     }
     grid.replaceChildren(...parts);
@@ -1906,6 +1961,7 @@ self.onmessage = async (e) => {
     const n = found ? here.length : view ? countIn(view) : state.files.length;
     $("count").textContent = found ? `${n} found` : n ? `${n} ${n === 1 ? "file" : "files"}` : "";
     $("newFolder").disabled = state.offline;
+    $("moveBtn").disabled = state.offline || (!state.files.length && !Object.keys(state.meta.folders).length);
     const nothing = !here.length && !subfolders.length;
     empty.hidden = !nothing || (!found && parts.length > 0);
     if (nothing && found) {
@@ -2781,9 +2837,9 @@ self.onmessage = async (e) => {
       const label = titleOf({ name: it.name, type: "" });
       if (m.type === "done" && m.size === it.size) {
         it.done = true; it.error = "";
-        if (!job.removeAfter) toast(`Downloaded ${label}. It plays on this device even without internet.`);
+        if (!job.removeAfter) toast(`Downloaded ${label}.`);
       } else if (m.type === "done") {
-        it.error = "The download didn't come out complete, so it was discarded. Try again.";
+        it.error = "The download didn't complete, so I scrapped it gang. Try again.";
         await dlDeleteFile(it).catch(() => {});
         it.got = 0;
       } else if (!m.aborted) {
@@ -2857,9 +2913,10 @@ self.onmessage = async (e) => {
     } catch { return null; }
   }
 
+  const dlVibe = (pct) => (pct < 25 ? "ii calm one sec" : pct < 50 ? "making progress" : pct < 75 ? "almost there gang" : "Im pm done");
   function dlLabel(id) {
     const it = dl.items.get(id);
-    if (dl.active && dl.active.id === id) return `Downloading ${dlPct(it)}%`;
+    if (dl.active && dl.active.id === id) return `${dlVibe(dlPct(it))} (${dlPct(it)}%)`;
     if (dl.queue.includes(id)) return "Waiting to download";
     if (it && it.done) return "Remove download";
     if (it && it.got > 0) return `Resume download (${dlPct(it)}%)`;
@@ -2905,7 +2962,7 @@ self.onmessage = async (e) => {
       const stat = document.createElement("span"); stat.className = "dl-stat";
       const busy = dl.active && dl.active.id === it.id;
       stat.textContent = it.done ? fmtSize(it.size)
-        : busy ? `Downloading, ${fmtSize(it.got)} of ${fmtSize(it.size)}`
+        : busy ? `${dlVibe(dlPct(it))}, ${fmtSize(it.got)} of ${fmtSize(it.size)}`
         : dl.queue.includes(it.id) ? "Waiting to download"
         : it.error ? `Stopped at ${dlPct(it)}%: ${it.error}`
         : `Paused at ${dlPct(it)}% (${fmtSize(it.got)} of ${fmtSize(it.size)})`;
@@ -2931,8 +2988,8 @@ self.onmessage = async (e) => {
     }));
     const used = items.reduce((s, i) => s + (i.got || 0), 0);
     $("dlSum").textContent = items.length
-      ? `MoCloud downloads take up ${fmtSize(used)} on this device. Removing one frees its space straight away.`
-      : "Nothing downloaded yet. Tap Download under any video to keep it on this device for watching without internet.";
+      ? `MoCloud downloads take up ${fmtSize(used)} on this device. Removing one frees its space.`
+      : "Nothing downloaded yet.";
     if (navigator.storage && navigator.storage.estimate) {
       navigator.storage.estimate().then((est) => {
         if (!est.quota) return;
