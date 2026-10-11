@@ -111,7 +111,6 @@
     font-size: 12px; font-weight: 500; pointer-events: none;
   }
   .acts-left { flex-wrap: wrap; row-gap: 4px; }
-  .acts a.link.off { opacity: .45; pointer-events: none; }
   #downloads { background: var(--panel); border-radius: var(--radius); padding: 24px; width: min(620px, 94vw); max-height: 86dvh; }
   .dl-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .dl-head h3 { margin: 0; font-size: 20px; font-weight: 500; }
@@ -193,6 +192,8 @@
     margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: var(--dim);
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
+  .tile .desc.open { display: block; overflow: visible; }
+  .tile .more { font-size: 13px; margin-top: 2px; }
   .continue { margin-bottom: 34px; }
   .row-title { margin: 0 0 14px; font-size: 18px; font-weight: 500; }
   .show-src { margin: 8px 0 0; font-size: 13px; color: var(--dim); }
@@ -273,7 +274,6 @@
   .tile.locked .thumb { cursor: not-allowed; }
   .tile.locked .thumb img { filter: grayscale(.7) brightness(.45); }
   .tile.locked .thumb .play { display: none; }
-  .tile.locked .acts a.link { opacity: .45; pointer-events: none; }
   .lock {
     position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
   }
@@ -416,7 +416,6 @@
   <div class="p-stage" id="pStage" data-fit="default"></div>
   <div class="p-foot">
     <div class="p-links">
-      <a class="link" id="pDownload" href="#">Save file</a>
       <button class="link" id="pInfo">Info</button>
       <span class="p-src" id="pSource"></span>
       <span class="p-resume" id="pResume" hidden><span id="pResumeText"></span><button class="link" id="pStartOver">Start over</button></span>
@@ -773,7 +772,7 @@ self.onmessage = async (e) => {
     return Math.max(1, Math.round(bytes / 1e3)) + " KB";
   }
   const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  const fileUrl = (key, dl) => `${API}/file/${encodeURIComponent(key)}${dl ? "?dl=1" : ""}`;
+  const fileUrl = (key) => `${API}/file/${encodeURIComponent(key)}`;
 
   // ---------- Readable titles ----------
   // Turns a messy file name into something you'd actually call the video, and works out
@@ -1730,6 +1729,17 @@ self.onmessage = async (e) => {
   }
 
   // ---------- Library ----------
+  // Descriptions that were opened with More stay open when the library redraws.
+  const openDescs = new Set();
+  function fitDescs() {
+    document.querySelectorAll(".tile .desc").forEach((d) => {
+      const more = d.nextElementSibling;
+      if (more && more.classList.contains("more")) more.hidden = !d.classList.contains("open") && d.scrollHeight <= d.clientHeight + 1;
+    });
+  }
+  let fitTimer;
+  window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(fitDescs, 150); });
+
   function tile(f, label) {
     const el = document.createElement("article");
     el.className = "tile";
@@ -1786,8 +1796,6 @@ self.onmessage = async (e) => {
     meta.textContent = `${fmtSize(f.size)}, added ${fmtDate(f.uploaded)}`;
 
     const acts = document.createElement("div"); acts.className = "acts";
-    const save = document.createElement("a"); save.className = "link" + (state.offline ? " off" : ""); save.textContent = "Save file"; save.href = fileUrl(f.key, true);
-    save.title = "Save a copy of the file to your computer";
     const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
     del.disabled = state.offline;
     let armed;
@@ -1816,11 +1824,22 @@ self.onmessage = async (e) => {
     mv.addEventListener("click", () => openMove({ kind: "file", f }));
     const left = document.createElement("div"); left.className = "acts-left";
     if (video) left.append(dlButton(f));
-    left.append(save, info, mv);
+    left.append(info, mv);
     acts.append(left, del);
     el.append(thumb, name, meta);
     const ep = tvEpisode(f);
-    if (ep && ep.summary) { const desc = document.createElement("p"); desc.className = "desc"; desc.textContent = ep.summary; desc.title = ep.summary; el.append(desc); }
+    if (ep && ep.summary) {
+      const desc = document.createElement("p"); desc.className = "desc"; desc.textContent = ep.summary;
+      const more = document.createElement("button"); more.className = "link more"; more.hidden = true; // shown only if it doesn't fit
+      const show = (open) => { desc.classList.toggle("open", open); more.textContent = open ? "Less" : "More"; more.setAttribute("aria-expanded", String(open)); };
+      show(openDescs.has(f.key));
+      more.addEventListener("click", () => {
+        const open = !desc.classList.contains("open");
+        if (open) openDescs.add(f.key); else openDescs.delete(f.key);
+        show(open);
+      });
+      el.append(desc, more);
+    }
     el.append(acts);
     return el;
   }
@@ -1845,7 +1864,7 @@ self.onmessage = async (e) => {
     s.append(n);
     if (extra) s.append(extra);
     d.append(s, ...children);
-    d.addEventListener("toggle", () => setFolded(id, !d.open));
+    d.addEventListener("toggle", () => { setFolded(id, !d.open); if (d.open) fitDescs(); });
     return d;
   }
 
@@ -1883,6 +1902,7 @@ self.onmessage = async (e) => {
       if (other.length) parts.push(section("other", "Other", other.length, [gridOf(other.map((f) => tile(f)))]));
     }
     grid.replaceChildren(...parts);
+    requestAnimationFrame(fitDescs);
     const n = found ? here.length : view ? countIn(view) : state.files.length;
     $("count").textContent = found ? `${n} found` : n ? `${n} ${n === 1 ? "file" : "files"}` : "";
     $("newFolder").disabled = state.offline;
@@ -2186,8 +2206,6 @@ self.onmessage = async (e) => {
     const stage = $("pStage");
     stage.replaceChildren();
     $("pTitle").textContent = titleOf(f); $("pTitle").title = f.name;
-    $("pDownload").href = fileUrl(f.key, true);
-    $("pDownload").classList.toggle("off", state.offline);
     $("pSource").textContent = "";
     $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || thumbs.get(f.key));
     $("pCtrls").hidden = !isVideo(f);
