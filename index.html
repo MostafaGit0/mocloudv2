@@ -178,6 +178,8 @@
   }
   .lib-tools span { color: var(--dim); font-size: 14px; }
   .btn.small { padding: 7px 14px; font-size: 14px; }
+  .dl-open { display: inline-flex; align-items: center; gap: 6px; }
+  .dl-open svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .link:disabled { opacity: .45; cursor: not-allowed; }
 
   /* Search, progress, descriptions */
@@ -458,7 +460,7 @@
           <button type="button" data-source="pi" aria-pressed="true">Pi</button>
           <button type="button" data-source="cloud" aria-pressed="false">Cloudflare</button>
         </div>
-        <button type="button" class="link" id="dlOpen">Downloads</button>
+        <button type="button" class="btn ghost small dl-open" id="dlOpen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg><span id="dlOpenLabel">Downloads</span></button>
       </div>
       <p class="source-note" id="sourceNote"></p>
     </div>
@@ -3323,7 +3325,7 @@ self.onmessage = async (e) => {
   function renderDownloadsPanel() {
     const items = [...dl.items.values()].sort((a, b) => b.added - a.added);
     const done = items.filter((i) => i.done).length;
-    $("dlOpen").textContent = items.length ? `Downloads (${done}${done < items.length ? "+" : ""})` : "Downloads";
+    $("dlOpenLabel").textContent = items.length ? `Downloads (${done}${done < items.length ? "+" : ""})` : "Downloads";
     if (!$("downloads").open) return;
     const list = $("dlList");
     list.replaceChildren(...items.map((it) => {
