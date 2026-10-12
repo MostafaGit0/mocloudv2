@@ -245,6 +245,44 @@
     .continue .desc { display: none; }
   }
 
+  /* Poster boxes: shows and movies */
+  .shelf-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap; margin: 0 0 22px; }
+  .shelf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .shelf { margin-bottom: 36px; }
+  .shelf .row-title span { color: var(--dim); font-size: 14px; margin-left: 8px; }
+  .grid.poster-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 16px; }
+  .poster .thumb { aspect-ratio: 2 / 3; }
+  .poster h3 { font-size: 15px; margin-top: 8px; }
+  .poster .meta { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .poster .acts { flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; }
+  .poster .acts .link, .poster .acts .dl { font-size: 13px; }
+  .poster .thumb .play { width: 34px; height: 34px; left: auto; right: 10px; bottom: auto; top: 10px; } /* top corner, so it never covers the poster's title */
+  .poster .acts .del { border: 0; padding: 0; background: none; color: var(--red); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,69,58,.4); }
+  .poster .acts .del:hover, .poster .acts .del.armed { background: none; color: var(--red); text-decoration-color: currentColor; }
+  .poster .acts { justify-content: flex-start; }
+  .poster .acts-left { gap: 12px; }
+  .poster-name {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 12px 12px; pointer-events: none;
+    background: rgba(var(--ink-rgb),.78); font-size: 15px; font-weight: 600; line-height: 1.25; color: var(--paper);
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .poster .thumb.has-name .box-tag { bottom: auto; top: 10px; }
+  .show-hero { display: grid; grid-template-columns: 150px 1fr; gap: 22px; align-items: end; }
+  .show-hero.no-art { grid-template-columns: 1fr; }
+  .show-hero img { width: 150px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: var(--radius); display: block; background: var(--panel); }
+  .show-play { margin-top: 14px; }
+  @media (max-width: 560px) {
+    .show-hero { grid-template-columns: 104px 1fr; gap: 14px; }
+    .show-hero img { width: 104px; }
+    .show-head h2 { font-size: 24px; }
+    .grid.poster-grid { gap: 18px 12px; }
+    .shelf-bar { flex-wrap: nowrap; }
+    .shelf-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+    .shelf-chips::-webkit-scrollbar { display: none; }
+    .shelf-chips .chip { flex: none; }
+    .sort-sel { flex: none; }
+  }
+
   /* Folders */
   .grid.folder-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 30px; }
   .folder-card { background: var(--panel); border-radius: var(--radius); padding: 4px 16px 12px; min-width: 0; }
@@ -1741,7 +1779,7 @@ self.onmessage = async (e) => {
     if (!showId || tv.asked.has(showId)) return;
     const c = tv.cache[showId], choice = tvChoice(showId);
     if (choice === "none") return;
-    const fresh = c && Date.now() - (c.at || 0) < (c.none ? 3 : 7) * DAY && (!choice || String(c.id) === String(choice));
+    const fresh = c && (c.none || "img" in c) && Date.now() - (c.at || 0) < (c.none ? 3 : 7) * DAY && (!choice || String(c.id) === String(choice));
     if (fresh) return;
     tv.asked.add(showId);
     tv.queue.push({ showId, name, choice });
@@ -1765,7 +1803,8 @@ self.onmessage = async (e) => {
           for (const e of (s._embedded && s._embedded.episodes) || []) {
             eps[`${e.season}x${e.number}`] = { name: e.name || "", summary: htmlText(e.summary) };
           }
-          tv.cache[job.showId] = { id: s.id, name: s.name, year: (s.premiered || "").slice(0, 4), url: s.url, eps, at: Date.now() };
+          const img = s.image ? s.image.original || s.image.medium || "" : "";
+          tv.cache[job.showId] = { id: s.id, name: s.name, year: (s.premiered || "").slice(0, 4), url: s.url, img, eps, at: Date.now() };
         } else retryLater(job.showId);
         tvSave();
         clearTimeout(tv.paint);
@@ -1854,15 +1893,20 @@ self.onmessage = async (e) => {
   let fitTimer;
   window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(fitDescs, 150); });
 
-  function tile(f, label) {
+  function tile(f, label, opts = {}) {
     const el = document.createElement("article");
     el.className = "tile";
     const video = isVideo(f);
+    const asPoster = "poster" in opts; // movies: a tall poster box that plays when tapped
 
     const thumb = document.createElement("button");
     thumb.className = "thumb";
     thumb.setAttribute("aria-label", `${video ? "Play" : "Open"} ${titleOf(f)}`);
-    if (video) {
+    if (asPoster) {
+      el.classList.add("poster");
+      posterArt(thumb, opts.poster, [f], label || titleOf(f));
+      const p = document.createElement("span"); p.className = "play"; thumb.append(p);
+    } else if (video) {
       const img = document.createElement("img"); img.alt = ""; img.hidden = true;
       const p = document.createElement("span"); p.className = "play";
       thumb.append(img, p);
@@ -1991,22 +2035,119 @@ self.onmessage = async (e) => {
   }
   window.addEventListener("popstate", () => { if (state.show) { state.show = ""; renderLibrary(); } });
 
-  function showCard(show) {
-    const files = showFiles(show);
-    const el = document.createElement("article"); el.className = "tile show-card";
-    const box = document.createElement("button"); box.className = "thumb";
-    box.setAttribute("aria-label", `Open ${show.name}`);
+  // ----- Movie posters (from Apple's free movie search, no account needed) -----
+  // Only for videos that look like a movie release (a year or quality tags in the name), and only an
+  // exact title match counts, so home videos never get a random poster.
+  const CAMERA = /^(img|vid|pxl|mvi|dsc|dji|gopr|gh\d|rpreplay|screen ?recording|screenrecorder|whatsapp|signal|snapchat|trim|\d{6,})/i;
+  const posters = {
+    cache: (() => { try { return JSON.parse(localStorage.getItem("mocloud-posters")) || {}; } catch { return {}; } })(),
+    queue: [], busy: false, asked: new Set(),
+  };
+  const normTitle = (t) => String(t).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "");
+  function movieInfo(f) {
+    if (!isVideo(f)) return null;
+    const info = parseName(f.name);
+    if (info.show && info.season !== undefined) return null; // an episode
+    const stem = String(f.name).replace(/\.[a-z0-9]{2,4}$/i, "");
+    if (CAMERA.test(stem.trim())) return null;
+    const m = info.title.match(/^(.*) \(((?:19|20)\d{2})\)$/);
+    const title = m ? m[1] : info.title, year = m ? +m[2] : 0;
+    const releaseLike = !!year || JUNK.test(stem);
+    if (!releaseLike || !normTitle(title)) return null;
+    const key = normTitle(title) + (year || "");
+    const c = posters.cache[key];
+    return { title, year, key, img: c && c.img ? c.img : "" };
+  }
+  function postersSave() {
+    for (let i = 0; i < 5; i++) {
+      try { localStorage.setItem("mocloud-posters", JSON.stringify(posters.cache)); return; }
+      catch {
+        const oldest = Object.entries(posters.cache).sort((a, b) => (a[1].at || 0) - (b[1].at || 0))[0];
+        if (!oldest) return;
+        delete posters.cache[oldest[0]];
+      }
+    }
+  }
+  function posterWant(mi) {
+    if (!mi || posters.asked.has(mi.key)) return;
+    const c = posters.cache[mi.key];
+    if (c && Date.now() - (c.at || 0) < (c.img ? 30 : 3) * DAY) return;
+    posters.asked.add(mi.key);
+    posters.queue.push(mi);
+    postersPump();
+  }
+  // Apple's search answers plain requests from most places; where the browser blocks that, the
+  // older script-tag way of asking is used instead.
+  function appleSearch(term) {
+    const q = `https://itunes.apple.com/search?media=movie&entity=movie&limit=15&country=US&term=${encodeURIComponent(term)}`;
+    return fetch(q).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(() => new Promise((resolve, reject) => {
+      const cb = "mocloudPoster" + Math.random().toString(36).slice(2);
+      const tag = document.createElement("script");
+      const done = (data, err) => { clearTimeout(timer); window[cb] = () => {}; tag.remove(); err ? reject(err) : resolve(data); };
+      const timer = setTimeout(() => done(null, new Error("timeout")), 10000);
+      window[cb] = (data) => done(data);
+      tag.onerror = () => done(null, new Error("blocked"));
+      tag.src = q + "&callback=" + cb;
+      document.head.append(tag);
+    }));
+  }
+  async function postersPump() {
+    if (posters.busy) return;
+    posters.busy = true;
+    while (posters.queue.length) {
+      const mi = posters.queue.shift();
+      try {
+        const data = await appleSearch(mi.title);
+        const want = normTitle(mi.title);
+        const hit = (data.results || []).find((r) => {
+          const n = normTitle(r.trackName || ""), bare = normTitle(String(r.trackName || "").replace(/\s*\([^)]*\)\s*$/, ""));
+          const y = +(r.releaseDate || "").slice(0, 4);
+          return (n === want || bare === want) && (!mi.year || !y || Math.abs(y - mi.year) <= 1);
+        });
+        const art = hit && (hit.artworkUrl100 || hit.artworkUrl60);
+        posters.cache[mi.key] = art ? { img: art.replace(/\/\d+x\d+(bb)?\.(jpg|jpeg|png|webp)$/i, "/600x900bb.jpg"), at: Date.now() } : { at: Date.now() };
+        postersSave();
+        clearTimeout(tv.paint);
+        tv.paint = setTimeout(() => { if (!$("player").open) renderLibrary(); }, 300);
+      } catch { setTimeout(() => posters.asked.delete(mi.key), 5 * 60000); } // offline or blocked: try again later
+      await sleep(500);
+    }
+    posters.busy = false;
+  }
+
+  // A poster picture, falling back to a frame from the video (with the name on it) when there's no poster.
+  function posterArt(box, url, files, name) {
     const img = document.createElement("img"); img.alt = ""; img.hidden = true;
     box.append(img);
-    const paint = (th) => { img.src = th.url; img.hidden = false; };
-    const cached = files.find((f) => thumbs.has(f.key));
-    if (cached) paint(thumbs.get(cached.key));
-    else {
-      // The first episode's picture, or the next one's if that video can't give one.
+    const label = () => {
+      if (box.querySelector(".poster-name")) return;
+      const n = document.createElement("span"); n.className = "poster-name"; n.textContent = name;
+      box.classList.add("has-name"); box.append(n);
+    };
+    const frame = () => {
+      label();
+      const paint = (th) => { img.src = th.url; img.hidden = false; };
+      const cached = files.find((f) => thumbs.has(f.key));
+      if (cached) return paint(thumbs.get(cached.key));
+      // The first video's picture, or the next one's if that video can't give one.
       const attempt = (i) => { if (i < Math.min(files.length, 4) && !state.offline) getThumb(files[i].key).then(paint, () => attempt(i + 1)); };
       box._wantThumb = () => attempt(0);
       if (thumbWatcher) thumbWatcher.observe(box); else box._wantThumb();
-    }
+    };
+    if (url) {
+      img.hidden = false; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
+      img.onerror = () => { img.onerror = null; img.hidden = true; img.removeAttribute("src"); frame(); };
+      img.src = url;
+    } else frame();
+  }
+
+  function showCard(show) {
+    const files = showFiles(show);
+    const el = document.createElement("article"); el.className = "tile show-card poster";
+    const box = document.createElement("button"); box.className = "thumb";
+    box.setAttribute("aria-label", `Open ${show.name}`);
+    const tvs = tvShow(show.id);
+    posterArt(box, tvs && tvs.img, files, show.name);
     const tag = document.createElement("span"); tag.className = "box-tag";
     tag.textContent = `${show.count} ${show.count === 1 ? "episode" : "episodes"}`;
     box.append(tag);
@@ -2014,36 +2155,79 @@ self.onmessage = async (e) => {
       const nw = document.createElement("span"); nw.className = "new-tag"; nw.textContent = "New"; box.append(nw);
     }
     box.addEventListener("click", () => openShow(show));
-    const name = document.createElement("h3"); name.textContent = show.name;
+    const name = document.createElement("h3"); name.textContent = show.name; name.title = show.name;
     const meta = document.createElement("p"); meta.className = "meta";
     const seasons = show.seasons.map((s) => s.number);
     const seen = files.filter((f) => (getProg(f.key) || {}).done).length;
     meta.textContent = [seasons.length > 1 ? `Seasons ${seasons[0]}–${seasons[seasons.length - 1]}` : `Season ${seasons[0]}`,
-      seen ? `${seen} of ${files.length} watched` : ""].filter(Boolean).join(" · ");
+      seen ? `${seen}/${files.length} watched` : ""].filter(Boolean).join(" · ");
     el.append(box, name, meta);
     return el;
   }
 
-  // Shows, movies and other videos as one set of boxes, newest upload first (or A to Z).
-  function boxesBlock(shows, other) {
-    const items = [
-      ...shows.map((s) => ({ name: s.name, at: newest(showFiles(s)), el: () => showCard(s) })),
-      ...other.map((f) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f) })),
-    ];
-    if (!items.length) return null;
-    items.sort(sortBy === "az" ? (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }) : (a, b) => b.at - a.at);
-    const wrap = document.createElement("section");
-    const head = document.createElement("div"); head.className = "row-head";
-    const h = document.createElement("h3"); h.className = "row-title"; h.textContent = sortBy === "az" ? "A to Z" : "Recently added";
+  // The home screen, split up: Shows, Movies, Videos and Photos, each with its own boxes.
+  // The chips at the top show just one kind. Newest upload first, or A to Z.
+  let shelfPick = (() => { try { return localStorage.getItem("mocloud-shelf") || "all"; } catch { return "all"; } })();
+  function shelves(shows, other, folderGrid) {
+    const movies = [], videos = [], photos = [];
+    for (const f of other) {
+      if (!isVideo(f)) { photos.push(f); continue; }
+      const mi = movieInfo(f);
+      if (mi) posterWant(mi);
+      if (mi && (mi.year || mi.img)) movies.push({ f, mi }); else videos.push(f);
+    }
+    const az = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true });
+    const order = (items) => items.sort(sortBy === "az" ? az : (a, b) => b.at - a.at).map((i) => i.el());
+    const groups = [
+      ["shows", "Shows", shows.length, () => order(shows.map((s) => ({ name: s.name, at: newest(showFiles(s)), el: () => showCard(s) }))), true],
+      ["movies", "Movies", movies.length, () => order(movies.map(({ f, mi }) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f, titleOf(f), { poster: mi.img }) }))), true],
+      ["videos", "Videos", videos.length, () => order(videos.map((f) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
+      ["photos", "Photos", photos.length, () => order(photos.map((f) => ({ name: f.name, at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
+    ].filter((g) => g[2]);
+    const out = [];
+    if (!groups.length) { if (folderGrid) out.push(folderGrid); return out; }
+    if (shelfPick !== "all" && !groups.some((g) => g[0] === shelfPick)) shelfPick = "all";
+    const bar = document.createElement("div"); bar.className = "shelf-bar";
+    const chips = document.createElement("div"); chips.className = "shelf-chips"; chips.setAttribute("role", "group"); chips.setAttribute("aria-label", "Show only");
+    if (groups.length > 1) {
+      for (const [id, label] of [["all", "All"], ...groups]) {
+        const b = document.createElement("button"); b.className = "chip"; b.textContent = label;
+        b.setAttribute("aria-pressed", String(id === shelfPick));
+        b.addEventListener("click", () => { shelfPick = id; try { localStorage.setItem("mocloud-shelf", id); } catch {} renderLibrary(); });
+        chips.append(b);
+      }
+    }
     const sel = document.createElement("select"); sel.className = "sort-sel"; sel.setAttribute("aria-label", "Sort");
     for (const [v, label] of [["recent", "Newest first"], ["az", "A to Z"]]) {
       const o = document.createElement("option"); o.value = v; o.textContent = label; o.selected = v === sortBy; sel.append(o);
     }
     sel.addEventListener("change", () => { sortBy = sel.value; try { localStorage.setItem("mocloud-sort", sortBy); } catch {} renderLibrary(); });
-    head.append(h, sel);
-    const g = gridOf(items.map((i) => i.el())); g.classList.add("box-grid");
-    wrap.append(head, g);
-    return wrap;
+    bar.append(chips, sel);
+    out.push(bar);
+    if (folderGrid && shelfPick === "all") out.push(folderGrid);
+    for (const [id, label, n, make, poster] of groups) {
+      if (shelfPick !== "all" && shelfPick !== id) continue;
+      const sec = document.createElement("section"); sec.className = "shelf"; sec.dataset.shelf = id;
+      const h = document.createElement("h3"); h.className = "row-title"; h.textContent = label;
+      const c = document.createElement("span"); c.textContent = String(n); h.append(c);
+      const g = gridOf(make()); g.classList.add(poster ? "poster-grid" : "box-grid");
+      sec.append(h, g);
+      out.push(sec);
+    }
+    return out;
+  }
+
+  // Where to pick a show back up: the episode you're in the middle of, the one after the last one
+  // you finished, or the very first.
+  function showNext(show) {
+    const eps = show.seasons.flatMap((s) => s.episodes.map((e) => ({ ...e, season: s.number })));
+    let last = null, at = -1;
+    eps.forEach((e, i) => { const p = getProg(e.file.key); if (p && (!last || (p.at || 0) > (last.at || 0))) { last = p; at = i; } });
+    const tag = (e) => `S${e.season} E${e.episode}`;
+    if (at < 0) return { ep: eps[0], label: `Play ${tag(eps[0])}` };
+    if (!last.done) return { ep: eps[at], label: `Resume ${tag(eps[at])}` };
+    if (at + 1 < eps.length) return { ep: eps[at + 1], label: `Play next: ${tag(eps[at + 1])}` };
+    return { ep: eps[0], label: `Start over from ${tag(eps[0])}` };
   }
 
   // A show's own page: season tabs, then that season's episodes.
@@ -2057,9 +2241,26 @@ self.onmessage = async (e) => {
     const seen = files.filter((f) => (getProg(f.key) || {}).done).length;
     meta.textContent = [`${show.count} ${show.count === 1 ? "episode" : "episodes"}`,
       show.seasons.length > 1 ? `${show.seasons.length} seasons` : "", seen ? `${seen} watched` : ""].filter(Boolean).join(" · ");
-    head.append(h, meta);
+    const info = document.createElement("div");
+    info.append(h, meta);
     const src = tvLine(show);
-    if (src) head.append(src);
+    if (src) info.append(src);
+    const next = showNext(show);
+    const play = document.createElement("button"); play.className = "btn show-play"; play.textContent = next.label;
+    play.addEventListener("click", () => {
+      if (state.offline && !isDownloaded(next.ep.file)) return toast("Locked until MoCloud is back online. Nothing has been deleted.", true);
+      openPlayer(next.ep.file);
+    });
+    info.append(play);
+    const hero = document.createElement("div"); hero.className = "show-hero";
+    const tvs = tvShow(show.id);
+    if (tvs && tvs.img) {
+      const art = document.createElement("img"); art.alt = ""; art.referrerPolicy = "no-referrer"; art.src = tvs.img;
+      art.onerror = () => { art.remove(); hero.classList.add("no-art"); };
+      hero.append(art);
+    } else hero.classList.add("no-art");
+    hero.append(info);
+    head.append(hero);
     wrap.append(head);
     // Opens on the season you were last watching, otherwise the first.
     let season = pickedSeason.get(show.id);
@@ -2107,9 +2308,9 @@ self.onmessage = async (e) => {
     if (openedShow) parts.push(showPage(openedShow));
     else if (!found) {
       if (!view) { const row = continueRow(); if (row) parts.push(row); }
-      if (subfolders.length) { const g = gridOf(subfolders.map(folderCard)); g.classList.add("folder-grid"); parts.push(g); }
-      const boxes = boxesBlock(shows, other);
-      if (boxes) parts.push(boxes);
+      let folderGrid = null;
+      if (subfolders.length) { folderGrid = gridOf(subfolders.map(folderCard)); folderGrid.classList.add("folder-grid"); }
+      parts.push(...shelves(shows, other, folderGrid));
     } else if (subfolders.length) { const g = gridOf(subfolders.map(folderCard)); g.classList.add("folder-grid"); parts.push(g); }
     if (!found) {
       // home screen and show pages are done above
