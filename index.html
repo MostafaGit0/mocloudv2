@@ -5,22 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>MoCloud</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23151A2B'/><path d='M38 30v40l34-20z' fill='%23F0B34E'/></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23111214'/><path d='M38 30v40l34-20z' fill='%233B82F6'/></svg>">
 <style>
+  /* Graphite and blue, like macOS dark mode */
   :root {
-    --ink: #151A2B;
-    --panel: #1D2440;
-    --panel-2: #262E52;
-    --line: #333D69;
-    --paper: #EEE9DD;
-    --dim: #9AA2C0;
-    --amber: #F0B34E;
-    --red: #F08372;
-    --radius: 12px;
-    --font: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --ink: #111214;          /* page */
+    --panel: #1C1D21;        /* cards */
+    --panel-2: #26272C;      /* raised bits inside cards */
+    --line: #34353B;
+    --paper: #F2F2F4;        /* text */
+    --dim: #9A9AA1;          /* quieter text */
+    --accent: #3B82F6;       /* blue: the main colour */
+    --accent-2: #8AB8FF;     /* light blue: small touches */
+    --red: #FF453A;
+    --on-accent: #FFFFFF;    /* text on blue */
+    --on-red: #FFFFFF;
+    --accent-rgb: 59,130,246;
+    --accent-2-rgb: 138,184,255;
+    --red-rgb: 255,69,58;
+    --ink-rgb: 17,18,20;
+    --r-sm: 12px;            /* small rounding: inputs, rows */
+    --r-lg: 26px;            /* big rounding: windows */
+    --radius: 18px;          /* cards, pictures */
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; }
   html { background: var(--ink); }
@@ -34,7 +41,7 @@
   }
   button, input { font: inherit; color: inherit; }
   button { cursor: pointer; }
-  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   [hidden] { display: none !important; }
 
   .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 80px; }
@@ -50,7 +57,7 @@
     border: 0; border-radius: 999px; padding: 6px 14px; background: transparent;
     color: var(--dim); font-size: 14px; font-weight: 500;
   }
-  .source button[aria-pressed="true"] { background: var(--amber); color: #1B1606; }
+  .source button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
   .source button:not([aria-pressed="true"]):hover { color: var(--paper); }
   .source-note { font-size: 13px; color: var(--dim); margin: -6px 0 0; }
 
@@ -59,24 +66,19 @@
   .gauge-line { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--dim); margin-bottom: 8px; }
   .gauge-line strong { color: var(--paper); font-weight: 500; }
   .gauge-bar {
-    position: relative; height: 26px; border-radius: 7px; overflow: hidden;
+    position: relative; height: 22px; border-radius: 999px; overflow: hidden;
     background: var(--panel); border: 1px solid var(--line);
   }
   .gauge-fill {
     position: absolute; inset: 0 auto 0 0; width: 0%;
-    background: var(--amber); transition: width .5s cubic-bezier(.2,.7,.2,1);
+    background: var(--accent); border-radius: 999px; transition: width .5s cubic-bezier(.2,.7,.2,1);
   }
-  .gauge-pending { position: absolute; inset: 0 auto 0 0; width: 0%; background: var(--amber); opacity: .35; }
+  .gauge-pending { position: absolute; inset: 0 auto 0 0; width: 0%; background: var(--accent); opacity: .35; }
   /* the 2 GB that is never used */
   .gauge-reserve {
     position: absolute; inset: 0 0 0 auto; width: 20%;
-    background: repeating-linear-gradient(135deg, transparent 0 5px, rgba(240,131,114,.5) 5px 7px);
+    background: rgba(var(--red-rgb),.35);
     border-left: 2px solid var(--red);
-  }
-  /* one tick per GB */
-  .gauge-ticks {
-    position: absolute; inset: 0; pointer-events: none;
-    background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(21,26,43,.55) calc(10% - 1px) 10%);
   }
   .gauge-note { margin: 8px 0 0; font-size: 13px; color: var(--dim); }
   .gauge.is-full .gauge-line strong { color: var(--red); }
@@ -85,40 +87,42 @@
   .drop {
     margin-top: 32px; padding: 22px 24px;
     display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
-    border: 1.5px dashed var(--line); border-radius: var(--radius);
+    border: 1.5px dashed var(--line); border-radius: var(--r-lg);
   }
   .drop p { margin: 0; color: var(--dim); }
   .drop p b { color: var(--paper); font-weight: 500; }
   .drop-btns { display: flex; flex-wrap: wrap; gap: 10px; }
   .btn {
-    border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 500;
-    background: var(--amber); color: #1B1606;
+    border: 0; border-radius: 999px; padding: 10px 20px; font-weight: 600;
+    background: var(--accent); color: var(--on-accent);
+    transition: transform .12s ease-out, filter .15s;
   }
   .btn:hover { filter: brightness(1.08); }
+  .btn:active:not(:disabled), .chip:active, .del:active:not(:disabled), .source button:active { transform: scale(.97); }
   .btn.ghost { background: var(--panel-2); color: var(--paper); }
   .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
 
   .banner {
     margin-top: 16px; padding: 14px 18px; border-radius: var(--radius);
-    background: rgba(240,131,114,.12); border: 1px solid var(--red); color: var(--paper);
+    background: rgba(var(--red-rgb),.12); border: 1px solid var(--red); color: var(--paper);
   }
 
   /* ---------- Offline downloads ---------- */
   .brand-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   .dl-badge {
     position: absolute; top: 10px; right: 10px; padding: 3px 9px; border-radius: 999px;
-    background: rgba(21,26,43,.85); border: 1px solid var(--amber); color: var(--amber);
+    background: rgba(var(--ink-rgb),.85); border: 1px solid var(--accent); color: var(--accent);
     font-size: 12px; font-weight: 500; pointer-events: none;
   }
   .acts-left { flex-wrap: wrap; row-gap: 4px; }
-  #downloads { background: var(--panel); border-radius: var(--radius); padding: 24px; width: min(620px, 94vw); max-height: 86dvh; }
+  #downloads { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(620px, 94vw); max-height: 86dvh; }
   .dl-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .dl-head h3 { margin: 0; font-size: 20px; font-weight: 500; }
   .dl-sum { color: var(--dim); font-size: 14px; margin: 10px 0 14px; }
   .dl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .dl-list li {
     display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;
-    padding: 12px 14px; border-radius: 10px; background: var(--panel-2);
+    padding: 12px 14px; border-radius: 14px; background: var(--panel-2);
   }
   .dl-list b { font-weight: 500; overflow-wrap: anywhere; }
   .dl-src { justify-self: end; font-size: 12px; color: var(--dim); }
@@ -126,14 +130,14 @@
   .dl-acts { display: flex; align-items: center; gap: 14px; justify-self: end; }
   .dl-acts .btn { padding: 6px 14px; font-size: 14px; }
   .dl-note { color: var(--dim); font-size: 13px; margin: 14px 0 0; }
-  .p-src { color: var(--amber); font-size: 14px; }
+  .p-src { color: var(--accent); font-size: 14px; }
 
   /* ---------- Server status (offline, power, storage warnings) ---------- */
   .status {
     margin-top: 16px; padding: 16px 18px; border-radius: var(--radius);
-    background: rgba(240,179,78,.10); border: 1px solid var(--amber); color: var(--paper);
+    background: rgba(var(--accent-rgb),.10); border: 1px solid var(--accent); color: var(--paper);
   }
-  .status.bad { background: rgba(240,131,114,.12); border-color: var(--red); }
+  .status.bad { background: rgba(var(--red-rgb),.12); border-color: var(--red); }
   .status b { display: block; font-weight: 500; font-size: 17px; margin-bottom: 2px; }
   .status p { margin: 4px 0 0; color: var(--dim); max-width: 70ch; }
   .status ul { margin: 6px 0 0; padding-left: 18px; color: var(--dim); }
@@ -144,14 +148,14 @@
   .queue { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
   .queue li {
     display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 6px 16px;
-    padding: 12px 16px; background: var(--panel); border-radius: 10px; font-size: 14px;
+    padding: 12px 16px; background: var(--panel); border-radius: 14px; font-size: 14px;
   }
   .queue .q-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .queue .q-stat { color: var(--dim); font-variant-numeric: tabular-nums; }
-  .queue .q-bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--panel-2); overflow: hidden; }
-  .queue .q-bar i { display: block; height: 100%; width: 0%; background: var(--amber); }
+  .queue .q-bar { grid-column: 1 / -1; height: 4px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+  .queue .q-bar i { display: block; height: 100%; width: 0%; background: var(--accent); }
   .queue li.failed .q-stat { color: var(--red); }
-  .queue li.paused .q-stat { color: var(--amber); }
+  .queue li.paused .q-stat { color: var(--accent); }
   .link { background: none; border: 0; padding: 2px 0; color: var(--dim); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
   .link:hover { color: var(--paper); }
   .link.danger:hover, .link.armed { color: var(--red); }
@@ -182,19 +186,19 @@
     border: 1px solid var(--line); background: var(--panel); color: var(--paper); font-size: 15px;
   }
   .search::placeholder { color: var(--dim); }
-  .thumb .prog { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(21,26,43,.75); pointer-events: none; }
-  .thumb .prog i { display: block; height: 100%; background: var(--amber); }
+  .thumb .prog { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(var(--ink-rgb),.75); pointer-events: none; }
+  .thumb .prog i { display: block; height: 100%; background: var(--accent); }
   .seen {
     position: absolute; top: 10px; left: 10px; padding: 3px 9px; border-radius: 999px; pointer-events: none;
-    background: rgba(21,26,43,.85); border: 1px solid var(--line); color: var(--paper); font-size: 12px; font-weight: 500;
+    background: rgba(var(--ink-rgb),.85); border: 1px solid var(--line); color: var(--paper); font-size: 12px; font-weight: 500;
   }
   .tile .desc {
     margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: var(--dim);
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
   .tile .desc.open { display: block; overflow: visible; }
-  .tile .more { font-size: 13px; margin-top: 2px; color: rgba(240,179,78,.72); text-decoration-color: rgba(240,179,78,.35); }
-  .tile .more:hover { color: var(--amber); text-decoration-color: currentColor; }
+  .tile .more { font-size: 13px; margin-top: 2px; color: rgba(var(--accent-2-rgb),.8); text-decoration-color: rgba(var(--accent-2-rgb),.35); }
+  .tile .more:hover { color: var(--accent-2); text-decoration-color: currentColor; }
   .continue { margin-bottom: 34px; }
   .row-title { margin: 0 0 14px; font-size: 18px; font-weight: 500; }
   .show-src { margin: 8px 0 0; font-size: 13px; color: var(--dim); }
@@ -204,11 +208,42 @@
   .p-resume { display: inline-flex; align-items: center; gap: 10px; color: var(--dim); font-size: 14px; }
   .p-desc { margin: 2px 16px 14px; color: var(--dim); font-size: 14px; line-height: 1.55; max-width: 85ch; }
   .p-desc b { display: block; color: var(--paper); font-weight: 500; margin-bottom: 2px; }
-  #showDlg { background: var(--panel); border-radius: var(--radius); padding: 24px; width: min(460px, 92vw); }
+  #showDlg { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(460px, 92vw); }
   #showDlg h3 { margin: 0 0 14px; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
   .show-find { display: flex; gap: 8px; margin-bottom: 12px; }
-  .show-find input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--ink); }
+  .show-find input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); }
   .show-note { margin: 4px 0; color: var(--dim); font-size: 14px; }
+
+  /* Home screen: one box per show, folder or video; newest first */
+  .row-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; }
+  .row-head .row-title { margin: 0; }
+  .sort-sel {
+    border: 1px solid var(--line); background: var(--panel); color: var(--paper); border-radius: 999px;
+    padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .show-card .thumb { cursor: pointer; }
+  .box-tag {
+    position: absolute; bottom: 10px; right: 10px; padding: 3px 10px; border-radius: 999px; pointer-events: none;
+    background: rgba(var(--ink-rgb),.85); color: var(--paper); font-size: 12px; font-weight: 600;
+  }
+  .new-tag {
+    position: absolute; top: 10px; left: 10px; padding: 3px 10px; border-radius: 999px; pointer-events: none;
+    background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600;
+  }
+  .show-card .meta { margin-top: 2px; }
+  /* A show's own page */
+  .show-head h2 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+  .show-head .meta { margin: 6px 0 0; color: var(--dim); font-size: 14px; }
+  .season-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 18px; }
+  @media (max-width: 560px) { /* phones: two boxes across, so less scrolling */
+    .grid.box-grid, .continue .grid { grid-template-columns: 1fr 1fr; gap: 18px 12px; }
+    .box-grid .tile h3, .continue .tile h3 { font-size: 14px; }
+    .box-grid .box-tag, .box-grid .new-tag { font-size: 11px; padding: 2px 8px; }
+    .box-grid .thumb .play, .continue .thumb .play { width: 32px; height: 32px; left: 8px; bottom: 8px; }
+    .box-grid .acts, .continue .acts { flex-wrap: wrap; gap: 8px; }
+    .box-grid .del { padding: 5px 12px; font-size: 13px; }
+    .continue .desc { display: none; }
+  }
 
   /* Folders */
   .grid.folder-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 30px; }
@@ -217,26 +252,26 @@
     display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center;
     width: 100%; text-align: left; background: none; border: 0; padding: 12px 0 10px;
   }
-  .folder-open svg { grid-row: 1 / 3; width: 36px; height: 36px; fill: var(--amber); }
+  .folder-open svg { grid-row: 1 / 3; width: 36px; height: 36px; fill: var(--accent); }
   .folder-open b { font-weight: 500; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .folder-open span { color: var(--dim); font-size: 13px; }
-  .folder-open:hover b { color: var(--amber); }
+  .folder-open:hover b { color: var(--accent); }
   .folder-card .acts { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  #nameDlg, #moveDlg { background: var(--panel); border-radius: var(--radius); padding: 24px; width: min(420px, 92vw); }
+  #nameDlg, #moveDlg { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(420px, 92vw); }
   #moveDlg { width: min(500px, 94vw); }
-  .move-filter { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--ink); margin-bottom: 10px; }
+  .move-filter { width: 100%; padding: 9px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); margin-bottom: 10px; }
   .move-item {
     display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center;
-    background: var(--panel-2); border-radius: 8px; padding: 9px 14px; cursor: pointer;
+    background: var(--panel-2); border-radius: var(--r-sm); padding: 9px 14px; cursor: pointer;
   }
-  .move-item input { grid-row: 1 / 3; width: 16px; height: 16px; margin: 0; accent-color: var(--amber); }
+  .move-item input { grid-row: 1 / 3; width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
   .move-item b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .move-item span { color: var(--dim); font-size: 13px; }
-  .move-item:has(input:checked) { box-shadow: inset 0 0 0 1px var(--amber); }
+  .move-item:has(input:checked) { box-shadow: inset 0 0 0 1px var(--accent); }
   #nameDlg h3, #moveDlg h3 { margin: 0 0 14px; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
-  #nameInput { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--ink); margin-bottom: 16px; }
+  #nameInput { width: 100%; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); margin-bottom: 16px; }
   .move-list { display: grid; gap: 4px; max-height: 50dvh; overflow: auto; margin: 0 0 16px; }
-  .move-row { text-align: left; background: var(--panel-2); border: 0; border-radius: 8px; padding: 10px 14px; font-size: 15px; }
+  .move-row { text-align: left; background: var(--panel-2); border: 0; border-radius: var(--r-sm); padding: 10px 14px; font-size: 15px; }
   .move-row:hover:not(:disabled) { background: var(--line); }
   .move-row:disabled { opacity: .55; cursor: default; }
   .dlg-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; }
@@ -252,7 +287,7 @@
   .group summary::-webkit-details-marker { display: none; }
   .group summary::before {
     content: ""; align-self: center; flex: none;
-    border: solid transparent; border-width: 5px 0 5px 8px; border-left-color: var(--amber);
+    border: solid transparent; border-width: 5px 0 5px 8px; border-left-color: var(--accent);
     transition: transform .15s;
   }
   .group[open] summary::before { transform: rotate(90deg); }
@@ -266,18 +301,18 @@
   .thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
   .thumb .play {
     position: absolute; left: 12px; bottom: 12px; width: 40px; height: 40px; border-radius: 50%;
-    background: var(--amber); display: grid; place-items: center; transition: transform .15s;
+    background: var(--accent); display: grid; place-items: center; transition: transform .15s;
   }
-  .thumb .play::before { content: ""; border: solid transparent; border-width: 7px 0 7px 12px; border-left-color: #1B1606; margin-left: 3px; }
+  .thumb .play::before { content: ""; border: solid transparent; border-width: 7px 0 7px 12px; border-left-color: var(--on-accent); margin-left: 3px; }
   .thumb:hover .play { transform: scale(1.1); }
   .tile h3 { margin: 10px 0 0; font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tile .meta { margin: 0; font-size: 13px; color: var(--dim); }
   .tile .acts { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 10px; }
   .del {
-    border: 1px solid var(--red); border-radius: 8px; padding: 8px 18px;
+    border: 1px solid var(--red); border-radius: 999px; padding: 8px 18px; transition: transform .12s ease-out;
     background: transparent; color: var(--red); font-size: 15px; font-weight: 500;
   }
-  .del:hover, .del.armed { background: var(--red); color: #2A0C07; }
+  .del:hover, .del.armed { background: var(--red); color: var(--on-red); }
   .del:disabled { opacity: .5; cursor: default; }
 
   /* Locked while the server is offline: still visible, nothing opens */
@@ -289,28 +324,34 @@
   }
   .lock span {
     display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
-    background: rgba(21,26,43,.85); border: 1px solid var(--line);
+    background: rgba(var(--ink-rgb),.85); border: 1px solid var(--line);
   }
   .lock svg { width: 24px; height: 24px; fill: none; stroke: var(--paper); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
   .empty { padding: 56px 0; color: var(--dim); max-width: 46ch; }
   .empty b { display: block; color: var(--paper); font-size: 22px; font-weight: 500; margin-bottom: 6px; }
-  .empty code { background: var(--panel); padding: 2px 6px; border-radius: 5px; font-size: 14px; }
+  .empty code { background: var(--panel); padding: 2px 6px; border-radius: 8px; font-size: 14px; }
 
   /* ---------- Drag overlay ---------- */
   .dragveil {
     position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
-    background: rgba(21,26,43,.88); border: 4px dashed var(--amber);
+    background: rgba(var(--ink-rgb),.88); border: 4px dashed var(--accent);
     font-size: clamp(28px, 6vw, 56px); font-weight: 700; letter-spacing: -0.02em; pointer-events: none;
   }
 
   /* ---------- Player ---------- */
   dialog { border: 0; padding: 0; color: var(--paper); background: transparent; }
-  dialog::backdrop { background: rgba(8,10,18,.92); }
-  #player { width: min(1200px, 100vw); max-width: 100vw; max-height: 100dvh; }
+  dialog { box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+  #player { box-shadow: none; }
+  #player::backdrop { background: rgba(var(--ink-rgb),.95); }
+  dialog::backdrop { background: rgba(var(--ink-rgb),.72); -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%); }
+  @media (prefers-reduced-transparency: reduce) { dialog::backdrop { background: rgba(var(--ink-rgb),.95); backdrop-filter: none; -webkit-backdrop-filter: none; } }
+  #player { width: min(1200px, 100vw); max-width: 100vw; max-height: 100dvh; padding: 0 8px; }
   .p-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; }
   .p-bar h3 { margin: 0; font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .p-stage { position: relative; overflow: hidden; background: #000; display: grid; place-items: center; min-height: 200px; }
+  .p-stage { position: relative; overflow: hidden; background: #000; display: grid; place-items: center; min-height: 200px; border-radius: var(--radius); }
+  .p-body:fullscreen .p-stage { border-radius: 0; }
+  .p-body:-webkit-full-screen .p-stage { border-radius: 0; }
   .p-stage video, .p-stage img { display: block; width: 100%; max-height: calc(100dvh - 170px); object-fit: contain; background: #000; }
   /* Screen size. Default is how it always looked. The others fill a widescreen frame. */
   .p-stage:not([data-fit="default"]) video { aspect-ratio: 16 / 9; height: auto; }
@@ -332,22 +373,22 @@
     border-radius: 999px; padding: 6px 14px; font-size: 14px; font-weight: 500; line-height: 1.4;
   }
   .chip:hover { border-color: var(--dim); }
-  .chip[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: #1B1606; }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .chip.fit { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
   .chip.fit select { background: transparent; border: 0; color: inherit; font: inherit; padding: 0 2px; cursor: pointer; }
   .chip.fit select option { background: var(--panel); color: var(--paper); }
-  #zoomRange { width: 120px; accent-color: var(--amber); }
+  #zoomRange { width: 120px; accent-color: var(--accent); }
 
   .p-error { padding: 40px 24px; max-width: 52ch; color: var(--dim); }
   .p-error b { display: block; color: var(--paper); font-size: 20px; font-weight: 500; margin-bottom: 6px; }
   .p-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding: 10px 16px; }
 
-  #gate { background: var(--panel); border-radius: var(--radius); padding: 28px; width: min(380px, 92vw); }
+  #gate { background: var(--panel); border-radius: var(--r-lg); padding: 28px; width: min(380px, 92vw); }
   #gate h3 { margin: 0 0 4px; font-size: 20px; font-weight: 500; }
   #gate p { margin: 0 0 16px; color: var(--dim); font-size: 14px; }
-  #gate input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--ink); margin-bottom: 14px; }
+  #gate input { width: 100%; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); margin-bottom: 14px; }
 
-  #info { background: var(--panel); border-radius: var(--radius); padding: 28px; width: min(460px, 92vw); }
+  #info { background: var(--panel); border-radius: var(--r-lg); padding: 28px; width: min(460px, 92vw); }
   #info h3 { margin: 0 0 16px; font-size: 20px; font-weight: 500; overflow-wrap: anywhere; }
   #info dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; margin: 0 0 22px; font-size: 14px; }
   #info dt { color: var(--dim); }
@@ -356,10 +397,10 @@
 
   .toast {
     position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
-    z-index: 60; max-width: 92vw; padding: 12px 18px; border-radius: 10px;
+    z-index: 60; max-width: 92vw; padding: 12px 20px; border-radius: 999px;
     background: var(--paper); color: var(--ink); font-weight: 500; box-shadow: 0 10px 40px rgba(0,0,0,.5);
   }
-  .toast.bad { background: var(--red); color: #2A0C07; }
+  .toast.bad { background: var(--red); color: var(--on-red); }
 
   @media (max-width: 560px) {
     .wordmark { font-size: 36px; }
@@ -389,7 +430,6 @@
         <div class="gauge-pending" id="gaugePending"></div>
         <div class="gauge-fill" id="gaugeFill"></div>
         <div class="gauge-reserve" id="gaugeReserve"></div>
-        <div class="gauge-ticks"></div>
       </div>
       <p class="gauge-note" id="gaugeNote"></p>
     </div>
@@ -756,7 +796,7 @@ self.onmessage = async (e) => {
     running: false,
     passcode: readPasscode(),
     offline: false,        // true while the server can't be reached; the library is shown locked
-    offlineReason: "",     // "internet" (this device), "server" (the Pi) or "drive" (the Pi's USB stick)
+    offlineReason: "",     // "internet" (this device), "server" (the Pi) or "drive" (the Pi's SSD)
     driveMissing: false,
     offlineSince: 0,
     fromCache: false,      // library shown is the copy remembered by this browser
@@ -766,6 +806,7 @@ self.onmessage = async (e) => {
     metaKey: null,         // the stored copy of the folder list that's been loaded
     view: "",              // the folder being looked at ("" is the top)
     q: "",                 // what's typed in the search box
+    show: "",              // the show whose page is open ("" is the home screen)
   };
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -902,9 +943,8 @@ self.onmessage = async (e) => {
   const GATEWAY = [502, 503, 504, 520, 521, 522, 523, 524, 530];
   const API_TIMEOUT = 8000;      // ms to wait for the server before treating it as offline
   const STALL_TIMEOUT = 45000;   // ms an upload chunk may go without moving before it counts as dropped
-  const SAVE_TIMEOUT = 240000;   // ms the server may take to save a chunk once it has all of it (slow USB sticks)
-  // How many chunks go up at once. The Pi writes to a USB stick, which copes far better with one
-  // or two steady streams than with several at once.
+  const SAVE_TIMEOUT = 240000;   // ms the server may take to save a chunk once it has all of it (slow drives)
+  // How many chunks go up at once. Two steady streams at a time suit the Pi's SSD.
   const partsAtOnce = () => (backend.id === "pi" ? 2 : PARALLEL_PARTS);
   function offlineError() {
     const err = new Error("MoCloud is offline");
@@ -946,7 +986,7 @@ self.onmessage = async (e) => {
       if (!res || GATEWAY.includes(res.status)) {
         // One quick retry in case it was a blip, then switch the page to offline mode.
         // No answer in time, but the server still answers its quick health check: it's just busy
-        // (usually a slow USB stick saving). Wait and try again instead of calling it offline.
+        // (usually the drive busy saving). Wait and try again instead of calling it offline.
         if (timedOut && ++slow <= 3 && (await ping())) { await sleep(3000); continue; }
         // A request that hung for the full time limit isn't retried: the server is clearly not there.
         if (!timedOut && ++dropped < 2) { await sleep(1000); continue; }
@@ -1215,6 +1255,7 @@ self.onmessage = async (e) => {
 
   function setView(id) {
     state.view = id && state.meta.folders[id] ? id : "";
+    state.show = "";
     try { localStorage.setItem("mocloud-view-" + backend.id, state.view); } catch {}
     renderLibrary();
     $("libTop").scrollIntoView({ block: "nearest" });
@@ -1398,19 +1439,25 @@ self.onmessage = async (e) => {
     const box = $("crumbs");
     if (state.q) { box.textContent = `Search: “${state.q}”`; return; }
     const path = folderPath(state.view);
+    const deeper = path.length || state.show; // anything after "Your files" to click back from
     const parts = [];
-    const home = document.createElement(path.length ? "button" : "span");
+    const home = document.createElement(deeper ? "button" : "span");
     home.textContent = "Your files";
-    if (path.length) { home.className = "crumb"; home.addEventListener("click", () => setView("")); }
+    if (deeper) { home.className = "crumb"; home.addEventListener("click", () => setView("")); }
     parts.push(home);
     path.forEach((id, i) => {
       const sep = document.createElement("span"); sep.className = "crumb-sep"; sep.textContent = "›";
-      const last = i === path.length - 1;
+      const last = i === path.length - 1 && !state.show;
       const c = document.createElement(last ? "span" : "button");
       c.textContent = state.meta.folders[id].name;
       if (!last) { c.className = "crumb"; c.addEventListener("click", () => setView(id)); }
       parts.push(sep, c);
     });
+    if (state.show) {
+      const sep = document.createElement("span"); sep.className = "crumb-sep"; sep.textContent = "›";
+      const c = document.createElement("span"); c.textContent = state.showName || "Show";
+      parts.push(sep, c);
+    }
     box.replaceChildren(...parts);
   }
   $("newFolder").addEventListener("click", () => createFolder(state.view));
@@ -1930,20 +1977,143 @@ self.onmessage = async (e) => {
     return d;
   }
 
+  // ----- Home screen boxes -----
+  const DAY_MS = 86400000;
+  let sortBy = (() => { try { return localStorage.getItem("mocloud-sort") || "recent"; } catch { return "recent"; } })();
+  const showFiles = (show) => show.seasons.flatMap((s) => s.episodes.map((e) => e.file));
+  const newest = (files) => Math.max(...files.map((f) => +new Date(f.uploaded) || 0));
+
+  function openShow(show) {
+    state.show = show.id; state.showName = show.name;
+    history.pushState({ mocloudShow: show.id }, ""); // the back button returns to the home screen
+    renderLibrary();
+    $("libTop").scrollIntoView({ block: "start" });
+  }
+  window.addEventListener("popstate", () => { if (state.show) { state.show = ""; renderLibrary(); } });
+
+  function showCard(show) {
+    const files = showFiles(show);
+    const el = document.createElement("article"); el.className = "tile show-card";
+    const box = document.createElement("button"); box.className = "thumb";
+    box.setAttribute("aria-label", `Open ${show.name}`);
+    const img = document.createElement("img"); img.alt = ""; img.hidden = true;
+    box.append(img);
+    const paint = (th) => { img.src = th.url; img.hidden = false; };
+    const cached = files.find((f) => thumbs.has(f.key));
+    if (cached) paint(thumbs.get(cached.key));
+    else {
+      // The first episode's picture, or the next one's if that video can't give one.
+      const attempt = (i) => { if (i < Math.min(files.length, 4) && !state.offline) getThumb(files[i].key).then(paint, () => attempt(i + 1)); };
+      box._wantThumb = () => attempt(0);
+      if (thumbWatcher) thumbWatcher.observe(box); else box._wantThumb();
+    }
+    const tag = document.createElement("span"); tag.className = "box-tag";
+    tag.textContent = `${show.count} ${show.count === 1 ? "episode" : "episodes"}`;
+    box.append(tag);
+    if (Date.now() - newest(files) < 7 * DAY_MS) {
+      const nw = document.createElement("span"); nw.className = "new-tag"; nw.textContent = "New"; box.append(nw);
+    }
+    box.addEventListener("click", () => openShow(show));
+    const name = document.createElement("h3"); name.textContent = show.name;
+    const meta = document.createElement("p"); meta.className = "meta";
+    const seasons = show.seasons.map((s) => s.number);
+    const seen = files.filter((f) => (getProg(f.key) || {}).done).length;
+    meta.textContent = [seasons.length > 1 ? `Seasons ${seasons[0]}–${seasons[seasons.length - 1]}` : `Season ${seasons[0]}`,
+      seen ? `${seen} of ${files.length} watched` : ""].filter(Boolean).join(" · ");
+    el.append(box, name, meta);
+    return el;
+  }
+
+  // Shows, movies and other videos as one set of boxes, newest upload first (or A to Z).
+  function boxesBlock(shows, other) {
+    const items = [
+      ...shows.map((s) => ({ name: s.name, at: newest(showFiles(s)), el: () => showCard(s) })),
+      ...other.map((f) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f) })),
+    ];
+    if (!items.length) return null;
+    items.sort(sortBy === "az" ? (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }) : (a, b) => b.at - a.at);
+    const wrap = document.createElement("section");
+    const head = document.createElement("div"); head.className = "row-head";
+    const h = document.createElement("h3"); h.className = "row-title"; h.textContent = sortBy === "az" ? "A to Z" : "Recently added";
+    const sel = document.createElement("select"); sel.className = "sort-sel"; sel.setAttribute("aria-label", "Sort");
+    for (const [v, label] of [["recent", "Newest first"], ["az", "A to Z"]]) {
+      const o = document.createElement("option"); o.value = v; o.textContent = label; o.selected = v === sortBy; sel.append(o);
+    }
+    sel.addEventListener("change", () => { sortBy = sel.value; try { localStorage.setItem("mocloud-sort", sortBy); } catch {} renderLibrary(); });
+    head.append(h, sel);
+    const g = gridOf(items.map((i) => i.el())); g.classList.add("box-grid");
+    wrap.append(head, g);
+    return wrap;
+  }
+
+  // A show's own page: season tabs, then that season's episodes.
+  const pickedSeason = new Map();
+  function showPage(show) {
+    const wrap = document.createElement("section"); wrap.className = "show-page";
+    const head = document.createElement("div"); head.className = "show-head";
+    const h = document.createElement("h2"); h.textContent = show.name;
+    const meta = document.createElement("p"); meta.className = "meta";
+    const files = showFiles(show);
+    const seen = files.filter((f) => (getProg(f.key) || {}).done).length;
+    meta.textContent = [`${show.count} ${show.count === 1 ? "episode" : "episodes"}`,
+      show.seasons.length > 1 ? `${show.seasons.length} seasons` : "", seen ? `${seen} watched` : ""].filter(Boolean).join(" · ");
+    head.append(h, meta);
+    const src = tvLine(show);
+    if (src) head.append(src);
+    wrap.append(head);
+    // Opens on the season you were last watching, otherwise the first.
+    let season = pickedSeason.get(show.id);
+    if (!show.seasons.some((s) => s.number === season)) {
+      let latest = null;
+      for (const s of show.seasons) for (const e of s.episodes) {
+        const p = getProg(e.file.key);
+        if (p && (!latest || p.at > latest.at)) latest = { at: p.at, season: s.number };
+      }
+      season = latest ? latest.season : show.seasons[0].number;
+    }
+    if (show.seasons.length > 1) {
+      const tabs = document.createElement("div"); tabs.className = "season-tabs"; tabs.setAttribute("role", "group"); tabs.setAttribute("aria-label", "Seasons");
+      for (const s of show.seasons) {
+        const b = document.createElement("button"); b.className = "chip"; b.textContent = `Season ${s.number}`;
+        b.setAttribute("aria-pressed", String(s.number === season));
+        b.addEventListener("click", () => { pickedSeason.set(show.id, s.number); renderLibrary(); });
+        tabs.append(b);
+      }
+      wrap.append(tabs);
+    } else {
+      const sh = document.createElement("h3"); sh.className = "season"; sh.textContent = `Season ${season}`; wrap.append(sh);
+    }
+    const eps = show.seasons.find((s) => s.number === season).episodes;
+    wrap.append(gridOf(eps.map((ep) => {
+      const name = ep.name || (tvEpisode(ep.file) || {}).name || "";
+      return tile(ep.file, `Episode ${ep.episode}${name ? ": " + name : ""}`);
+    })));
+    return wrap;
+  }
+
   function renderLibrary() {
     const grid = $("grid"), empty = $("empty");
     if (state.view && !state.meta.folders[state.view]) state.view = "";
     const view = state.view;
     const found = state.q ? searchMatches(state.q) : null; // searching looks through every folder
-    renderCrumbs();
     const here = found ? found.files : state.files.filter((f) => folderOf(f) === view); // what's in the folder being looked at
     const parts = [];
-    if (!found && !view) { const row = continueRow(); if (row) parts.push(row); }
-    const subfolders = found ? found.folders : childFolders(view);
-    if (subfolders.length) { const g = gridOf(subfolders.map(folderCard)); g.classList.add("folder-grid"); parts.push(g); }
     const { shows, other } = groupFiles(here);
     for (const show of shows) tvWant(show.id, show.name);
-    if (!shows.length) {
+    const openedShow = !found && state.show ? shows.find((s) => s.id === state.show) : null;
+    if (!found && state.show && !openedShow) state.show = ""; // its episodes were moved or deleted
+    renderCrumbs();
+    const subfolders = openedShow ? [] : found ? found.folders : childFolders(view);
+    if (openedShow) parts.push(showPage(openedShow));
+    else if (!found) {
+      if (!view) { const row = continueRow(); if (row) parts.push(row); }
+      if (subfolders.length) { const g = gridOf(subfolders.map(folderCard)); g.classList.add("folder-grid"); parts.push(g); }
+      const boxes = boxesBlock(shows, other);
+      if (boxes) parts.push(boxes);
+    } else if (subfolders.length) { const g = gridOf(subfolders.map(folderCard)); g.classList.add("folder-grid"); parts.push(g); }
+    if (!found) {
+      // home screen and show pages are done above
+    } else if (!shows.length) {
       if (other.length) parts.push(gridOf(other.map((f) => tile(f)))); // nothing to group: plain grid
     } else {
       parts.push(...shows.map((show) => section("show:" + show.id, show.name, show.count, [tvLine(show), ...
@@ -1958,8 +2128,8 @@ self.onmessage = async (e) => {
     }
     grid.replaceChildren(...parts);
     requestAnimationFrame(fitDescs);
-    const n = found ? here.length : view ? countIn(view) : state.files.length;
-    $("count").textContent = found ? `${n} found` : n ? `${n} ${n === 1 ? "file" : "files"}` : "";
+    const n = found ? here.length : openedShow ? openedShow.count : view ? countIn(view) : state.files.length;
+    $("count").textContent = found ? `${n} found` : openedShow ? "" : n ? `${n} ${n === 1 ? "file" : "files"}` : "";
     $("newFolder").disabled = state.offline;
     $("moveBtn").disabled = state.offline || (!state.files.length && !Object.keys(state.meta.folders).length);
     const nothing = !here.length && !subfolders.length;
@@ -2018,7 +2188,7 @@ self.onmessage = async (e) => {
   }
 
   // Asks the server how it's doing. Resolves with its report when it's ready to use, or null if
-  // there's no answer or its USB stick is missing (state.driveMissing says which).
+  // there's no answer or its SSD is missing (state.driveMissing says which).
   async function ping() {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 5000); // the Pi answers this instantly when it's up
@@ -2036,7 +2206,7 @@ self.onmessage = async (e) => {
     } catch { return null; } finally { clearTimeout(timer); }
   }
 
-  // Works out why MoCloud can't be used: the Pi's USB stick, the Pi itself, or this device's internet.
+  // Works out why MoCloud can't be used: the Pi's SSD, the Pi itself, or this device's internet.
   async function diagnose() {
     if (state.driveMissing) return "drive";
     return (await internetWorks()) ? "server" : "internet";
@@ -2156,9 +2326,9 @@ self.onmessage = async (e) => {
         title = "You're offline";
         lines.push(`This device has no internet connection, so MoCloud can't be reached. Your files are safe on ${backend.id === "cloud" ? "Cloudflare" : "the Pi"}.`);
       } else if (state.offlineReason === "drive") {
-        title = "MoCloud's USB stick is disconnected";
-        lines.push("The Pi is on, but it can't find the USB stick that holds your files. Plug it back into one of the Pi's blue USB ports.");
-        lines.push("Your files are safe on the stick. Nothing has been deleted, they're just locked. This page unlocks on its own within about 30 seconds of the stick going back in.");
+        title = "MoCloud's SSD is disconnected";
+        lines.push("The Pi is on, but it can't find the SSD that holds your files. Plug it back into one of the Pi's blue USB ports.");
+        lines.push("Your files are safe on the SSD. Nothing has been deleted, they're just locked. This page unlocks on its own within about 30 seconds of the SSD going back in.");
       } else if (state.offlineReason === "server" && backend.id === "cloud") {
         title = "Can't reach your Cloudflare storage";
         lines.push(`Cloudflare stopped answering at ${since}. This is usually brief. Your files there are safe.`);
@@ -2467,7 +2637,7 @@ self.onmessage = async (e) => {
           await waitForServer(q);
           continue;
         }
-        // The server is up but this chunk stalled (usually a slow USB stick catching up): give it
+        // The server is up but this chunk stalled (usually the drive catching up): give it
         // more tries and more breathing room before calling the upload failed.
         const tries = e.message === "Connection stalled." ? 8 : 4;
         if (e.code === "LIMIT" || e.code === "UPLOAD_GONE" || ++attempt >= tries) throw e;
@@ -2622,7 +2792,7 @@ self.onmessage = async (e) => {
         try {
           await api("/api/upload/finish", {
             method: "POST",
-            timeout: SAVE_TIMEOUT, // the Pi makes sure the whole file is safely on the stick first
+            timeout: SAVE_TIMEOUT, // the Pi makes sure the whole file is safely on the SSD first
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts }),
           });
