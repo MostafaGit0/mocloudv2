@@ -157,6 +157,7 @@
   .queue .q-bar i { display: block; height: 100%; width: 0%; background: var(--accent); }
   .queue li.failed .q-stat { color: var(--red); }
   .queue li.paused .q-stat { color: var(--accent); }
+  .queue li.fixing .q-stat { color: var(--accent-2); }
   .link { background: none; border: 0; padding: 2px 0; color: var(--dim); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
   .link:hover { color: var(--paper); }
   .link.danger:hover, .link.armed { color: var(--red); }
@@ -986,7 +987,7 @@ self.onmessage = async (e) => {
   const STALL_TIMEOUT = 45000;   // ms an upload chunk may go without moving before it counts as dropped
   const SAVE_TIMEOUT = 240000;   // ms the server may take to save a chunk once it has all of it (slow drives)
   // How many chunks go up at once. Two steady streams at a time suit the Pi's SSD.
-  const partsAtOnce = () => (backend.id === "pi" ? 2 : PARALLEL_PARTS);
+  const partsAtOnce = () => PARALLEL_PARTS;
   function offlineError() {
     const err = new Error("MoCloud is offline");
     err.code = "OFFLINE";
@@ -2348,11 +2349,21 @@ self.onmessage = async (e) => {
     }
   }
 
+  // While the Pi is fixing videos, check back every few seconds so they appear when done.
+  let fixPoll = null;
+  function watchFixes() {
+    clearTimeout(fixPoll);
+    if (state.processing && state.processing.length && !state.offline) {
+      fixPoll = setTimeout(() => refresh().catch(() => {}), 4000);
+    }
+  }
+
   async function refresh() {
     const data = await api("/api/files");
     const all = data.files || [];
     Object.assign(state, {
       files: all.filter((f) => !isSys(f)), sysFiles: all.filter(isSys), used: data.used, limit: data.limit,
+      processing: (data.processing || []).filter((p) => !isSys(p)),
       freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
     });
     await loadMeta();
@@ -2362,6 +2373,8 @@ self.onmessage = async (e) => {
     pruneThumbs();
     renderGauge();
     renderLibrary();
+    renderQueue();
+    watchFixes();
   }
 
   // ---------- When the server can't be reached ----------
@@ -2407,6 +2420,7 @@ self.onmessage = async (e) => {
       const data = await res.json();
       state.driveMissing = !!(data && data.driveMissing);
       if (data && data.route !== state.route) { state.route = data.route; renderSource(); }
+      state.piFixes = !!(data && data.fixesAudio); // the Pi fixes sound itself, so uploads go up untouched
       return data && data.ok && !data.driveMissing ? data : null;
     } catch { return null; } finally { clearTimeout(timer); }
   }
@@ -2737,6 +2751,17 @@ self.onmessage = async (e) => {
       bar.append(fill);
       li.append(name, stat, btn, bar);
       return li;
+    }), ...(backend.id === "pi" ? state.processing || [] : []).map((p) => {
+      const li = document.createElement("li"); li.className = "fixing";
+      const name = document.createElement("span"); name.className = "q-name"; name.textContent = p.name;
+      const stat = document.createElement("span"); stat.className = "q-stat";
+      const pct = Math.floor((p.progress || 0) * 100);
+      stat.textContent = p.inPlace ? `Pi is fixing the sound, ${pct}%` : `Pi is fixing the sound, ${pct}%. Shows up when done`;
+      const bar = document.createElement("div"); bar.className = "q-bar";
+      const fill = document.createElement("i"); fill.style.width = pct + "%";
+      bar.append(fill);
+      li.append(name, stat, document.createElement("span"), bar);
+      return li;
     }));
     renderGauge();
   }
@@ -2999,7 +3024,7 @@ self.onmessage = async (e) => {
     if (state.offline) { q.status = "paused"; renderQueue(); return; }
     try {
       let parts = null;
-      if (CHECK_EXT.test(q.file.name)) {
+      if (CHECK_EXT.test(q.file.name) && !(backend.id === "pi" && state.piFixes)) { // the Pi does it better and faster
         q.status = "converting"; q.prep = 0; q.prepStage = "check"; renderQueue();
         const result = await convertAndUpload(q);
         if (q.cancelled) throw new Error("cancelled");
@@ -3011,26 +3036,29 @@ self.onmessage = async (e) => {
       q.status = "finishing"; renderQueue();
       for (;;) {
         try {
-          await api("/api/upload/finish", {
+          const done = await api("/api/upload/finish", {
             method: "POST",
             timeout: SAVE_TIMEOUT, // the Pi makes sure the whole file is safely on the SSD first
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts }),
           });
+          if (done && done.key) q.key = done.key; // the Pi may store a fixed MP4 under a new name
+          q.fixing = !!(done && done.processing);
           break;
         } catch (e) {
           // Every chunk is already safe on the server, so if it dropped, just wait and finish later.
           if (e.code === "OFFLINE") { await waitForServer(q); continue; }
           // The reply can get lost even though storage did finish. Check before calling it failed.
           if (e.code === "LIMIT") throw e;
-          const saved = await refresh().then(() => state.files.some((f) => f.key === q.key), () => false);
+          const id = String(q.key).split("-")[0]; // the Pi may have renamed it to .mp4 while fixing it
+          const saved = await refresh().then(() => [...state.files, ...(state.processing || [])].some((f) => f.key.split("-")[0] === id), () => false);
           if (!saved) throw e;
           q.uploadId = null;
           break;
         }
       }
       state.queue = state.queue.filter((x) => x !== q);
-      toast(`Uploaded ${prettyTitle(q.outName || q.file.name)}`);
+      toast(q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.` : `Uploaded ${prettyTitle(q.outName || q.file.name)}`);
       if (q.folder && state.meta.folders[q.folder]) changeMeta((m) => { m.place[q.key] = q.folder; }); // into the folder that was open
       await refresh();
       renderQueue();
