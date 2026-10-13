@@ -1074,8 +1074,10 @@ self.onmessage = async (e) => {
   }
 
   // ---------- Thumbnails ----------
-  // A still frame is grabbed from each video once, then kept in this browser, so the library
-  // shows pictures straight away on later visits instead of loading every video again.
+  // A still frame is grabbed from each video once, by whichever device manages it first (usually
+  // the one that uploaded it, straight from the file on that device), and saved in your storage
+  // as a small hidden picture. Every other device just loads that picture, so they show up
+  // instantly everywhere instead of each phone loading the video to make its own.
   const thumbs = new Map();       // file key -> { url, duration, videoWidth, videoHeight }
   const thumbJobs = new Map();    // file key -> capture in progress
   const THUMB_WIDTH = 480, THUMB_AT_ONCE = 2;
@@ -1117,7 +1119,7 @@ self.onmessage = async (e) => {
   }
 
   // Loads just enough of the video to grab one frame, a little way in so it isn't a black intro.
-  function grabFrame(key) {
+  function grabFrame(src) {
     return new Promise((resolve, reject) => {
       const v = document.createElement("video");
       v.crossOrigin = "anonymous"; v.muted = true; v.playsInline = true; v.preload = "metadata";
@@ -1147,17 +1149,65 @@ self.onmessage = async (e) => {
           stop(); resolve(result);
         } catch { fail(); }
       };
-      v.src = fileUrl(key);
+      v.src = src;
     });
+  }
+
+  // Shared pictures are named after the video they belong to, plus its length and size for Info.
+  const thumbHash = (key) => { let h = 5381; for (const c of String(key)) h = ((h * 33) ^ c.codePointAt(0)) >>> 0; return h.toString(16); };
+  const THUMB_RE = /^mocloud-thumb-([0-9a-f]+)(?:-(\d+(?:\.\d+)?)x(\d+)x(\d+))?\.jpg$/;
+  function sharedThumb(key) {
+    const h = thumbHash(key);
+    const f = state.sysFiles.find((x) => { const m = THUMB_RE.exec(x.name); return m && m[1] === h; });
+    if (!f) return null;
+    const m = THUMB_RE.exec(f.name);
+    return { url: fileUrl(f.key), duration: +m[2] || 0, videoWidth: +m[3] || 0, videoHeight: +m[4] || 0, shared: f.key };
+  }
+  const sharing = new Set();
+  async function shareThumb(key, t) {
+    if (state.offline || sharing.has(key) || sharedThumb(key) || !t || !t.url.startsWith("data:")) return;
+    sharing.add(key);
+    try {
+      const bytes = Uint8Array.from(atob(t.url.split(",")[1]), (c) => c.charCodeAt(0));
+      const dims = t.videoWidth ? `-${Math.round(t.duration || 0)}x${t.videoWidth}x${t.videoHeight}` : "";
+      await putSmallFile(`mocloud-thumb-${thumbHash(key)}${dims}.jpg`, bytes, "image/jpeg");
+    } catch {} finally { sharing.delete(key); } // not shared this time: another visit will try again
+  }
+  // Pictures this device already made for videos that have none in storage yet get shared in the
+  // background, one at a time, so older videos get thumbnails everywhere without opening each one.
+  let sharingAll = false;
+  async function shareKnownThumbs() {
+    if (sharingAll) return;
+    sharingAll = true;
+    try {
+      for (const f of state.files) {
+        const t = thumbs.get(f.key);
+        if (state.offline) break;
+        if (t && (t.src || "pi") === backend.id && !sharedThumb(f.key)) await shareThumb(f.key, t);
+      }
+    } finally { sharingAll = false; }
+  }
+  // When a video is deleted, its picture goes too.
+  function dropSharedThumb(key) {
+    const t = sharedThumb(key);
+    if (t) deleteSysFile(t.shared).catch(() => {});
   }
 
   // At most two videos are sampled at a time so the page and the connection stay free.
   function getThumb(key) {
-    if (thumbs.has(key)) return Promise.resolve(thumbs.get(key));
+    if (thumbs.has(key)) {
+      const t = thumbs.get(key);
+      if (!sharedThumb(key)) shareThumb(key, t); // made before sharing existed: share it now
+      return Promise.resolve(t);
+    }
+    const shared = sharedThumb(key);
+    if (shared) return Promise.resolve(shared);
     if (!thumbJobs.has(key)) {
       thumbJobs.set(key, new Promise((resolve, reject) => {
         const src = backend.id;
-        thumbWaiting.push(() => grabFrame(key).then((t) => { t.src = src; thumbs.set(key, t); thumbStore(key, t); resolve(t); }, reject));
+        thumbWaiting.push(() => grabFrame(fileUrl(key)).then((t) => {
+          t.src = src; thumbs.set(key, t); thumbStore(key, t); shareThumb(key, t); resolve(t);
+        }, reject));
         pumpThumbs();
       }));
       thumbJobs.get(key).catch(() => thumbJobs.delete(key)); // try again next time instead of giving up for good
@@ -1179,7 +1229,7 @@ self.onmessage = async (e) => {
   // It's kept in your storage right next to the videos (on the Pi or on Cloudflare), so folders are
   // the same on every device. It's hidden from the library.
   const META_NAME = "mocloud-folders.json";
-  const isSys = (f) => f.name === META_NAME || f.name === "mocloud-progress.json" || /^mocloud-subs-[0-9a-f]+\.vtt$/.test(f.name); // MoCloud's own files stay out of the library
+  const isSys = (f) => f.name === META_NAME || f.name === "mocloud-progress.json" || /^mocloud-subs-[0-9a-f]+\.vtt$/.test(f.name) || THUMB_RE.test(f.name); // MoCloud's own files stay out of the library
   const emptyMeta = () => ({ v: 1, folders: {}, place: {}, tvmaze: {} });
   const newestFirst = (a, b) => new Date(b.uploaded) - new Date(a.uploaded) || (a.key < b.key ? 1 : -1);
 
@@ -1971,6 +2021,7 @@ self.onmessage = async (e) => {
       del.disabled = true; del.textContent = "Deleting";
       try {
         await api(`/api/files/${encodeURIComponent(f.key)}`, { method: "DELETE" });
+        dropSharedThumb(f.key);
         const local = dl.items.get(dlId(backend.id, f.key));
         if (local) await removeDownload(local.id, true); // its saved copy goes too, so no space is left behind
         toast(local ? "Deleted from MoCloud and downloads" : "Deleted");
@@ -2371,6 +2422,7 @@ self.onmessage = async (e) => {
     saveLibrary();
     await thumbsReady;
     pruneThumbs();
+    shareKnownThumbs();
     renderGauge();
     renderLibrary();
     renderQueue();
@@ -3058,6 +3110,11 @@ self.onmessage = async (e) => {
         }
       }
       state.queue = state.queue.filter((x) => x !== q);
+      if (isVideo(q.file)) { // picture from the file on this device: instant, and shared with every device
+        const local = URL.createObjectURL(q.file), key = q.key, src = backend.id;
+        grabFrame(local).then((t) => { t.src = src; thumbs.set(key, t); thumbStore(key, t); return shareThumb(key, t); })
+          .catch(() => {}).finally(() => { URL.revokeObjectURL(local); if (!$("player").open) renderLibrary(); });
+      }
       toast(q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.` : `Uploaded ${prettyTitle(q.outName || q.file.name)}`);
       if (q.folder && state.meta.folders[q.folder]) changeMeta((m) => { m.place[q.key] = q.folder; }); // into the folder that was open
       await refresh();
