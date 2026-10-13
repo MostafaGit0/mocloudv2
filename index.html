@@ -2724,7 +2724,7 @@ self.onmessage = async (e) => {
         : q.file.size ? Math.floor((q.sent / q.file.size) * 100) : 0;
       stat.textContent = held ? "Paused until MoCloud is back" : {
         waiting: "Waiting",
-        converting: q.prepStage === "fix" ? `Converting and uploading, ${prepPct}%` : "Checking audio",
+        converting: q.prepStage === "fix" ? `Converting and uploading, ${prepPct}%${speed}` : "Checking audio",
         uploading: `${pct}% of ${fmtSize(q.file.size)}${speed}`,
         finishing: "Finishing",
         failed: q.error || "Upload failed",
@@ -2881,6 +2881,8 @@ self.onmessage = async (e) => {
       const original = q.file;
       const parts = [];
       const inFlight = new Set();
+      const partBytes = new Map(); // bytes sent per chunk, for the speed readout
+      q.sent = 0;
       let started = null, settled = false, lastPaint = 0, worker;
 
       const stop = () => { settled = true; q.stopConvert = null; if (worker) worker.terminate(); };
@@ -2938,7 +2940,11 @@ self.onmessage = async (e) => {
           } else if (m.type === "part") {
             const job = (async () => {
               await started;
-              parts.push(await sendPartRetry(q, m.n, new Blob([m.buffer]), () => {}));
+              parts.push(await sendPartRetry(q, m.n, new Blob([m.buffer]), (loaded) => {
+                partBytes.set(m.n, loaded);
+                let sum = 0; for (const v of partBytes.values()) sum += v;
+                q.sent = sum;
+              }));
               if (!settled) worker.postMessage({ type: "ack" });
             })();
             inFlight.add(job);
