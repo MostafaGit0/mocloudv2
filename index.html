@@ -60,6 +60,7 @@
   .source button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
   .source button:not([aria-pressed="true"]):hover { color: var(--paper); }
   .source-note { font-size: 13px; color: var(--dim); margin: -6px 0 0; }
+  .source-note.slow { color: #FFB340; }
 
   /* ---------- Storage gauge (the one loud element) ---------- */
   .gauge { flex: 1 1 340px; max-width: 520px; }
@@ -2405,6 +2406,7 @@ self.onmessage = async (e) => {
       if (!res.ok) return null;
       const data = await res.json();
       state.driveMissing = !!(data && data.driveMissing);
+      if (data && data.route !== state.route) { state.route = data.route; renderSource(); }
       return data && data.ok && !data.driveMissing ? data : null;
     } catch { return null; } finally { clearTimeout(timer); }
   }
@@ -2708,12 +2710,22 @@ self.onmessage = async (e) => {
       const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.file.name;
       const stat = document.createElement("span"); stat.className = "q-stat";
       const prepPct = Math.floor((q.prep || 0) * 100);
+      if (q.status === "uploading" || q.status === "converting") { // upload speed, smoothed over the last few seconds
+        const now = performance.now(), sent = q.sent || 0;
+        if (!q.rateAt || sent < q.rateFrom) { q.rateAt = now; q.rateFrom = sent; }
+        else if (now - q.rateAt >= 1000) {
+          const r = (sent - q.rateFrom) / ((now - q.rateAt) / 1000);
+          q.rate = q.rate ? q.rate * 0.6 + r * 0.4 : r;
+          q.rateAt = now; q.rateFrom = sent;
+        }
+      }
+      const speed = q.rate > 0 ? `, ${q.rate >= 1e6 ? (q.rate / 1e6).toFixed(q.rate >= 1e7 ? 0 : 1) + " MB/s" : Math.round(q.rate / 1e3) + " KB/s"}` : "";
       const pct = q.status === "converting" ? prepPct
         : q.file.size ? Math.floor((q.sent / q.file.size) * 100) : 0;
       stat.textContent = held ? "Paused until MoCloud is back" : {
         waiting: "Waiting",
         converting: q.prepStage === "fix" ? `Converting and uploading, ${prepPct}%` : "Checking audio",
-        uploading: `${pct}% of ${fmtSize(q.file.size)}`,
+        uploading: `${pct}% of ${fmtSize(q.file.size)}${speed}`,
         finishing: "Finishing",
         failed: q.error || "Upload failed",
       }[q.status];
@@ -3386,7 +3398,13 @@ self.onmessage = async (e) => {
     const group = document.querySelector(".source");
     group.hidden = !isUrl(BACKENDS.cloud.url) || !isUrl(BACKENDS.pi.url); // only one storage set up: nothing to switch
     group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.source === backend.id)));
-    $("sourceNote").textContent = backend.id === "cloud" ? "Showing your Cloudflare storage" : "";
+    const note = $("sourceNote");
+    note.classList.toggle("slow", backend.id === "pi" && state.route === "funnel");
+    note.textContent = backend.id === "cloud" ? "Showing your Cloudflare storage"
+      // Tailscale speed-limits its public link (Funnel). Devices with Tailscale on skip it and go straight to the Pi.
+      : state.route === "funnel" ? "Slow lane: uploads to the Pi are speed-limited on this device. Turn on Tailscale here for full speed."
+      : state.route === "direct" ? "Fast lane: straight to the Pi over Tailscale."
+      : "";
     document.title = backend.id === "cloud" ? "MoCloud (Cloudflare)" : "MoCloud";
   }
 
