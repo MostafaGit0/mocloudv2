@@ -230,10 +230,6 @@
     position: absolute; bottom: 10px; right: 10px; padding: 3px 10px; border-radius: 999px; pointer-events: none;
     background: rgba(var(--ink-rgb),.85); color: var(--paper); font-size: 12px; font-weight: 600;
   }
-  .new-tag {
-    position: absolute; top: 10px; left: 10px; padding: 3px 10px; border-radius: 999px; pointer-events: none;
-    background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600;
-  }
   .show-card .meta { margin-top: 2px; }
   /* A show's own page */
   .show-head h2 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
@@ -242,7 +238,7 @@
   @media (max-width: 560px) { /* phones: two boxes across, so less scrolling */
     .grid.box-grid, .continue .grid { grid-template-columns: 1fr 1fr; gap: 18px 12px; }
     .box-grid .tile h3, .continue .tile h3 { font-size: 14px; }
-    .box-grid .box-tag, .box-grid .new-tag { font-size: 11px; padding: 2px 8px; }
+    .box-grid .box-tag { font-size: 11px; padding: 2px 8px; }
     .box-grid .thumb .play, .continue .thumb .play { width: 32px; height: 32px; left: 8px; bottom: 8px; }
     .box-grid .acts, .continue .acts { flex-wrap: wrap; gap: 8px; }
     .box-grid .del { padding: 5px 12px; font-size: 13px; }
@@ -1080,7 +1076,7 @@ self.onmessage = async (e) => {
   // instantly everywhere instead of each phone loading the video to make its own.
   const thumbs = new Map();       // file key -> { url, duration, videoWidth, videoHeight }
   const thumbJobs = new Map();    // file key -> capture in progress
-  const THUMB_WIDTH = 480, THUMB_AT_ONCE = 2;
+  const THUMB_WIDTH = 1280, THUMB_AT_ONCE = 2; // sharp enough for tall poster boxes on phone screens
   let thumbDb = null, thumbsRunning = 0;
   const thumbWaiting = [];
 
@@ -1138,14 +1134,14 @@ self.onmessage = async (e) => {
         try {
           if (!v.videoWidth) return fail();
           const c = document.createElement("canvas");
-          c.width = THUMB_WIDTH; c.height = Math.round(THUMB_WIDTH * v.videoHeight / v.videoWidth);
+          c.width = Math.min(THUMB_WIDTH, v.videoWidth); c.height = Math.round(c.width * v.videoHeight / v.videoWidth);
           const ctx = c.getContext("2d");
           ctx.drawImage(v, 0, 0, c.width, c.height);
           const px = ctx.getImageData(0, 0, c.width, c.height).data;
           let light = 0;
           for (let i = 0; i < px.length; i += 400) light += px[i] + px[i + 1] + px[i + 2];
           if (light / (px.length / 400 * 3) < 12 && ++tries < spots.length) return seek();
-          const result = { url: c.toDataURL("image/jpeg", 0.72), duration: v.duration, videoWidth: v.videoWidth, videoHeight: v.videoHeight };
+          const result = { url: c.toDataURL("image/jpeg", 0.85), duration: v.duration, videoWidth: v.videoWidth, videoHeight: v.videoHeight };
           stop(); resolve(result);
         } catch { fail(); }
       };
@@ -1155,17 +1151,24 @@ self.onmessage = async (e) => {
 
   // Shared pictures are named after the video they belong to, plus its length and size for Info.
   const thumbHash = (key) => { let h = 5381; for (const c of String(key)) h = ((h * 33) ^ c.codePointAt(0)) >>> 0; return h.toString(16); };
-  const THUMB_RE = /^mocloud-thumb-([0-9a-f]+)(?:-(\d+(?:\.\d+)?)x(\d+)x(\d+))?\.jpg$/;
+  const THUMB_RE = /^mocloud-thumb-([0-9a-f]+)(?:-(\d+(?:\.\d+)?)x(\d+)x(\d+))?(-hq)?\.jpg$/;
+  // The Pi makes its own sharp picture for every video ("-hq"); those beat browser-made ones.
+  const piMakesThumbs = () => backend.id === "pi" && state.piThumbs;
   function sharedThumb(key) {
     const h = thumbHash(key);
-    const f = state.sysFiles.find((x) => { const m = THUMB_RE.exec(x.name); return m && m[1] === h; });
-    if (!f) return null;
-    const m = THUMB_RE.exec(f.name);
-    return { url: fileUrl(f.key), duration: +m[2] || 0, videoWidth: +m[3] || 0, videoHeight: +m[4] || 0, shared: f.key };
+    let best = null, bestM = null;
+    for (const x of state.sysFiles) {
+      const m = THUMB_RE.exec(x.name);
+      if (m && m[1] === h && (!best || (m[5] && !bestM[5]))) { best = x; bestM = m; }
+    }
+    if (!best) return null;
+    return { url: fileUrl(best.key), duration: +bestM[2] || 0, videoWidth: +bestM[3] || 0, videoHeight: +bestM[4] || 0, shared: best.key, hq: !!bestM[5] };
   }
+  // The picture to show: the shared one if there is one, otherwise one this device made.
+  const knownThumb = (key) => sharedThumb(key) || thumbs.get(key) || null;
   const sharing = new Set();
   async function shareThumb(key, t) {
-    if (state.offline || sharing.has(key) || sharedThumb(key) || !t || !t.url.startsWith("data:")) return;
+    if (state.offline || piMakesThumbs() || sharing.has(key) || sharedThumb(key) || !t || !t.url.startsWith("data:")) return;
     sharing.add(key);
     try {
       const bytes = Uint8Array.from(atob(t.url.split(",")[1]), (c) => c.charCodeAt(0));
@@ -1177,7 +1180,7 @@ self.onmessage = async (e) => {
   // background, one at a time, so older videos get thumbnails everywhere without opening each one.
   let sharingAll = false;
   async function shareKnownThumbs() {
-    if (sharingAll) return;
+    if (sharingAll || piMakesThumbs()) return;
     sharingAll = true;
     try {
       for (const f of state.files) {
@@ -1195,13 +1198,14 @@ self.onmessage = async (e) => {
 
   // At most two videos are sampled at a time so the page and the connection stay free.
   function getThumb(key) {
-    if (thumbs.has(key)) {
-      const t = thumbs.get(key);
-      if (!sharedThumb(key)) shareThumb(key, t); // made before sharing existed: share it now
-      return Promise.resolve(t);
-    }
     const shared = sharedThumb(key);
     if (shared) return Promise.resolve(shared);
+    if (thumbs.has(key)) {
+      const t = thumbs.get(key);
+      shareThumb(key, t); // made before sharing existed: share it now
+      return Promise.resolve(t);
+    }
+    if (piMakesThumbs()) return Promise.reject(new Error("the Pi is making it")); // shows on the next refresh
     if (!thumbJobs.has(key)) {
       thumbJobs.set(key, new Promise((resolve, reject) => {
         const src = backend.id;
@@ -1965,7 +1969,7 @@ self.onmessage = async (e) => {
       const p = document.createElement("span"); p.className = "play";
       thumb.append(img, p);
       const show = (t) => { img.src = t.url; img.hidden = false; };
-      if (thumbs.has(f.key)) show(thumbs.get(f.key));
+      if (knownThumb(f.key)) show(knownThumb(f.key));
       else {
         thumb._wantThumb = () => { if (!state.offline) getThumb(f.key).then(show, () => {}); }; // no picture: the plain tile stays
         if (thumbWatcher) thumbWatcher.observe(thumb); else thumb._wantThumb();
@@ -2030,7 +2034,7 @@ self.onmessage = async (e) => {
     });
     const info = document.createElement("button"); info.className = "link"; info.textContent = "Info";
     info.setAttribute("aria-label", `File information for ${titleOf(f)}`);
-    info.addEventListener("click", () => openInfo(f, thumbs.get(f.key)));
+    info.addEventListener("click", () => openInfo(f, knownThumb(f.key)));
     const left = document.createElement("div"); left.className = "acts-left";
     if (video) left.append(dlButton(f));
     left.append(info);
@@ -2077,7 +2081,6 @@ self.onmessage = async (e) => {
   }
 
   // ----- Home screen boxes -----
-  const DAY_MS = 86400000;
   let sortBy = (() => { try { return localStorage.getItem("mocloud-sort") || "recent"; } catch { return "recent"; } })();
   const showFiles = (show) => show.seasons.flatMap((s) => s.episodes.map((e) => e.file));
   const newest = (files) => Math.max(...files.map((f) => +new Date(f.uploaded) || 0));
@@ -2182,8 +2185,8 @@ self.onmessage = async (e) => {
     const frame = () => {
       label();
       const paint = (th) => { img.src = th.url; img.hidden = false; };
-      const cached = files.find((f) => thumbs.has(f.key));
-      if (cached) return paint(thumbs.get(cached.key));
+      const cached = files.find((f) => knownThumb(f.key));
+      if (cached) return paint(knownThumb(cached.key));
       // The first video's picture, or the next one's if that video can't give one.
       const attempt = (i) => { if (i < Math.min(files.length, 4) && !state.offline) getThumb(files[i].key).then(paint, () => attempt(i + 1)); };
       box._wantThumb = () => attempt(0);
@@ -2206,9 +2209,6 @@ self.onmessage = async (e) => {
     const tag = document.createElement("span"); tag.className = "box-tag";
     tag.textContent = `${show.count} ${show.count === 1 ? "episode" : "episodes"}`;
     box.append(tag);
-    if (Date.now() - newest(files) < 7 * DAY_MS) {
-      const nw = document.createElement("span"); nw.className = "new-tag"; nw.textContent = "New"; box.append(nw);
-    }
     box.addEventListener("click", () => openShow(show));
     const name = document.createElement("h3"); name.textContent = show.name; name.title = show.name;
     const meta = document.createElement("p"); meta.className = "meta";
@@ -2404,7 +2404,8 @@ self.onmessage = async (e) => {
   let fixPoll = null;
   function watchFixes() {
     clearTimeout(fixPoll);
-    if (state.processing && state.processing.length && !state.offline) {
+    const waitingPics = piMakesThumbs() && state.thumbsPending > 0; // the Pi is still making pictures
+    if (((state.processing && state.processing.length) || waitingPics) && !state.offline) {
       fixPoll = setTimeout(() => refresh().catch(() => {}), 4000);
     }
   }
@@ -2414,7 +2415,7 @@ self.onmessage = async (e) => {
     const all = data.files || [];
     Object.assign(state, {
       files: all.filter((f) => !isSys(f)), sysFiles: all.filter(isSys), used: data.used, limit: data.limit,
-      processing: (data.processing || []).filter((p) => !isSys(p)),
+      processing: (data.processing || []).filter((p) => !isSys(p)), thumbsPending: data.thumbsPending || 0,
       freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
     });
     await loadMeta();
@@ -2472,7 +2473,8 @@ self.onmessage = async (e) => {
       const data = await res.json();
       state.driveMissing = !!(data && data.driveMissing);
       if (data && data.route !== state.route) { state.route = data.route; renderSource(); }
-      state.piFixes = !!(data && data.fixesAudio); // the Pi fixes sound itself, so uploads go up untouched
+      state.piFixes = !!(data && data.fixesAudio);
+      state.piThumbs = !!(data && data.makesThumbs); // the Pi fixes sound itself, so uploads go up untouched
       return data && data.ok && !data.driveMissing ? data : null;
     } catch { return null; } finally { clearTimeout(timer); }
   }
@@ -2704,7 +2706,7 @@ self.onmessage = async (e) => {
     stage.replaceChildren();
     $("pTitle").textContent = titleOf(f); $("pTitle").title = f.name;
     $("pSource").textContent = "";
-    $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || thumbs.get(f.key));
+    $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || knownThumb(f.key));
     $("pCtrls").hidden = !isVideo(f);
     player.f = isVideo(f) ? f : null;
     $("pResume").hidden = true;
@@ -3110,7 +3112,7 @@ self.onmessage = async (e) => {
         }
       }
       state.queue = state.queue.filter((x) => x !== q);
-      if (isVideo(q.file)) { // picture from the file on this device: instant, and shared with every device
+      if (isVideo(q.file) && !piMakesThumbs()) { // picture from the file on this device, shared with every device
         const local = URL.createObjectURL(q.file), key = q.key, src = backend.id;
         grabFrame(local).then((t) => { t.src = src; thumbs.set(key, t); thumbStore(key, t); return shareThumb(key, t); })
           .catch(() => {}).finally(() => { URL.revokeObjectURL(local); if (!$("player").open) renderLibrary(); });
