@@ -402,6 +402,14 @@
   .p-body:-webkit-full-screen .p-stage { flex: 1; min-height: 0; }
   .p-body:fullscreen .p-stage video { width: 100%; height: 100%; max-height: none; aspect-ratio: auto; }
   .p-body:-webkit-full-screen .p-stage video { width: 100%; height: 100%; max-height: none; aspect-ratio: auto; }
+  /* Square: old 4:3 shows un-stretched, with black bars on the sides of a widescreen frame */
+  .p-stage[data-fit="square"] { aspect-ratio: 16 / 9; max-height: calc(100dvh - 170px); }
+  .p-stage[data-fit="square"] video { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: auto; height: 100%; max-width: 100%; max-height: none; aspect-ratio: 4 / 3; object-fit: fill; }
+  .p-body:fullscreen .p-stage[data-fit="square"] { aspect-ratio: auto; max-height: none; }
+  .p-body:-webkit-full-screen .p-stage[data-fit="square"] { aspect-ratio: auto; max-height: none; }
+  .p-body:fullscreen .p-stage[data-fit="square"] video { width: auto; height: 100%; aspect-ratio: 4 / 3; }
+  .p-body:-webkit-full-screen .p-stage[data-fit="square"] video { width: auto; height: 100%; aspect-ratio: 4 / 3; }
+  .p-stage video::cue { background: rgba(0,0,0,.72); color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
   .p-stage[data-fit="fill"] video:fullscreen { object-fit: cover; }
   .p-stage[data-fit="stretch"] video:fullscreen { object-fit: fill; }
   .p-links { display: flex; align-items: center; gap: 20px; }
@@ -431,6 +439,7 @@
   #info dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; margin: 0 0 22px; font-size: 14px; }
   #info dt { color: var(--dim); }
   #info dd { margin: 0; overflow-wrap: anywhere; }
+  #info .info-acts { display: flex; align-items: center; gap: 20px; }
   .acts-left { display: flex; align-items: center; gap: 16px; }
 
   .toast {
@@ -514,10 +523,12 @@
           <option value="default">Default</option>
           <option value="fill">Fill screen</option>
           <option value="stretch">Stretch</option>
+          <option value="square">Square (4:3)</option>
           <option value="zoom">Zoom</option>
         </select>
       </label>
       <input type="range" id="zoomRange" min="100" max="200" step="5" value="125" aria-label="Zoom amount" hidden>
+      <button type="button" class="chip" id="ccBtn" aria-pressed="false" hidden>Subtitles</button>
       <button type="button" class="chip" id="fsBtn">Full screen</button>
     </div>
   </div>
@@ -554,7 +565,7 @@
 <dialog id="info">
   <h3 id="infoTitle"></h3>
   <dl id="infoList"></dl>
-  <button class="btn ghost" id="infoClose">Close</button>
+  <div class="info-acts"><button class="btn ghost" id="infoClose">Close</button><button class="link" id="infoFindSubs" hidden>Find subtitles</button></div>
 </dialog>
 
 <dialog id="downloads" aria-labelledby="dlTitle">
@@ -1564,7 +1575,7 @@ self.onmessage = async (e) => {
   const writeJson = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
   // Screen size, remembered per show (or per video when it isn't part of a show).
-  const FITS = { default: "Default", fill: "Fill screen", stretch: "Stretch", zoom: "Zoom" };
+  const FITS = { default: "Default", fill: "Fill screen", stretch: "Stretch", square: "Square (4:3)", zoom: "Zoom" };
   const canZoom = !!(window.CSS && CSS.supports && CSS.supports("object-view-box", "inset(10%)"));
   if (!canZoom) $("fitSel").querySelector('option[value="zoom"]').remove();
   const fitKey = (f) => { const sid = isVideo(f) ? showIdOfName(f.name) : ""; return sid ? "show:" + sid : f.key; };
@@ -1609,6 +1620,123 @@ self.onmessage = async (e) => {
   document.addEventListener("fullscreenchange", onFs);
   document.addEventListener("webkitfullscreenchange", onFs);
 
+
+  // ---------- Subtitles ----------
+  // The Pi finds English subtitles for new uploads (from inside the file, or OpenSubtitles) and
+  // keeps them next to each video as a small file. The Subtitles button turns them on and off,
+  // remembered on this device. The video's own captions menu works too.
+  const SUBS_RE = /^mocloud-subs-([0-9a-f]+)\.vtt$/;
+  const SUBS_BUSY = ["queued", "searching", "downloading", "adding", "waiting"];
+  const subsFile = (key) => {
+    const h = thumbHash(key);
+    return state.sysFiles.find((x) => { const m = SUBS_RE.exec(x.name); return m && m[1] === h; }) || null;
+  };
+  const subsJob = (key) => (state.subs || []).find((s) => s.key === key) || null;
+  const subsOn = () => { try { return localStorage.getItem("mocloud-subs-on") === "1"; } catch { return false; } };
+  const setSubsOn = (on) => { try { localStorage.setItem("mocloud-subs-on", on ? "1" : "0"); } catch {} };
+  const fmtClock = (ms) => {
+    if (!ms) return "the daily reset";
+    const d = new Date(ms), today = new Date().toDateString() === d.toDateString();
+    return d.toLocaleString(undefined, today ? { hour: "numeric", minute: "2-digit" } : { weekday: "short", hour: "numeric", minute: "2-digit" });
+  };
+  function paintSubs(v) {
+    const on = subsOn();
+    $("ccBtn").setAttribute("aria-pressed", String(on));
+    if (v && v._subsTrack) v._subsTrack.mode = on ? "showing" : "disabled";
+  }
+  async function attachSubs(f, v) {
+    $("ccBtn").hidden = true;
+    const sf = subsFile(f.key);
+    if (!sf) return;
+    try {
+      const res = await fetch(fileUrl(sf.key), { cache: "no-cache" });
+      if (!res.ok || !v.isConnected) return;
+      const url = URL.createObjectURL(new Blob([await res.text()], { type: "text/vtt" }));
+      if (!v.isConnected) { URL.revokeObjectURL(url); return; }
+      const track = document.createElement("track");
+      Object.assign(track, { kind: "subtitles", label: "English", srclang: "en", src: url });
+      v.append(track);
+      v._subsUrl = url;
+      v._subsTrack = track.track;
+      $("ccBtn").hidden = false;
+      paintSubs(v);
+      v.textTracks.addEventListener("change", () => { // picked in the video's own captions menu
+        const showing = track.track.mode === "showing";
+        if (showing !== subsOn()) { setSubsOn(showing); $("ccBtn").setAttribute("aria-pressed", String(showing)); }
+      });
+    } catch {}
+  }
+  $("ccBtn").addEventListener("click", () => { setSubsOn(!subsOn()); paintSubs($("pStage").querySelector("video")); });
+
+  // Asks the Pi to look (again) for one video's subtitles.
+  async function findSubs(f) {
+    try {
+      await api("/api/subs/find", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: f.key }) });
+      toast(`Looking for subtitles for ${titleOf(f)}`);
+      await refresh();
+    } catch (e) { toast(e.message || "Couldn't ask the Pi for subtitles.", true); }
+  }
+
+  // Tells you when subtitles are ready (or couldn't be found), once per result on this device,
+  // even if the page was closed while the Pi worked. Also warns when the day's downloads run low.
+  function noticeSubs() {
+    if (backend.id !== "pi") return;
+    const seenKey = "mocloud-subs-seen";
+    let seen = 0;
+    try { seen = +localStorage.getItem(seenKey) || 0; } catch {}
+    if (!seen) { seen = Date.now(); try { localStorage.setItem(seenKey, String(seen)); } catch {} } // first visit: nothing old
+    const fresh = (state.subs || []).filter((x) => !SUBS_BUSY.includes(x.state) && x.at > seen);
+    if (fresh.length) {
+      try { localStorage.setItem(seenKey, String(Math.max(...fresh.map((x) => x.at)))); } catch {}
+      const label = (x) => titleOf(state.files.find((f) => f.key === x.key) || { key: x.key, name: x.name, type: "video/mp4" });
+      const found = fresh.filter((x) => x.state === "found"), none = fresh.filter((x) => x.state === "none"),
+        failed = fresh.filter((x) => x.state === "failed");
+      const parts = [];
+      if (found.length) parts.push(found.length === 1 ? `Subtitles ready for ${label(found[0])}` : `Subtitles ready for ${found.length} videos`);
+      if (none.length) parts.push(none.length === 1 ? `Couldn't find subtitles for ${label(none[0])}` : `Couldn't find subtitles for ${none.length} videos`);
+      if (failed.length) parts.push(failed.length === 1 ? (failed[0].msg || `Subtitles didn't work for ${label(failed[0])}`).replace(/\.$/, "") : `Subtitles didn't work for ${failed.length} videos`);
+      toast(parts.join(". ") + ".", !found.length);
+    }
+    const q = state.subsQuota;
+    if (q && (q.warn || q.full)) {
+      const tag = `${q.full ? "full" : "warn"}:${q.resetAt || ""}`;
+      let last = "";
+      try { last = localStorage.getItem("mocloud-subs-warned") || ""; } catch {}
+      if (last !== tag) {
+        try { localStorage.setItem("mocloud-subs-warned", tag); } catch {}
+        const msg = q.full
+          ? `Daily subtitle limit reached (${q.limit} of ${q.limit}). The rest wait until ${fmtClock(q.resetAt)}.`
+          : `Heads up: ${q.used} of today's ${q.limit} subtitle downloads used. ${q.remaining} left until ${fmtClock(q.resetAt)}.`;
+        setTimeout(() => toast(msg, true), fresh.length ? 5000 : 0);
+      }
+    }
+  }
+
+  // Rows under the uploads while the Pi works on subtitles.
+  function subsRows() {
+    if (backend.id !== "pi") return [];
+    const busy = (state.subs || []).filter((x) => SUBS_BUSY.includes(x.state));
+    const row = (nameText, statText) => {
+      const li = document.createElement("li"); li.className = "fixing";
+      const name = document.createElement("span"); name.className = "q-name"; name.textContent = nameText;
+      const stat = document.createElement("span"); stat.className = "q-stat"; stat.textContent = statText;
+      li.append(name, stat, document.createElement("span"));
+      return li;
+    };
+    const label = (x) => titleOf(state.files.find((f) => f.key === x.key) || { key: x.key, name: x.name, type: "video/mp4" });
+    const out = busy.filter((x) => ["searching", "downloading", "adding"].includes(x.state)).map((x) => row(label(x), {
+      searching: "Looking for subtitles",
+      downloading: "Downloading subtitles",
+      adding: x.msg ? "Subtitles found, adding them once nobody's watching" : "Adding subtitles",
+    }[x.state]));
+    const queued = busy.filter((x) => x.state === "queued"), waiting = busy.filter((x) => x.state === "waiting");
+    if (queued.length) out.push(row(queued.length === 1 ? label(queued[0]) : `${queued.length} videos`, "In line for subtitles"));
+    if (waiting.length) {
+      const at = fmtClock(state.subsQuota && state.subsQuota.resetAt);
+      out.push(row(waiting.length === 1 ? label(waiting[0]) : `${waiting.length} videos`, `Daily subtitle limit reached. Picks back up at ${at}`));
+    }
+    return out;
+  }
 
   // ---------- Pick up where you left off ----------
   // Where you stopped in each video is kept on this device straight away and also saved in your
@@ -2405,8 +2533,11 @@ self.onmessage = async (e) => {
   function watchFixes() {
     clearTimeout(fixPoll);
     const waitingPics = piMakesThumbs() && state.thumbsPending > 0; // the Pi is still making pictures
+    const subsBusy = (state.subs || []).some((x) => SUBS_BUSY.includes(x.state) && x.state !== "waiting");
     if (((state.processing && state.processing.length) || waitingPics) && !state.offline) {
       fixPoll = setTimeout(() => refresh().catch(() => {}), 4000);
+    } else if (subsBusy && !state.offline) {
+      fixPoll = setTimeout(() => refresh().catch(() => {}), 6000);
     }
   }
 
@@ -2416,6 +2547,7 @@ self.onmessage = async (e) => {
     Object.assign(state, {
       files: all.filter((f) => !isSys(f)), sysFiles: all.filter(isSys), used: data.used, limit: data.limit,
       processing: (data.processing || []).filter((p) => !isSys(p)), thumbsPending: data.thumbsPending || 0,
+      subs: backend.id === "pi" ? data.subs || [] : [], subsQuota: backend.id === "pi" ? data.subsQuota || null : null,
       freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
     });
     await loadMeta();
@@ -2428,6 +2560,7 @@ self.onmessage = async (e) => {
     renderLibrary();
     renderQueue();
     watchFixes();
+    noticeSubs();
   }
 
   // ---------- When the server can't be reached ----------
@@ -2474,7 +2607,8 @@ self.onmessage = async (e) => {
       state.driveMissing = !!(data && data.driveMissing);
       if (data && data.route !== state.route) { state.route = data.route; renderSource(); }
       state.piFixes = !!(data && data.fixesAudio);
-      state.piThumbs = !!(data && data.makesThumbs); // the Pi fixes sound itself, so uploads go up untouched
+      state.piThumbs = !!(data && data.makesThumbs);
+      state.piSubs = !!(data && data.findsSubs); // the Pi fixes sound itself, so uploads go up untouched
       return data && data.ok && !data.driveMissing ? data : null;
     } catch { return null; } finally { clearTimeout(timer); }
   }
@@ -2687,6 +2821,7 @@ self.onmessage = async (e) => {
       ["Size", full.size ? fmtSize(full.size) : ""],
       ["Length", videoEl && isFinite(videoEl.duration) && videoEl.duration > 0 ? fmtLength(videoEl.duration) : ""],
       ["Resolution", videoEl && videoEl.videoWidth ? `${videoEl.videoWidth} × ${videoEl.videoHeight}` : ""],
+      ["Subtitles", video ? subsLine(full) : ""],
       ["Added", full.uploaded ? new Date(full.uploaded).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : ""],
     ].filter((row) => row[1]);
     $("infoTitle").textContent = titleOf(full);
@@ -2695,7 +2830,22 @@ self.onmessage = async (e) => {
       const dd = document.createElement("dd"); dd.textContent = value;
       return [dt, dd];
     }));
+    const job = video && backend.id === "pi" ? subsJob(full.key) : null;
+    const canAsk = video && backend.id === "pi" && state.piSubs && state.files.some((x) => x.key === full.key)
+      && !(job && SUBS_BUSY.includes(job.state));
+    $("infoFindSubs").hidden = !canAsk;
+    $("infoFindSubs").textContent = subsFile(full.key) ? "Look for subtitles again" : job ? "Try subtitles again" : "Find subtitles";
+    $("infoFindSubs").onclick = () => { $("info").close(); findSubs(full); };
     if (!$("info").open) $("info").showModal();
+  }
+  function subsLine(f) {
+    const job = backend.id === "pi" ? subsJob(f.key) : null;
+    if (job && job.state === "waiting") return "Found, waiting for the daily download limit to reset";
+    if (job && SUBS_BUSY.includes(job.state)) return "Looking for them now";
+    if (subsFile(f.key)) return job && job.source === "file" ? "English (came with the file)" : "English";
+    if (job && job.state === "none") return "None found online";
+    if (job && job.state === "failed") return job.msg || "Couldn't get them";
+    return backend.id === "pi" && state.piSubs ? "None" : "";
   }
   $("infoClose").addEventListener("click", () => $("info").close());
   $("info").addEventListener("click", (e) => { if (e.target === $("info")) $("info").close(); });
@@ -2708,6 +2858,7 @@ self.onmessage = async (e) => {
     $("pSource").textContent = "";
     $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || knownThumb(f.key));
     $("pCtrls").hidden = !isVideo(f);
+    $("ccBtn").hidden = true;
     player.f = isVideo(f) ? f : null;
     $("pResume").hidden = true;
     paintPlayerDesc();
@@ -2732,6 +2883,7 @@ self.onmessage = async (e) => {
       });
       stage.append(v);
       trackProgress(f, v);
+      attachSubs(f, v);
       localVideoUrl(f).then((url) => {
         if (!v.isConnected) { if (url) URL.revokeObjectURL(url); return; }
         if (url) { v._local = url; v.src = url; $("pSource").textContent = "Playing from this device"; }
@@ -2752,7 +2904,7 @@ self.onmessage = async (e) => {
     if (watched) { scheduleProgSync(800); setTimeout(renderLibrary, 0); } // progress bars and Continue watching
     if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
     player.f = null;
-    $("pStage").querySelectorAll("video").forEach((v) => { if (v._local) URL.revokeObjectURL(v._local); });
+    $("pStage").querySelectorAll("video").forEach((v) => { if (v._local) URL.revokeObjectURL(v._local); if (v._subsUrl) URL.revokeObjectURL(v._subsUrl); });
     $("pStage").replaceChildren(); // stops playback and the download behind it
     history.replaceState(null, "", location.pathname + location.search);
   });
@@ -2816,7 +2968,7 @@ self.onmessage = async (e) => {
       bar.append(fill);
       li.append(name, stat, document.createElement("span"), bar);
       return li;
-    }));
+    }), ...subsRows());
     renderGauge();
   }
 
@@ -3098,6 +3250,7 @@ self.onmessage = async (e) => {
           });
           if (done && done.key) q.key = done.key; // the Pi may store a fixed MP4 under a new name
           q.fixing = !!(done && done.processing);
+          q.subs = !!(done && done.subs);
           break;
         } catch (e) {
           // Every chunk is already safe on the server, so if it dropped, just wait and finish later.
@@ -3117,7 +3270,8 @@ self.onmessage = async (e) => {
         grabFrame(local).then((t) => { t.src = src; thumbs.set(key, t); thumbStore(key, t); return shareThumb(key, t); })
           .catch(() => {}).finally(() => { URL.revokeObjectURL(local); if (!$("player").open) renderLibrary(); });
       }
-      toast(q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.` : `Uploaded ${prettyTitle(q.outName || q.file.name)}`);
+      toast((q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.` : `Uploaded ${prettyTitle(q.outName || q.file.name)}.`)
+        + (q.subs ? " Looking for subtitles, you can already watch it." : ""));
       if (q.folder && state.meta.folders[q.folder]) changeMeta((m) => { m.place[q.key] = q.folder; }); // into the folder that was open
       await refresh();
       renderQueue();
