@@ -420,10 +420,9 @@
   .p-body:-webkit-full-screen .p-stage[data-fit="square"] { aspect-ratio: auto; max-height: none; }
   .p-body:fullscreen .p-stage[data-fit="square"] video { width: auto; height: 100%; aspect-ratio: 4 / 3; }
   .p-body:-webkit-full-screen .p-stage[data-fit="square"] video { width: auto; height: 100%; aspect-ratio: 4 / 3; }
-  .p-prompt { position: absolute; right: 16px; bottom: 64px; z-index: 3; display: flex; gap: 8px; align-items: center; }
+  .p-prompt { position: absolute; right: 18px; bottom: 68px; z-index: 3; }
   .p-prompt[hidden] { display: none; }
-  .p-prompt .btn { box-shadow: 0 6px 24px rgba(0,0,0,.45); }
-  .p-prompt .alt { background: rgba(var(--ink-rgb),.82); color: var(--paper); border: 1px solid rgba(255,255,255,.18); }
+  .p-prompt .btn { min-width: 210px; padding: 14px 28px; font-size: 18px; font-weight: 700; box-shadow: 0 6px 24px rgba(0,0,0,.45); }
   .p-stage video::cue { background: rgba(0,0,0,.72); color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
   .p-stage[data-fit="fill"] video:fullscreen { object-fit: cover; }
   .p-stage[data-fit="stretch"] video:fullscreen { object-fit: fill; }
@@ -1801,8 +1800,8 @@ self.onmessage = async (e) => {
 
   // ---------- Skip Intro and Next Episode ----------
   // The Pi finds each show's intro (the theme song that repeats across episodes). During it, a
-  // Skip Intro button shows. In the last 30 seconds, Next Episode shows, and when an episode ends
-  // the next one starts by itself after 10 seconds unless you cancel.
+  // Skip Intro button shows. In the last minute, Next Episode shows, and when an episode ends the
+  // next one starts by itself 5 seconds later.
   function nextEpisodeOf(f) {
     const sid = showIdOfName(f.name);
     if (!sid) return null;
@@ -1813,36 +1812,31 @@ self.onmessage = async (e) => {
   }
   function playerPrompts(f, v, stage) {
     const box = document.createElement("div"); box.className = "p-prompt"; box.hidden = true;
-    const alt = document.createElement("button"); alt.type = "button"; alt.className = "btn alt";
     const go = document.createElement("button"); go.type = "button"; go.className = "btn";
-    box.append(alt, go);
+    box.append(go);
     stage.append(box);
     // Looked up as it plays: the library may still be loading when a video opens from a link.
     const introOf = () => (backend.id === "pi" && state.intros ? state.intros[f.key] : null);
     const nextOf = () => (f._dl ? null : nextEpisodeOf(f));
-    let mode = "", dismissed = false, timer = null;
-    const set = (m, label, altLabel) => {
-      mode = m; box.hidden = !m;
-      go.textContent = label || ""; alt.textContent = altLabel || ""; alt.hidden = !altLabel;
-    };
+    let mode = "", timer = null;
+    const set = (m, label) => { mode = m; box.hidden = !m; go.textContent = label || ""; };
     const stop = () => { clearInterval(timer); timer = null; };
     const playNext = () => { stop(); const next = nextOf(); if ($("player").open && next) openPlayer(next); };
     go.addEventListener("click", () => {
       const intro = introOf();
       if (mode === "intro" && intro) { v.currentTime = intro[1]; set(""); } else playNext();
     });
-    alt.addEventListener("click", () => { dismissed = true; stop(); set(""); });
     v.addEventListener("timeupdate", () => {
       const t = v.currentTime, d = v.duration, intro = introOf();
       if (timer) { if (t < d - 3) { stop(); set(""); } return; }
       if (intro && t >= intro[0] - 0.5 && t < intro[1] - 1) { if (mode !== "intro") set("intro", "Skip Intro"); }
-      else if (!dismissed && d > 120 && d - t <= 30 && nextOf()) { if (mode !== "next") set("next", "Next Episode", "Hide"); }
+      else if (d > 180 && d - t <= 60 && nextOf()) { if (mode !== "next") set("next", "Next Episode"); }
       else if (mode) set("");
     });
     v.addEventListener("ended", () => {
-      if (dismissed || !nextOf()) return;
-      let left = 10;
-      set("count", `Next Episode in ${left}`, "Cancel");
+      if (!nextOf()) return;
+      let left = 5;
+      set("count", `Next Episode in ${left}`);
       timer = setInterval(() => {
         left -= 1;
         if (left <= 0) playNext(); else go.textContent = `Next Episode in ${left}`;
