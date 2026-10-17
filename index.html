@@ -5,25 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>MoCloud</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23111214'/><path d='M38 30v40l34-20z' fill='%233B82F6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DynaPuff:wght@700&display=swap">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23111318'/><path d='M38 30v40l34-20z' fill='%23E8C07A'/></svg>">
 <style>
-  /* Graphite and blue, like macOS dark mode */
+  /* Midnight Cinema: obsidian and slate, champagne gold for MoCloud itself (buttons, selections),
+     sky blue for anything to do with files (uploads, downloads, progress), green when something's done. */
   :root {
-    --ink: #111214;          /* page */
-    --panel: #1C1D21;        /* cards */
-    --panel-2: #26272C;      /* raised bits inside cards */
-    --line: #34353B;
-    --paper: #F2F2F4;        /* text */
-    --dim: #9A9AA1;          /* quieter text */
-    --accent: #3B82F6;       /* blue: the main colour */
-    --accent-2: #8AB8FF;     /* light blue: small touches */
-    --red: #FF453A;
-    --on-accent: #FFFFFF;    /* text on blue */
-    --on-red: #FFFFFF;
-    --accent-rgb: 59,130,246;
-    --accent-2-rgb: 138,184,255;
-    --red-rgb: 255,69,58;
-    --ink-rgb: 17,18,20;
+    --ink: #111318;          /* page: obsidian */
+    --panel: #1C2029;        /* cards: slate */
+    --panel-2: #262B36;      /* raised and selected bits */
+    --line: #303540;         /* borders and dividers */
+    --paper: #F4F5F7;        /* text: cloud white */
+    --dim: #A4A7B1;          /* quieter text */
+    --accent: #E8C07A;       /* champagne gold: the brand colour */
+    --accent-2: #38BDF8;     /* sky blue: files, uploads, downloads */
+    --green: #8ED6AD;        /* finished */
+    --amber: #FB923C;        /* heads up */
+    --red: #F87171;          /* went wrong */
+    --on-accent: #111318;    /* text on gold */
+    --on-red: #111318;
+    --accent-rgb: 232,192,122;
+    --accent-2-rgb: 56,189,248;
+    --red-rgb: 248,113,113;
+    --ink-rgb: 17,19,24;
     --r-sm: 12px;            /* small rounding: inputs, rows */
     --r-lg: 26px;            /* big rounding: windows */
     --radius: 18px;          /* cards, pictures */
@@ -48,7 +54,8 @@
 
   /* ---------- Header ---------- */
   .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 40px; }
-  .wordmark { margin: 0; font-size: 44px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
+  .wordmark { margin: 0; font-family: "DynaPuff", -apple-system, BlinkMacSystemFont, sans-serif; font-size: 44px; font-weight: 700; line-height: 1; letter-spacing: -0.01em; color: var(--paper); }
+  .wordmark .mo { color: var(--accent); }
   .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 
   /* Pi / Cloudflare storage switch */
@@ -60,7 +67,7 @@
   .source button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
   .source button:not([aria-pressed="true"]):hover { color: var(--paper); }
   .source-note { font-size: 13px; color: var(--dim); margin: -6px 0 0; }
-  .source-note.slow { color: #FFB340; }
+  .source-note.slow { color: var(--amber); }
 
   /* ---------- Storage gauge (the one loud element) ---------- */
   .gauge { flex: 1 1 340px; max-width: 520px; }
@@ -112,11 +119,11 @@
   .brand-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   .dl-badge {
     position: absolute; top: 10px; right: 10px; padding: 3px 9px; border-radius: 999px;
-    background: rgba(var(--ink-rgb),.85); border: 1px solid var(--accent); color: var(--accent);
+    background: rgba(var(--ink-rgb),.85); border: 1px solid var(--green); color: var(--green);
     font-size: 12px; font-weight: 500; pointer-events: none;
   }
   .acts-left { flex-wrap: wrap; row-gap: 4px; }
-  #downloads { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(620px, 94vw); max-height: 86dvh; }
+  #downloads { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(620px, 94vw); max-height: 86dvh; margin: 7dvh auto auto; overflow-y: auto; }
   .dl-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .dl-head h3 { margin: 0; font-size: 20px; font-weight: 500; }
   .dl-sum { color: var(--dim); font-size: 14px; margin: 10px 0 14px; }
@@ -127,11 +134,11 @@
   }
   .dl-list b { font-weight: 500; overflow-wrap: anywhere; }
   .dl-src { justify-self: end; font-size: 12px; color: var(--dim); }
-  .dl-stat { font-size: 13px; color: var(--dim); }
+  .dl-stat { font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
   .dl-acts { display: flex; align-items: center; gap: 14px; justify-self: end; }
   .dl-acts .btn { padding: 6px 14px; font-size: 14px; }
   .dl-note { color: var(--dim); font-size: 13px; margin: 14px 0 0; }
-  .p-src { color: var(--accent); font-size: 14px; }
+  .p-src { color: var(--accent-2); font-size: 14px; }
 
   /* ---------- Server status (offline, power, storage warnings) ---------- */
   .status {
@@ -154,7 +161,7 @@
   .queue .q-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .queue .q-stat { color: var(--dim); font-variant-numeric: tabular-nums; }
   .queue .q-bar { grid-column: 1 / -1; height: 4px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
-  .queue .q-bar i { display: block; height: 100%; width: 0%; background: var(--accent); }
+  .queue .q-bar i { display: block; height: 100%; width: 0%; background: var(--accent-2); }
   .queue li.failed .q-stat { color: var(--red); }
   .queue li.paused .q-stat { color: var(--accent); }
   .queue li.fixing .q-stat { color: var(--accent-2); }
@@ -257,7 +264,7 @@
   .poster .acts { flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; }
   .poster .acts .link, .poster .acts .dl { font-size: 13px; }
   .poster .thumb .play { width: 34px; height: 34px; left: auto; right: 10px; bottom: auto; top: 10px; } /* top corner, so it never covers the poster's title */
-  .poster .acts .del { border: 0; padding: 0; background: none; color: var(--red); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,69,58,.4); }
+  .poster .acts .del { border: 0; padding: 0; background: none; color: var(--red); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(var(--red-rgb),.4); }
   .poster .acts .del:hover, .poster .acts .del.armed { background: none; color: var(--red); text-decoration-color: currentColor; }
   .poster .acts { justify-content: flex-start; }
   .poster .acts-left { gap: 12px; }
@@ -295,6 +302,10 @@
   .folder-open span { color: var(--dim); font-size: 13px; }
   .folder-open:hover b { color: var(--accent); }
   .folder-card .acts { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  #dlStop { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(420px, 92vw); }
+  #dlStop h3 { margin: 0 0 8px; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
+  #dlStop p { margin: 0 0 18px; color: var(--dim); font-size: 14px; }
+  .btn.stop { background: var(--red); color: var(--on-red); }
   #nameDlg, #moveDlg { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(420px, 92vw); }
   #moveDlg { width: min(500px, 94vw); }
   .move-filter { width: 100%; padding: 9px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); margin-bottom: 10px; }
@@ -409,6 +420,10 @@
   .p-body:-webkit-full-screen .p-stage[data-fit="square"] { aspect-ratio: auto; max-height: none; }
   .p-body:fullscreen .p-stage[data-fit="square"] video { width: auto; height: 100%; aspect-ratio: 4 / 3; }
   .p-body:-webkit-full-screen .p-stage[data-fit="square"] video { width: auto; height: 100%; aspect-ratio: 4 / 3; }
+  .p-prompt { position: absolute; right: 16px; bottom: 64px; z-index: 3; display: flex; gap: 8px; align-items: center; }
+  .p-prompt[hidden] { display: none; }
+  .p-prompt .btn { box-shadow: 0 6px 24px rgba(0,0,0,.45); }
+  .p-prompt .alt { background: rgba(var(--ink-rgb),.82); color: var(--paper); border: 1px solid rgba(255,255,255,.18); }
   .p-stage video::cue { background: rgba(0,0,0,.72); color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
   .p-stage[data-fit="fill"] video:fullscreen { object-fit: cover; }
   .p-stage[data-fit="stretch"] video:fullscreen { object-fit: fill; }
@@ -461,7 +476,7 @@
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1 class="wordmark">MoCloud</h1>
+      <h1 class="wordmark"><span class="mo">Mo</span>Cloud</h1>
       <div class="brand-row">
         <div class="source" role="group" aria-label="Which storage to use">
           <button type="button" data-source="pi" aria-pressed="true">Pi</button>
@@ -566,6 +581,12 @@
   <h3 id="infoTitle"></h3>
   <dl id="infoList"></dl>
   <div class="info-acts"><button class="btn ghost" id="infoClose">Close</button><button class="link" id="infoFindSubs" hidden>Find subtitles</button></div>
+</dialog>
+
+<dialog id="dlStop" aria-labelledby="dlStopTitle">
+  <h3 id="dlStopTitle">Stop this download?</h3>
+  <p id="dlStopText"></p>
+  <div class="dlg-acts"><button class="btn ghost" id="dlStopKeep">Keep downloading</button><button class="btn stop" id="dlStopGo">Stop download</button></div>
 </dialog>
 
 <dialog id="downloads" aria-labelledby="dlTitle">
@@ -761,40 +782,78 @@ self.onmessage = async (e) => {
     let pos = handle.getSize();
     if (pos > m.total) { handle.truncate(0); pos = 0; } // never keep more than the video's size
     ctrl = new AbortController();
-    if (pos < m.total) {
-      let res = await fetch(m.url, { headers: pos ? { Range: "bytes=" + pos + "-" } : {}, signal: ctrl.signal, cache: "no-store" });
-      if (pos && res.status === 206) {
-        const cr = /bytes (\d+)-\d+\/(\d+)/.exec(res.headers.get("Content-Range") || "");
-        if (!cr || +cr[1] !== pos || +cr[2] !== m.total) {
-          // The video changed on the server since this download started: start it over cleanly.
-          ctrl.abort(); ctrl = new AbortController();
-          handle.truncate(0); pos = 0;
-          res = await fetch(m.url, { signal: ctrl.signal, cache: "no-store" });
+    // Several pieces download at once (like a download manager): one connection over the internet,
+    // especially through Tailscale's relay, is much slower than a few side by side. Pieces are
+    // saved in order, so a download that stops can always carry on from where the file ends.
+    const PIECE = 8 * 1024 * 1024, AT_ONCE = 4;
+    const piece = async (start) => {
+      const end = Math.min(start + PIECE, m.total) - 1;
+      for (let attempt = 1; ; attempt++) {
+        try {
+          const res = await fetch(m.url, { headers: { Range: `bytes=${start}-${end}` }, signal: ctrl.signal, cache: "no-store" });
+          if (res.status === 200 && start === 0 && end === m.total - 1) return new Uint8Array(await res.arrayBuffer());
+          if (res.status === 200) { res.body && res.body.cancel(); throw Object.assign(new Error("no ranges"), { noRange: true }); }
+          if (res.status !== 206) throw new Error("the server answered " + res.status);
+          const cr = /bytes (\d+)-(\d+)\/(\d+)/.exec(res.headers.get("Content-Range") || "");
+          if (!cr || +cr[1] !== start || +cr[3] !== m.total) throw Object.assign(new Error("changed"), { changed: true });
+          const buf = new Uint8Array(await res.arrayBuffer());
+          if (buf.length !== end - start + 1) throw new Error("a piece came back short");
+          return buf;
+        } catch (err) {
+          if (err.name === "AbortError" || err.changed || err.noRange || attempt >= 4) throw err;
+          await new Promise((r) => setTimeout(r, attempt * 1500)); // a blip: try that piece again
         }
-      } else if (pos && res.status === 200) {
-        handle.truncate(0); pos = 0; // the server sent the whole file again, so start from the top
       }
-      if (!res.ok) throw new Error("the server answered " + res.status);
-      const reader = res.body.getReader();
-      let unflushed = 0, lastPost = 0;
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (pos + value.length > m.total) throw new Error("the video is bigger than MoCloud said, so it was stopped to protect your storage");
-        handle.write(value, { at: pos });
-        pos += value.length;
-        unflushed += value.length;
-        if (unflushed >= FLUSH_EVERY) { handle.flush(); unflushed = 0; }
-        const now = Date.now();
-        if (now - lastPost > 300) { lastPost = now; self.postMessage({ type: "progress", got: pos }); }
+    };
+    let next = pos, lastPost = 0, unflushed = 0, restarted = false;
+    const inflight = [];
+    while (pos < m.total) {
+      while (inflight.length < AT_ONCE && next < m.total) {
+        const p = piece(next); p.catch(() => {}); // failures are handled when its turn comes
+        inflight.push(p); next += PIECE;
       }
-      handle.flush();
+      let buf;
+      try {
+        buf = await inflight.shift();
+      } catch (err) {
+        if (err.noRange) { // a server that can only send whole files: one stream from the start
+          ctrl.abort(); await Promise.allSettled(inflight); inflight.length = 0;
+          ctrl = new AbortController(); handle.truncate(0); pos = 0;
+          const res = await fetch(m.url, { signal: ctrl.signal, cache: "no-store" });
+          if (!res.ok) throw new Error("the server answered " + res.status);
+          const reader = res.body.getReader();
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (pos + value.length > m.total) throw new Error("the video is bigger than MoCloud said, so it was stopped to protect your storage");
+            handle.write(value, { at: pos }); pos += value.length; unflushed += value.length;
+            if (unflushed >= FLUSH_EVERY) { handle.flush(); unflushed = 0; }
+            const now = Date.now();
+            if (now - lastPost > 300) { lastPost = now; self.postMessage({ type: "progress", got: pos }); }
+          }
+          break;
+        }
+        if (!err.changed || restarted) throw err;
+        // The video changed on the server since this download started: start it over cleanly.
+        ctrl.abort(); await Promise.allSettled(inflight); inflight.length = 0;
+        ctrl = new AbortController(); handle.truncate(0); pos = 0; next = 0; restarted = true;
+        continue;
+      }
+      if (pos + buf.length > m.total) throw new Error("the video is bigger than MoCloud said, so it was stopped to protect your storage");
+      handle.write(buf, { at: pos });
+      pos += buf.length;
+      unflushed += buf.length;
+      if (unflushed >= FLUSH_EVERY) { handle.flush(); unflushed = 0; }
+      const now = Date.now();
+      if (now - lastPost > 300) { lastPost = now; self.postMessage({ type: "progress", got: pos }); }
     }
+    handle.flush();
     const size = handle.getSize();
     handle.close(); handle = null;
     self.postMessage({ type: "done", size });
   } catch (err) {
     let size = 0;
+    try { if (ctrl) ctrl.abort(); } catch (_) {} // stop the other pieces too
     try { if (handle) { handle.flush(); size = handle.getSize(); handle.close(); } } catch (_) {}
     self.postMessage({
       type: "error",
@@ -1362,7 +1421,7 @@ self.onmessage = async (e) => {
 
   function setView(id) {
     state.view = id && state.meta.folders[id] ? id : "";
-    state.show = "";
+    state.show = ""; state.collection = "";
     try { localStorage.setItem("mocloud-view-" + backend.id, state.view); } catch {}
     renderLibrary();
     $("libTop").scrollIntoView({ block: "nearest" });
@@ -1546,7 +1605,7 @@ self.onmessage = async (e) => {
     const box = $("crumbs");
     if (state.q) { box.textContent = `Search: “${state.q}”`; return; }
     const path = folderPath(state.view);
-    const deeper = path.length || state.show; // anything after "Your files" to click back from
+    const deeper = path.length || state.show || state.collection; // anything after "Your files" to click back from
     const parts = [];
     const home = document.createElement(deeper ? "button" : "span");
     home.textContent = "Your files";
@@ -1554,15 +1613,15 @@ self.onmessage = async (e) => {
     parts.push(home);
     path.forEach((id, i) => {
       const sep = document.createElement("span"); sep.className = "crumb-sep"; sep.textContent = "›";
-      const last = i === path.length - 1 && !state.show;
+      const last = i === path.length - 1 && !state.show && !state.collection;
       const c = document.createElement(last ? "span" : "button");
       c.textContent = state.meta.folders[id].name;
       if (!last) { c.className = "crumb"; c.addEventListener("click", () => setView(id)); }
       parts.push(sep, c);
     });
-    if (state.show) {
+    if (state.show || state.collection) {
       const sep = document.createElement("span"); sep.className = "crumb-sep"; sep.textContent = "›";
-      const c = document.createElement("span"); c.textContent = state.showName || "Show";
+      const c = document.createElement("span"); c.textContent = state.show ? state.showName || "Show" : state.collectionName || "Collection";
       parts.push(sep, c);
     }
     box.replaceChildren(...parts);
@@ -1626,7 +1685,7 @@ self.onmessage = async (e) => {
   // keeps them next to each video as a small file. The Subtitles button turns them on and off,
   // remembered on this device. The video's own captions menu works too.
   const SUBS_RE = /^mocloud-subs-([0-9a-f]+)\.vtt$/;
-  const SUBS_BUSY = ["queued", "searching", "downloading", "adding", "waiting"];
+  const SUBS_DONE = ["found", "none", "failed"];
   const subsFile = (key) => {
     const h = thumbHash(key);
     return state.sysFiles.find((x) => { const m = SUBS_RE.exec(x.name); return m && m[1] === h; }) || null;
@@ -1685,17 +1744,18 @@ self.onmessage = async (e) => {
     let seen = 0;
     try { seen = +localStorage.getItem(seenKey) || 0; } catch {}
     if (!seen) { seen = Date.now(); try { localStorage.setItem(seenKey, String(seen)); } catch {} } // first visit: nothing old
-    const fresh = (state.subs || []).filter((x) => !SUBS_BUSY.includes(x.state) && x.at > seen);
+    const fresh = (state.subs || []).filter((x) => SUBS_DONE.includes(x.state) && x.at > seen);
     if (fresh.length) {
       try { localStorage.setItem(seenKey, String(Math.max(...fresh.map((x) => x.at)))); } catch {}
       const label = (x) => titleOf(state.files.find((f) => f.key === x.key) || { key: x.key, name: x.name, type: "video/mp4" });
-      const found = fresh.filter((x) => x.state === "found"), none = fresh.filter((x) => x.state === "none"),
-        failed = fresh.filter((x) => x.state === "failed");
+      const found = fresh.filter((x) => x.state === "found" && x.kind !== "retimed"), none = fresh.filter((x) => x.state === "none"),
+        failed = fresh.filter((x) => x.state === "failed"), retimed = fresh.filter((x) => x.state === "found" && x.kind === "retimed");
       const parts = [];
+      if (retimed.length) parts.push(retimed.length === 1 ? `Fixed the subtitle timing for ${label(retimed[0])}` : `Fixed the subtitle timing for ${retimed.length} videos`);
       if (found.length) parts.push(found.length === 1 ? `Subtitles ready for ${label(found[0])}` : `Subtitles ready for ${found.length} videos`);
       if (none.length) parts.push(none.length === 1 ? `Couldn't find subtitles for ${label(none[0])}` : `Couldn't find subtitles for ${none.length} videos`);
       if (failed.length) parts.push(failed.length === 1 ? (failed[0].msg || `Subtitles didn't work for ${label(failed[0])}`).replace(/\.$/, "") : `Subtitles didn't work for ${failed.length} videos`);
-      toast(parts.join(". ") + ".", !found.length);
+      toast(parts.join(". ") + ".", !found.length && !retimed.length);
     }
     const q = state.subsQuota;
     if (q && (q.warn || q.full)) {
@@ -1715,7 +1775,7 @@ self.onmessage = async (e) => {
   // Rows under the uploads while the Pi works on subtitles.
   function subsRows() {
     if (backend.id !== "pi") return [];
-    const busy = (state.subs || []).filter((x) => SUBS_BUSY.includes(x.state));
+    const busy = (state.subs || []).filter((x) => !SUBS_DONE.includes(x.state));
     const row = (nameText, statText) => {
       const li = document.createElement("li"); li.className = "fixing";
       const name = document.createElement("span"); name.className = "q-name"; name.textContent = nameText;
@@ -1724,18 +1784,86 @@ self.onmessage = async (e) => {
       return li;
     };
     const label = (x) => titleOf(state.files.find((f) => f.key === x.key) || { key: x.key, name: x.name, type: "video/mp4" });
-    const out = busy.filter((x) => ["searching", "downloading", "adding"].includes(x.state)).map((x) => row(label(x), {
+    const out = busy.filter((x) => !["queued", "waiting"].includes(x.state)).map((x) => row(label(x), {
       searching: "Looking for subtitles",
       downloading: "Downloading subtitles",
       adding: x.msg ? "Subtitles found, adding them once nobody's watching" : "Adding subtitles",
-    }[x.state]));
+    }[x.state] || x.msg || "Working on subtitles"));
     const queued = busy.filter((x) => x.state === "queued"), waiting = busy.filter((x) => x.state === "waiting");
-    if (queued.length) out.push(row(queued.length === 1 ? label(queued[0]) : `${queued.length} videos`, "In line for subtitles"));
+    if (queued.length) out.push(row(queued.length === 1 ? label(queued[0]) : `${queued.length} videos`,
+      queued.every((x) => x.msg) ? queued[0].msg : "In line for subtitles"));
     if (waiting.length) {
       const at = fmtClock(state.subsQuota && state.subsQuota.resetAt);
       out.push(row(waiting.length === 1 ? label(waiting[0]) : `${waiting.length} videos`, `Daily subtitle limit reached. Picks back up at ${at}`));
     }
     return out;
+  }
+
+  // ---------- Skip Intro and Next Episode ----------
+  // The Pi finds each show's intro (the theme song that repeats across episodes). During it, a
+  // Skip Intro button shows. In the last 30 seconds, Next Episode shows, and when an episode ends
+  // the next one starts by itself after 10 seconds unless you cancel.
+  function nextEpisodeOf(f) {
+    const sid = showIdOfName(f.name);
+    if (!sid) return null;
+    const eps = state.files.filter((x) => isVideo(x) && showIdOfName(x.name) === sid).map((x) => ({ x, i: parseName(x.name) }))
+      .sort((a, b) => a.i.season - b.i.season || a.i.episode - b.i.episode);
+    const at = eps.findIndex((e) => e.x.key === f.key);
+    return at >= 0 && at + 1 < eps.length ? eps[at + 1].x : null;
+  }
+  function playerPrompts(f, v, stage) {
+    const box = document.createElement("div"); box.className = "p-prompt"; box.hidden = true;
+    const alt = document.createElement("button"); alt.type = "button"; alt.className = "btn alt";
+    const go = document.createElement("button"); go.type = "button"; go.className = "btn";
+    box.append(alt, go);
+    stage.append(box);
+    // Looked up as it plays: the library may still be loading when a video opens from a link.
+    const introOf = () => (backend.id === "pi" && state.intros ? state.intros[f.key] : null);
+    const nextOf = () => (f._dl ? null : nextEpisodeOf(f));
+    let mode = "", dismissed = false, timer = null;
+    const set = (m, label, altLabel) => {
+      mode = m; box.hidden = !m;
+      go.textContent = label || ""; alt.textContent = altLabel || ""; alt.hidden = !altLabel;
+    };
+    const stop = () => { clearInterval(timer); timer = null; };
+    const playNext = () => { stop(); const next = nextOf(); if ($("player").open && next) openPlayer(next); };
+    go.addEventListener("click", () => {
+      const intro = introOf();
+      if (mode === "intro" && intro) { v.currentTime = intro[1]; set(""); } else playNext();
+    });
+    alt.addEventListener("click", () => { dismissed = true; stop(); set(""); });
+    v.addEventListener("timeupdate", () => {
+      const t = v.currentTime, d = v.duration, intro = introOf();
+      if (timer) { if (t < d - 3) { stop(); set(""); } return; }
+      if (intro && t >= intro[0] - 0.5 && t < intro[1] - 1) { if (mode !== "intro") set("intro", "Skip Intro"); }
+      else if (!dismissed && d > 120 && d - t <= 30 && nextOf()) { if (mode !== "next") set("next", "Next Episode", "Hide"); }
+      else if (mode) set("");
+    });
+    v.addEventListener("ended", () => {
+      if (dismissed || !nextOf()) return;
+      let left = 10;
+      set("count", `Next Episode in ${left}`, "Cancel");
+      timer = setInterval(() => {
+        left -= 1;
+        if (left <= 0) playNext(); else go.textContent = `Next Episode in ${left}`;
+      }, 1000);
+    });
+    v._stopPrompts = stop;
+  }
+
+  // What's playing, with its poster, on the lock screen, Control Center and media keys.
+  function nowPlaying(f) {
+    if (!("mediaSession" in navigator) || typeof MediaMetadata === "undefined") return;
+    const sid = showIdOfName(f.name), show = sid ? tvShow(sid) : null;
+    const mi = sid ? null : movieInfo(f);
+    const th = knownThumb(f.key);
+    const art = (show && show.img) || (mi && mi.img) || (th && th.url) || "";
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: titleOf(f), artist: show ? show.name : "MoCloud", album: "MoCloud",
+        artwork: art ? [{ src: art, sizes: "600x900" }] : [],
+      });
+    } catch {}
   }
 
   // ---------- Pick up where you left off ----------
@@ -2214,7 +2342,7 @@ self.onmessage = async (e) => {
   const newest = (files) => Math.max(...files.map((f) => +new Date(f.uploaded) || 0));
 
   function openShow(show) {
-    state.show = show.id; state.showName = show.name;
+    state.show = show.id; state.showName = show.name; state.collection = "";
     history.pushState({ mocloudShow: show.id }, ""); // the back button returns to the home screen
     renderLibrary();
     $("libTop").scrollIntoView({ block: "start" });
@@ -2226,7 +2354,7 @@ self.onmessage = async (e) => {
   // exact title match counts, so home videos never get a random poster.
   const CAMERA = /^(img|vid|pxl|mvi|dsc|dji|gopr|gh\d|rpreplay|screen ?recording|screenrecorder|whatsapp|signal|snapchat|trim|\d{6,})/i;
   const posters = {
-    cache: (() => { try { return JSON.parse(localStorage.getItem("mocloud-posters")) || {}; } catch { return {}; } })(),
+    cache: (() => { try { return JSON.parse(localStorage.getItem("mocloud-posters2")) || {}; } catch { return {}; } })(), // v2: older misses get looked up again
     queue: [], busy: false, asked: new Set(),
   };
   const normTitle = (t) => String(t).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "");
@@ -2238,7 +2366,8 @@ self.onmessage = async (e) => {
     if (CAMERA.test(stem.trim())) return null;
     const m = info.title.match(/^(.*) \(((?:19|20)\d{2})\)$/);
     const title = m ? m[1] : info.title, year = m ? +m[2] : 0;
-    const releaseLike = !!year || JUNK.test(stem);
+    const th = sharedThumb(f.key); // an hour or longer (from the Pi's picture of it) says "movie" on its own
+    const releaseLike = !!year || JUNK.test(stem) || !!(th && th.duration >= 3600);
     if (!releaseLike || !normTitle(title)) return null;
     const key = normTitle(title) + (year || "");
     const c = posters.cache[key];
@@ -2246,7 +2375,7 @@ self.onmessage = async (e) => {
   }
   function postersSave() {
     for (let i = 0; i < 5; i++) {
-      try { localStorage.setItem("mocloud-posters", JSON.stringify(posters.cache)); return; }
+      try { localStorage.setItem("mocloud-posters2", JSON.stringify(posters.cache)); return; }
       catch {
         const oldest = Object.entries(posters.cache).sort((a, b) => (a[1].at || 0) - (b[1].at || 0))[0];
         if (!oldest) return;
@@ -2277,21 +2406,57 @@ self.onmessage = async (e) => {
       document.head.append(tag);
     }));
   }
+  // The names a result could go by: as is, without "(2010)", without a subtitle, without "The".
+  function titleForms(name) {
+    const out = new Set();
+    const bare = String(name).replace(/\s*\([^)]*\)\s*$/, "");
+    for (const t of [String(name), bare]) {
+      out.add(normTitle(t));
+      for (const sep of [":", " - "]) { const i = t.indexOf(sep); if (i > 0) out.add(normTitle(t.slice(0, i))); }
+    }
+    for (const t of [...out]) if (t.startsWith("the")) out.add(t.slice(3));
+    out.delete("");
+    return out;
+  }
+  function titleMatches(name, mi) {
+    const forms = titleForms(name), want = normTitle(mi.title);
+    return forms.has(want) || (want.startsWith("the") && forms.has(want.slice(3)));
+  }
+  async function appleCover(mi) {
+    const data = await appleSearch(mi.title);
+    const year = (r) => +(r.releaseDate || "").slice(0, 4) || 0;
+    const hits = (data.results || []).filter((r) => titleMatches(r.trackName || "", mi)
+      && (!mi.year || !year(r) || Math.abs(year(r) - mi.year) <= 1) && (r.artworkUrl100 || r.artworkUrl60));
+    if (mi.year) hits.sort((a, b) => Math.abs(year(a) - mi.year) - Math.abs(year(b) - mi.year));
+    const art = hits[0] && (hits[0].artworkUrl100 || hits[0].artworkUrl60);
+    return art ? art.replace(/\/\d+x\d+(bb)?\.(jpg|jpeg|png|webp)$/i, "/600x900bb.jpg") : "";
+  }
+  // When Apple doesn't have the movie: the picture on its Wikipedia article, which is the poster.
+  async function wikiCover(mi) {
+    const q = new URLSearchParams({ action: "query", format: "json", origin: "*", generator: "search",
+      gsrsearch: `${mi.title}${mi.year ? " " + mi.year : ""} film`, gsrlimit: "8", prop: "pageimages",
+      piprop: "thumbnail", pithumbsize: "600", pilicense: "any", redirects: "1" });
+    const res = await fetch("https://en.wikipedia.org/w/api.php?" + q);
+    if (!res.ok) throw new Error(res.status);
+    const pages = Object.values(((await res.json()).query || {}).pages || {}).sort((a, b) => (a.index || 99) - (b.index || 99));
+    const hit = pages.find((pg) => {
+      if (!pg.thumbnail || !pg.thumbnail.source) return false;
+      const tag = (String(pg.title).match(/\(([^)]*)\)\s*$/) || [])[1] || ""; // "Inside Job (2010 film)"
+      if (tag && !/film|movie/i.test(tag)) return false;
+      const y = +(tag.match(/(?:19|20)\d{2}/) || [])[0] || 0;
+      if (mi.year && y && Math.abs(y - mi.year) > 1) return false;
+      return titleMatches(pg.title, mi);
+    });
+    return hit ? hit.thumbnail.source : "";
+  }
   async function postersPump() {
     if (posters.busy) return;
     posters.busy = true;
     while (posters.queue.length) {
       const mi = posters.queue.shift();
       try {
-        const data = await appleSearch(mi.title);
-        const want = normTitle(mi.title);
-        const hit = (data.results || []).find((r) => {
-          const n = normTitle(r.trackName || ""), bare = normTitle(String(r.trackName || "").replace(/\s*\([^)]*\)\s*$/, ""));
-          const y = +(r.releaseDate || "").slice(0, 4);
-          return (n === want || bare === want) && (!mi.year || !y || Math.abs(y - mi.year) <= 1);
-        });
-        const art = hit && (hit.artworkUrl100 || hit.artworkUrl60);
-        posters.cache[mi.key] = art ? { img: art.replace(/\/\d+x\d+(bb)?\.(jpg|jpeg|png|webp)$/i, "/600x900bb.jpg"), at: Date.now() } : { at: Date.now() };
+        const img = (await appleCover(mi)) || (await wikiCover(mi));
+        posters.cache[mi.key] = img ? { img, at: Date.now() } : { at: Date.now() };
         postersSave();
         clearTimeout(tv.paint);
         tv.paint = setTimeout(() => { if (!$("player").open) renderLibrary(); }, 300);
@@ -2363,7 +2528,13 @@ self.onmessage = async (e) => {
     const order = (items) => items.sort(sortBy === "az" ? az : (a, b) => b.at - a.at).map((i) => i.el());
     const groups = [
       ["shows", "Shows", shows.length, () => order(shows.map((s) => ({ name: s.name, at: newest(showFiles(s)), el: () => showCard(s) }))), true],
-      ["movies", "Movies", movies.length, () => order(movies.map(({ f, mi }) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f, titleOf(f), { poster: mi.img }) }))), true],
+      ["movies", "Movies", movies.length, () => {
+        const { collections, single } = movieCollections(movies);
+        return order([
+          ...collections.map((col) => ({ name: col.name, at: newest(col.movies.map((m) => m.f)), el: () => collectionCard(col) })),
+          ...single.map(({ f, mi }) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f, titleOf(f), { poster: mi.img }) })),
+        ]);
+      }, true],
       ["videos", "Videos", videos.length, () => order(videos.map((f) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
       ["photos", "Photos", photos.length, () => order(photos.map((f) => ({ name: f.name, at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
     ].filter((g) => g[2]);
@@ -2399,6 +2570,88 @@ self.onmessage = async (e) => {
     }
     return out;
   }
+
+  // ---------- Movie collections ----------
+  // Movies from the same series (Toy Story, Toy Story 2, Toy Story 3...) go in one box, like a show.
+  // Two movies belong together when their names start with the same two or more real words.
+  const COLLECTION_STOP = new Set(["the", "a", "an", "and", "of", "part", "chapter", "vol", "volume"]);
+  function collectionWords(title) {
+    let t = String(title).replace(/\s*\((?:19|20)\d{2}\)\s*$/, "");
+    t = t.split(" - ")[0];
+    const words = t.toLowerCase().replace(/&/g, " and ").split(/[^a-z0-9]+/).filter(Boolean);
+    while (words.length && /^(\d{1,2}|[ivx]{1,4})$/.test(words[words.length - 1]) && words.length > 1) words.pop();
+    if (words[0] === "the") words.shift();
+    return words;
+  }
+  function sharedLead(a, b) {
+    let n = 0;
+    while (n < a.length && n < b.length && a[n] === b[n]) n++;
+    return n;
+  }
+  function movieCollections(movies) { // movies: [{ f, mi }]
+    const words = movies.map(({ mi }) => collectionWords(mi.title));
+    const parent = movies.map((_, i) => i);
+    const root = (i) => (parent[i] === i ? i : (parent[i] = root(parent[i])));
+    const trim = (w, n) => { while (n > 0 && COLLECTION_STOP.has(w[n - 1])) n--; return n; }; // "harry potter and the" -> "harry potter"
+    for (let i = 0; i < movies.length; i++) {
+      for (let j = i + 1; j < movies.length; j++) {
+        const n = trim(words[i], sharedLead(words[i], words[j]));
+        const real = words[i].slice(0, n).filter((w) => !COLLECTION_STOP.has(w)).length;
+        // Two real words in common, or one longer word that is the whole name of one of them (Cars, Cars 2).
+        if (real >= 2 || (real === 1 && n === Math.min(words[i].length, words[j].length) && words[i][0].length > 3)) parent[root(j)] = root(i);
+      }
+    }
+    const groups = new Map();
+    movies.forEach((m, i) => { const r = root(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(i); });
+    const out = [], single = [];
+    for (const idx of groups.values()) {
+      if (idx.length < 2) { single.push(movies[idx[0]]); continue; }
+      let n = Math.min(...idx.map((i) => sharedLead(words[idx[0]], words[i])));
+      n = Math.max(1, trim(words[idx[0]], n));
+      const list = idx.map((i) => movies[i]);
+      list.sort((a, b) => (a.mi.year || 9999) - (b.mi.year || 9999) || a.mi.title.localeCompare(b.mi.title, undefined, { numeric: true }));
+      // The name: the shared words, written the way the first movie writes them.
+      const full = String(list[0].mi.title).split(" - ")[0];
+      const the = /^the\s+/i.test(full) ? full.slice(0, 4) : "";
+      const first = full.replace(/^the\s+/i, "").split(/\s+/);
+      const name = the + (first.slice(0, n).join(" ").replace(/[\s,:&-]+$/, "") || list[0].mi.title);
+      out.push({ id: words[idx[0]].slice(0, n).join("-"), name, movies: list });
+    }
+    return { collections: out, single };
+  }
+  function collectionCard(col) {
+    const el = document.createElement("article"); el.className = "tile show-card poster";
+    const box = document.createElement("button"); box.className = "thumb";
+    box.setAttribute("aria-label", `Open ${col.name}`);
+    const cover = col.movies.find((m) => m.mi.img);
+    posterArt(box, cover && cover.mi.img, col.movies.map((m) => m.f), col.name);
+    const tag = document.createElement("span"); tag.className = "box-tag"; tag.textContent = `${col.movies.length} movies`;
+    box.append(tag);
+    box.addEventListener("click", () => {
+      state.collection = col.id; state.collectionName = col.name;
+      history.pushState({ mocloudCollection: col.id }, "");
+      renderLibrary();
+      $("libTop").scrollIntoView({ block: "start" });
+    });
+    const name = document.createElement("h3"); name.textContent = col.name; name.title = col.name;
+    const meta = document.createElement("p"); meta.className = "meta";
+    const years = col.movies.map((m) => m.mi.year).filter(Boolean);
+    const seen = col.movies.filter((m) => (getProg(m.f.key) || {}).done).length;
+    meta.textContent = [years.length ? (years[0] === years[years.length - 1] ? `${years[0]}` : `${years[0]}–${years[years.length - 1]}`) : "",
+      seen ? `${seen}/${col.movies.length} watched` : ""].filter(Boolean).join(" · ");
+    el.append(box, name, meta);
+    return el;
+  }
+  function collectionPage(col) {
+    const wrap = document.createElement("section"); wrap.className = "show-page";
+    const h = document.createElement("h2"); h.textContent = col.name;
+    const meta = document.createElement("p"); meta.className = "meta"; meta.textContent = `${col.movies.length} movies`;
+    const g = gridOf(col.movies.map(({ f, mi }) => tile(f, titleOf(f), { poster: mi.img })));
+    g.classList.add("poster-grid");
+    wrap.append(h, meta, g);
+    return wrap;
+  }
+  window.addEventListener("popstate", () => { if (state.collection) { state.collection = ""; renderLibrary(); } });
 
   // Where to pick a show back up: the episode you're in the middle of, the one after the last one
   // you finished, or the very first.
@@ -2488,7 +2741,15 @@ self.onmessage = async (e) => {
     if (!found && state.show && !openedShow) state.show = ""; // its episodes were moved or deleted
     renderCrumbs();
     const subfolders = openedShow ? [] : found ? found.folders : childFolders(view);
+    let openedCol = null;
+    if (!found && !openedShow && state.collection) {
+      const movies = [];
+      for (const f of other) { const mi = isVideo(f) ? movieInfo(f) : null; if (mi && (mi.year || mi.img)) movies.push({ f, mi }); }
+      openedCol = movieCollections(movies).collections.find((c) => c.id === state.collection) || null;
+      if (!openedCol) state.collection = ""; // moved or deleted
+    }
     if (openedShow) parts.push(showPage(openedShow));
+    else if (openedCol) parts.push(collectionPage(openedCol));
     else if (!found) {
       if (!view) { const row = continueRow(); if (row) parts.push(row); }
       let folderGrid = null;
@@ -2513,7 +2774,7 @@ self.onmessage = async (e) => {
     grid.replaceChildren(...parts);
     requestAnimationFrame(fitDescs);
     const n = found ? here.length : openedShow ? openedShow.count : view ? countIn(view) : state.files.length;
-    $("count").textContent = found ? `${n} found` : openedShow ? "" : n ? `${n} ${n === 1 ? "file" : "files"}` : "";
+    $("count").textContent = found ? `${n} found` : openedShow || openedCol ? "" : n ? `${n} ${n === 1 ? "file" : "files"}` : "";
     $("newFolder").disabled = state.offline;
     $("moveBtn").disabled = state.offline || (!state.files.length && !Object.keys(state.meta.folders).length);
     const nothing = !here.length && !subfolders.length;
@@ -2533,7 +2794,7 @@ self.onmessage = async (e) => {
   function watchFixes() {
     clearTimeout(fixPoll);
     const waitingPics = piMakesThumbs() && state.thumbsPending > 0; // the Pi is still making pictures
-    const subsBusy = (state.subs || []).some((x) => SUBS_BUSY.includes(x.state) && x.state !== "waiting");
+    const subsBusy = (state.subs || []).some((x) => !SUBS_DONE.includes(x.state) && x.state !== "waiting");
     if (((state.processing && state.processing.length) || waitingPics) && !state.offline) {
       fixPoll = setTimeout(() => refresh().catch(() => {}), 4000);
     } else if (subsBusy && !state.offline) {
@@ -2548,6 +2809,7 @@ self.onmessage = async (e) => {
       files: all.filter((f) => !isSys(f)), sysFiles: all.filter(isSys), used: data.used, limit: data.limit,
       processing: (data.processing || []).filter((p) => !isSys(p)), thumbsPending: data.thumbsPending || 0,
       subs: backend.id === "pi" ? data.subs || [] : [], subsQuota: backend.id === "pi" ? data.subsQuota || null : null,
+      intros: backend.id === "pi" ? data.intros || {} : {},
       freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
     });
     await loadMeta();
@@ -2832,7 +3094,7 @@ self.onmessage = async (e) => {
     }));
     const job = video && backend.id === "pi" ? subsJob(full.key) : null;
     const canAsk = video && backend.id === "pi" && state.piSubs && state.files.some((x) => x.key === full.key)
-      && !(job && SUBS_BUSY.includes(job.state));
+      && !(job && !SUBS_DONE.includes(job.state));
     $("infoFindSubs").hidden = !canAsk;
     $("infoFindSubs").textContent = subsFile(full.key) ? "Look for subtitles again" : job ? "Try subtitles again" : "Find subtitles";
     $("infoFindSubs").onclick = () => { $("info").close(); findSubs(full); };
@@ -2841,8 +3103,8 @@ self.onmessage = async (e) => {
   function subsLine(f) {
     const job = backend.id === "pi" ? subsJob(f.key) : null;
     if (job && job.state === "waiting") return "Found, waiting for the daily download limit to reset";
-    if (job && SUBS_BUSY.includes(job.state)) return "Looking for them now";
-    if (subsFile(f.key)) return job && job.source === "file" ? "English (came with the file)" : "English";
+    if (job && !SUBS_DONE.includes(job.state)) return subsFile(f.key) ? "English (checking the timing)" : "Looking for them now";
+    if (subsFile(f.key)) return job && job.source === "file" ? "English (came with the file)" : job && job.kind === "retimed" ? "English (timing fixed)" : "English";
     if (job && job.state === "none") return "None found online";
     if (job && job.state === "failed") return job.msg || "Couldn't get them";
     return backend.id === "pi" && state.piSubs ? "None" : "";
@@ -2853,6 +3115,12 @@ self.onmessage = async (e) => {
   // ---------- Player ----------
   function openPlayer(f) {
     const stage = $("pStage");
+    stage.querySelectorAll("video").forEach((old) => { // the next episode replaces this one: tidy it up first
+      if (old._saveProgress) { old._saveProgress(); scheduleProgSync(800); }
+      if (old._stopPrompts) old._stopPrompts();
+      if (old._local) URL.revokeObjectURL(old._local);
+      if (old._subsUrl) URL.revokeObjectURL(old._subsUrl);
+    });
     stage.replaceChildren();
     $("pTitle").textContent = titleOf(f); $("pTitle").title = f.name;
     $("pSource").textContent = "";
@@ -2884,6 +3152,8 @@ self.onmessage = async (e) => {
       stage.append(v);
       trackProgress(f, v);
       attachSubs(f, v);
+      playerPrompts(f, v, stage);
+      nowPlaying(f);
       localVideoUrl(f).then((url) => {
         if (!v.isConnected) { if (url) URL.revokeObjectURL(url); return; }
         if (url) { v._local = url; v.src = url; $("pSource").textContent = "Playing from this device"; }
@@ -2899,6 +3169,7 @@ self.onmessage = async (e) => {
   }
 
   $("player").addEventListener("close", () => {
+    $("pStage").querySelectorAll("video").forEach((v) => { if (v._stopPrompts) v._stopPrompts(); });
     let watched = false;
     $("pStage").querySelectorAll("video").forEach((v) => { if (v._saveProgress) { v._saveProgress(); watched = true; } });
     if (watched) { scheduleProgSync(800); setTimeout(renderLibrary, 0); } // progress bars and Continue watching
@@ -3561,13 +3832,23 @@ self.onmessage = async (e) => {
     b.textContent = dlLabel(id);
     b.addEventListener("click", () => {
       const it = dl.items.get(id);
-      if (dl.active && dl.active.id === id) pauseDownload(id);
-      else if (dl.queue.includes(id)) pauseDownload(id);
+      if ((dl.active && dl.active.id === id) || dl.queue.includes(id)) askStopDownload(id);
       else if (it && it.done) removeDownload(id);
       else startDownload(f);
     });
     return b;
   }
+
+  // Clicking a download that's on its way asks first, then stops it and deletes what came so far.
+  function askStopDownload(id) {
+    const it = dl.items.get(id);
+    if (!it) return;
+    $("dlStopText").textContent = `${titleOf({ name: it.name, type: "" })} is ${dlPct(it)}% downloaded. Stopping deletes what's downloaded so far from this device. The video stays on MoCloud.`;
+    $("dlStopGo").onclick = () => { $("dlStop").close(); removeDownload(id, true); toast("Download stopped."); };
+    $("dlStopKeep").onclick = () => $("dlStop").close();
+    if (!$("dlStop").open) $("dlStop").showModal();
+  }
+  $("dlStop").addEventListener("click", (e) => { if (e.target === $("dlStop")) $("dlStop").close(); });
 
   // Updates download buttons and the Downloads panel. Re-draws the library when something finished
   // or was removed (that changes which tiles are playable offline).
@@ -3581,51 +3862,74 @@ self.onmessage = async (e) => {
     renderDownloadsPanel();
   }
 
+  // The panel is only rebuilt when a download starts, finishes, pauses or is removed. While one is
+  // going, just its line of text changes, so the window holds still.
+  const dlEst = { text: "", at: 0 };
+  function dlStatText(it) {
+    const busy = dl.active && dl.active.id === it.id;
+    return it.done ? fmtSize(it.size)
+      : busy ? `${dlVibe(dlPct(it))}, ${fmtSize(it.got)} of ${fmtSize(it.size)}`
+      : dl.queue.includes(it.id) ? "Waiting to download"
+      : it.error ? `Stopped at ${dlPct(it)}%: ${it.error}`
+      : `Paused at ${dlPct(it)}% (${fmtSize(it.got)} of ${fmtSize(it.size)})`;
+  }
+  function dlRow(it) {
+    const li = document.createElement("li");
+    const name = document.createElement("b"); name.textContent = titleOf({ name: it.name, type: "" });
+    const src = document.createElement("span"); src.className = "dl-src"; src.textContent = BACKENDS[it.src] ? BACKENDS[it.src].name : it.src;
+    const stat = document.createElement("span"); stat.className = "dl-stat"; stat.textContent = dlStatText(it);
+    li._stat = stat; li._id = it.id;
+    const busy = dl.active && dl.active.id === it.id;
+    const acts = document.createElement("div"); acts.className = "dl-acts";
+    if (it.done) {
+      const play = document.createElement("button"); play.className = "btn"; play.textContent = "Play";
+      play.addEventListener("click", () => { $("downloads").close(); openPlayer({ key: it.key, name: it.name, size: it.size, type: "", _dl: it.id }); });
+      acts.append(play);
+    } else if (busy || dl.queue.includes(it.id)) {
+      const p = document.createElement("button"); p.className = "btn ghost"; p.textContent = "Pause";
+      p.addEventListener("click", () => pauseDownload(it.id));
+      acts.append(p);
+    } else if (it.src === backend.id) {
+      const r = document.createElement("button"); r.className = "btn ghost"; r.textContent = "Resume";
+      r.addEventListener("click", () => startDownload({ key: it.key, name: it.name, size: it.size }));
+      acts.append(r);
+    }
+    const rm = document.createElement("button"); rm.className = "link"; rm.textContent = "Remove from device";
+    rm.addEventListener("click", () => removeDownload(it.id));
+    acts.append(rm);
+    li.append(name, src, stat, acts);
+    return li;
+  }
   function renderDownloadsPanel() {
     const items = [...dl.items.values()].sort((a, b) => b.added - a.added);
     const done = items.filter((i) => i.done).length;
     $("dlOpenLabel").textContent = items.length ? `Downloads (${done}${done < items.length ? "+" : ""})` : "Downloads";
     if (!$("downloads").open) return;
     const list = $("dlList");
-    list.replaceChildren(...items.map((it) => {
-      const li = document.createElement("li");
-      const name = document.createElement("b"); name.textContent = titleOf({ name: it.name, type: "" });
-      const src = document.createElement("span"); src.className = "dl-src"; src.textContent = BACKENDS[it.src] ? BACKENDS[it.src].name : it.src;
-      const stat = document.createElement("span"); stat.className = "dl-stat";
-      const busy = dl.active && dl.active.id === it.id;
-      stat.textContent = it.done ? fmtSize(it.size)
-        : busy ? `${dlVibe(dlPct(it))}, ${fmtSize(it.got)} of ${fmtSize(it.size)}`
-        : dl.queue.includes(it.id) ? "Waiting to download"
-        : it.error ? `Stopped at ${dlPct(it)}%: ${it.error}`
-        : `Paused at ${dlPct(it)}% (${fmtSize(it.got)} of ${fmtSize(it.size)})`;
-      const acts = document.createElement("div"); acts.className = "dl-acts";
-      if (it.done) {
-        const play = document.createElement("button"); play.className = "btn"; play.textContent = "Play";
-        play.addEventListener("click", () => { $("downloads").close(); openPlayer({ key: it.key, name: it.name, size: it.size, type: "", _dl: it.id }); });
-        acts.append(play);
-      } else if (busy || dl.queue.includes(it.id)) {
-        const p = document.createElement("button"); p.className = "btn ghost"; p.textContent = "Pause";
-        p.addEventListener("click", () => pauseDownload(it.id));
-        acts.append(p);
-      } else if (it.src === backend.id) {
-        const r = document.createElement("button"); r.className = "btn ghost"; r.textContent = "Resume";
-        r.addEventListener("click", () => startDownload({ key: it.key, name: it.name, size: it.size }));
-        acts.append(r);
+    const sig = items.map((it) => [it.id, it.done, dl.active && dl.active.id === it.id, dl.queue.includes(it.id), !!it.error, it.src === backend.id].join(":")).join("|");
+    if (list._sig !== sig) {
+      list._sig = sig;
+      list.replaceChildren(...items.map(dlRow));
+    } else {
+      const byId = new Map(items.map((it) => [it.id, it]));
+      for (const li of list.children) {
+        const it = byId.get(li._id), text = it ? dlStatText(it) : "";
+        if (it && li._stat.textContent !== text) li._stat.textContent = text;
       }
-      const rm = document.createElement("button"); rm.className = "link"; rm.textContent = "Remove from device";
-      rm.addEventListener("click", () => removeDownload(it.id));
-      acts.append(rm);
-      li.append(name, src, stat, acts);
-      return li;
-    }));
-    const used = items.reduce((s, i) => s + (i.got || 0), 0);
-    $("dlSum").textContent = items.length
-      ? `MoCloud downloads take up ${fmtSize(used)} on this device. Removing one frees its space.`
-      : "Nothing downloaded yet.";
-    if (navigator.storage && navigator.storage.estimate) {
+    }
+    const used = items.reduce((sum, i) => sum + (i.got || 0), 0);
+    const paintSum = () => {
+      const text = items.length
+        ? `MoCloud downloads take up ${fmtSize(used)} on this device. Removing one frees its space.${dlEst.text}`
+        : "Nothing downloaded yet.";
+      if ($("dlSum").textContent !== text) $("dlSum").textContent = text;
+    };
+    paintSum();
+    if (navigator.storage && navigator.storage.estimate && Date.now() - dlEst.at > 5000) { // free space: checked every few seconds, not every tick
+      dlEst.at = Date.now();
       navigator.storage.estimate().then((est) => {
-        if (!est.quota) return;
-        $("dlSum").textContent += ` About ${fmtSize(Math.max(0, est.quota - est.usage - DL_MARGIN))} more is available for downloads.`;
+        dlEst.text = est.quota ? ` About ${fmtSize(Math.max(0, est.quota - est.usage - DL_MARGIN))} more is available for downloads.` : "";
+        paintSum();
       }).catch(() => {});
     }
     const notes = [];
@@ -3633,7 +3937,8 @@ self.onmessage = async (e) => {
     if (dl.persisted === false && items.length) notes.push("Your browser may clear downloads if this device runs very low on space.");
     if (/iPhone|iPad/.test(navigator.userAgent)) notes.push("On iPhone or iPad, add MoCloud to your Home Screen (Share, then Add to Home Screen), or Safari may clear downloads if you don't open MoCloud for a week.");
     if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) notes.push("To open MoCloud with no internet at all, sw.js needs to sit next to index.html on your site.");
-    $("dlNote").textContent = notes.join(" ");
+    const note = notes.join(" ");
+    if ($("dlNote").textContent !== note) $("dlNote").textContent = note;
   }
   $("dlOpen").addEventListener("click", () => { $("downloads").showModal(); renderDownloadsPanel(); });
   $("dlClose").addEventListener("click", () => $("downloads").close());
