@@ -165,6 +165,11 @@
   .queue li.failed .q-stat { color: var(--red); }
   .queue li.paused .q-stat { color: var(--accent); }
   .queue li.fixing .q-stat { color: var(--accent-2); }
+  .queue li.ask { grid-template-columns: 1fr auto; }
+  .queue li.ask .q-stat { color: var(--accent); }
+  .queue .q-ask { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+  .queue .q-ask .btn { padding: 7px 16px; font-size: 14px; }
+  .queue li.ask-all { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; background: none; padding: 2px 4px; color: var(--dim); }
   .link { background: none; border: 0; padding: 2px 0; color: var(--dim); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
   .link:hover { color: var(--paper); }
   .link.danger:hover, .link.armed { color: var(--red); }
@@ -188,6 +193,60 @@
   .lib-tools span { color: var(--dim); font-size: 14px; }
   .btn.small { padding: 7px 14px; font-size: 14px; }
   .dl-open { display: inline-flex; align-items: center; gap: 6px; }
+  .gear-btn { width: 38px; height: 38px; padding: 0; display: inline-grid; place-items: center; }
+  .gear-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- Settings page ---------- */
+  #settingsPage { position: fixed; inset: 0; z-index: 40; background: var(--ink); overflow-y: auto; overscroll-behavior: contain; }
+  #settingsPage[hidden] { display: none; }
+  body.no-scroll { overflow: hidden; }
+  .set-wrap { max-width: 860px; margin: 0 auto; padding: 24px 20px 120px; }
+  .set-top { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .set-top h2 { margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.01em; }
+  .set-back { display: inline-flex; align-items: center; gap: 4px; }
+  .set-card { background: var(--panel); border-radius: var(--r-lg); padding: 20px 22px; margin-bottom: 18px; }
+  .set-card h3 { margin: 0 0 6px; font-size: 19px; font-weight: 600; }
+  .set-card .sub { margin: 0 0 14px; color: var(--dim); font-size: 14px; max-width: 64ch; }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+  .set-row + .set-row { margin-top: 12px; }
+  .set-stat { font-size: 14px; color: var(--dim); }
+  .set-stat b { color: var(--paper); font-weight: 600; }
+  .set-stat.live { color: var(--accent-2); }
+  .set-note { font-size: 13px; color: var(--dim); margin-top: 10px; }
+  .switch { position: relative; width: 52px; height: 32px; flex: none; border-radius: 999px; border: 0; padding: 0;
+    background: var(--line); transition: background .2s; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--paper); transition: transform .2s; }
+  .switch[aria-checked="true"] { background: var(--accent); }
+  .switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--on-accent); }
+  .set-select { background: var(--panel-2); color: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font: inherit; }
+  .usage { height: 10px; border-radius: 999px; background: var(--panel-2); overflow: hidden; margin: 10px 0 6px; }
+  .usage i { display: block; height: 100%; background: var(--accent); }
+  .usage.hot i { background: var(--amber); }
+  .bars { display: grid; gap: 10px; margin-top: 6px; }
+  .bars h4 { margin: 14px 0 2px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--dim); font-weight: 600; }
+  .bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; font-size: 14px; }
+  .bar-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-row em { font-style: normal; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .bar-row .track { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+  .bar-row .track i { display: block; height: 100%; background: var(--accent-2); border-radius: 999px; }
+  .goal { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 6px; }
+  .goal span { color: var(--dim); font-size: 14px; margin-right: 4px; }
+  .clean-list { list-style: none; margin: 10px 0 0; padding: 0; }
+  .clean-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; padding: 14px 0; border-top: 1px solid var(--line); align-items: start; }
+  .clean-item input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); }
+  .clean-item b { font-weight: 500; overflow-wrap: anywhere; }
+  .clean-item .size { font-variant-numeric: tabular-nums; color: var(--paper); font-weight: 600; }
+  .clean-why { grid-column: 2 / -1; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--amber); }
+  .clean-acts { grid-column: 2 / -1; display: flex; gap: 16px; }
+  .clean-acts .link { font-size: 13px; }
+  .clean-bar { position: sticky; bottom: 14px; margin-top: 16px; padding: 12px 16px; border-radius: 999px; background: var(--panel-2);
+    border: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .btn.stop.small, .btn.small { padding: 7px 14px; font-size: 14px; }
+  #sureDlg { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(440px, 92vw); }
+  #sureDlg h3 { margin: 0 0 8px; font-size: 19px; font-weight: 600; }
+  #sureDlg p { margin: 0 0 18px; color: var(--dim); font-size: 14px; }
   .dl-open svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .link:disabled { opacity: .45; cursor: not-allowed; }
 
@@ -482,6 +541,7 @@
           <button type="button" data-source="cloud" aria-pressed="false">Cloudflare</button>
         </div>
         <button type="button" class="btn ghost small dl-open" id="dlOpen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg><span id="dlOpenLabel">Downloads</span></button>
+        <button type="button" class="btn ghost gear-btn" id="setOpen" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.9 4.6 1.7 1.7 0 0 0 9.97 3.04V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.26.6.85 1 1.51 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg></button>
       </div>
       <p class="source-note" id="sourceNote"></p>
     </div>
@@ -580,6 +640,22 @@
   <h3 id="infoTitle"></h3>
   <dl id="infoList"></dl>
   <div class="info-acts"><button class="btn ghost" id="infoClose">Close</button><button class="link" id="infoFindSubs" hidden>Find subtitles</button></div>
+</dialog>
+
+<section id="settingsPage" hidden aria-labelledby="setTitle">
+  <div class="set-wrap">
+    <div class="set-top">
+      <button type="button" class="btn ghost small set-back" id="setBack">&larr; Back</button>
+      <h2 id="setTitle">Settings</h2>
+    </div>
+    <div id="setBody"></div>
+  </div>
+</section>
+
+<dialog id="sureDlg" aria-labelledby="sureTitle">
+  <h3 id="sureTitle"></h3>
+  <p id="sureText"></p>
+  <div class="dlg-acts"><button class="btn ghost" id="sureNo"></button><button class="btn stop" id="sureYes"></button></div>
 </dialog>
 
 <dialog id="dlStop" aria-labelledby="dlStopTitle">
@@ -1106,6 +1182,7 @@ self.onmessage = async (e) => {
       if (!res.ok) {
         const err = new Error(data.error || `Storage returned an error (${res.status}).`);
         err.code = data.code;
+        err.existing = data.existing || "";
         throw err;
       }
       return data;
@@ -1114,7 +1191,7 @@ self.onmessage = async (e) => {
 
   // ---------- Storage gauge ----------
   function pendingBytes() {
-    return state.queue.filter((q) => ["waiting", "paused", "converting", "uploading"].includes(q.status))
+    return state.queue.filter((q) => ["waiting", "paused", "checking", "ask", "converting", "uploading"].includes(q.status))
       .reduce((sum, q) => sum + q.file.size, 0);
   }
 
@@ -2804,9 +2881,12 @@ self.onmessage = async (e) => {
       processing: (data.processing || []).filter((p) => !isSys(p)), thumbsPending: data.thumbsPending || 0,
       subs: backend.id === "pi" ? data.subs || [] : [], subsQuota: backend.id === "pi" ? data.subsQuota || null : null,
       intros: backend.id === "pi" ? data.intros || {} : {},
+      light: backend.id === "pi" ? data.light || {} : {}, storageAlert: data.storageAlert === undefined ? 90 : data.storageAlert,
       freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
     });
     await loadMeta();
+    storageHeadsUp();
+    if (isSettingsOpen()) renderSettings();
     syncProgress(); // where you left off, from your other devices
     saveLibrary();
     await thumbsReady;
@@ -3177,6 +3257,7 @@ self.onmessage = async (e) => {
   $("player").addEventListener("click", (e) => { if (e.target === $("player")) $("player").close(); });
 
   function openFromHash() {
+    if (location.hash === "#settings") { if (!isSettingsOpen()) openSettings(false); return; }
     const m = location.hash.match(/^#watch=(.+)$/);
     if (!m) return;
     const key = decodeURIComponent(m[1]);
@@ -3184,10 +3265,319 @@ self.onmessage = async (e) => {
     openPlayer({ key, name: dash === -1 ? key : key.slice(dash + 1), type: "" });
   }
 
+  // ---------- Settings page (the gear) ----------
+  // Download copies, where the space is going, Smart Cleanup and the storage heads-up. Most of it
+  // lives on the Pi, so on Cloudflare the page just says so.
+  const setUI = { data: null, clean: null, goal: 0, picked: new Set(), timer: null, loading: false, err: "" };
+  function isSettingsOpen() { return !$("settingsPage").hidden; }
+
+  function openSettings(push = true) {
+    $("settingsPage").hidden = false;
+    document.body.classList.add("no-scroll");
+    if (push && location.hash !== "#settings") history.pushState({ mocloudSettings: 1 }, "", "#settings");
+    setUI.picked.clear(); setUI.goal = 0;
+    renderSettings();
+    loadSettings(true);
+  }
+  function closeSettings(fromHistory) {
+    if (!isSettingsOpen()) return;
+    $("settingsPage").hidden = true;
+    document.body.classList.remove("no-scroll");
+    clearTimeout(setUI.timer);
+    if (!fromHistory && location.hash === "#settings") history.back();
+  }
+  $("setOpen").addEventListener("click", () => openSettings());
+  $("setBack").addEventListener("click", () => closeSettings());
+  window.addEventListener("popstate", () => { if (location.hash !== "#settings") closeSettings(true); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isSettingsOpen() && !document.querySelector("dialog[open]")) closeSettings(); });
+
+  async function loadSettings(withCleanup) {
+    clearTimeout(setUI.timer);
+    if (backend.id !== "pi" || state.offline) { renderSettings(); return; }
+    setUI.loading = true;
+    try {
+      const [st, cl] = await Promise.all([api("/api/settings"), withCleanup ? api("/api/cleanup") : Promise.resolve(setUI.clean)]);
+      setUI.data = st; setUI.clean = cl; setUI.err = "";
+    } catch (e) { setUI.err = e.message; }
+    setUI.loading = false;
+    if (!isSettingsOpen()) return;
+    renderSettings();
+    // Live progress while the page is open: the copy being made, or a scan that's running.
+    const scanning = setUI.clean && setUI.clean.scanning;
+    setUI.timer = setTimeout(() => loadSettings(!!scanning), scanning ? 3000 : 5000);
+  }
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function card(title, sub) {
+    const c = el("div", "set-card");
+    c.append(el("h3", "", title));
+    if (sub) c.append(el("p", "sub", sub));
+    return c;
+  }
+  function barRows(rows, total) {
+    const wrap = el("div", "bars");
+    for (const r of rows) {
+      const row = el("div", "bar-row");
+      const tr = el("div", "track"), fill = el("i");
+      fill.style.width = Math.max(1, Math.min(100, (r.bytes / (total || 1)) * 100)) + "%";
+      tr.append(fill);
+      row.append(el("span", "", r.name), el("em", "", fmtSize(r.bytes)), tr);
+      wrap.append(row);
+    }
+    return wrap;
+  }
+
+  function renderSettings() {
+    const body = $("setBody");
+    const parts = [];
+    const pct = state.limit ? Math.round((state.used / state.limit) * 100) : 0;
+
+    // Storage + heads-up
+    const stor = card("Storage", backend.id === "pi" ? "Your Pi's SSD." : "Your Cloudflare storage.");
+    const line = el("div", "set-stat");
+    line.innerHTML = `<b>${fmtSize(state.used)}</b> used of ${fmtSize(state.limit)} (${pct}%)`;
+    const usage = el("div", "usage" + (state.storageAlert && pct >= state.storageAlert ? " hot" : ""));
+    const fill = el("i"); fill.style.width = Math.min(100, pct) + "%"; usage.append(fill);
+    stor.append(line, usage);
+    if (backend.id === "pi" && setUI.data) {
+      const row = el("div", "set-row");
+      const lab = el("span", "set-stat", "Give me a heads up when storage hits");
+      const sel = el("select", "set-select");
+      for (const [v, t] of [[0, "Never"], [80, "80%"], [90, "90%"], [95, "95%"]]) {
+        const o = el("option", "", t); o.value = v; o.selected = v === (setUI.data.settings.storageAlert ?? 90); sel.append(o);
+      }
+      sel.addEventListener("change", async () => {
+        try { setUI.data = await api("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storageAlert: +sel.value }) }); state.storageAlert = +sel.value; toast("Got it."); }
+        catch (e) { toast(e.message, true); }
+      });
+      row.append(lab, sel);
+      stor.append(row);
+    }
+    parts.push(stor);
+
+    if (backend.id !== "pi") {
+      parts.push(card("Download copies and Smart Cleanup", "These live on the Pi. Switch to the Pi up top to use them."));
+      body.replaceChildren(...parts);
+      return;
+    }
+    if (state.offline) {
+      parts.push(card("MoCloud is offline", "Settings come back once the Pi does."));
+      body.replaceChildren(...parts);
+      return;
+    }
+    if (!setUI.data) {
+      parts.push(card(setUI.err ? "Couldn't load settings" : "Loading", setUI.err || "ii calm one sec"));
+      body.replaceChildren(...parts);
+      return;
+    }
+
+    // Lighter download copies
+    const L = setUI.data.light;
+    const dc = card("Lighter download copies",
+      "When nobody's using MoCloud, the Pi makes smaller copies of big videos so downloads go way faster. " +
+      "Same resolution, and every copy gets checked against the original before it's kept. Watching still streams the full thing. " +
+      "The moment anyone plays, uploads or downloads something, it stops and picks back up later.");
+    const row = el("div", "set-row");
+    const sw = el("button", "switch"); sw.type = "button"; sw.setAttribute("role", "switch");
+    sw.setAttribute("aria-checked", String(!!L.on)); sw.setAttribute("aria-label", "Make lighter download copies");
+    sw.addEventListener("click", async () => {
+      try { setUI.data = await api("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lightCopies: !L.on }) }); renderSettings(); }
+      catch (e) { toast(e.message, true); }
+    });
+    row.append(el("span", "", L.on ? "On" : "Off"), sw);
+    dc.append(row);
+    const now = el("p", "set-stat" + (L.working && !L.working.paused ? " live" : ""));
+    if (!L.available) now.textContent = "The Pi needs ffmpeg for this. Run the MoCloud installer again.";
+    else if (!L.on) now.textContent = "Off. Downloads use the original files.";
+    else if (L.working) {
+      const what = { testing: "Testing", checking: "Checking", making: "Making a copy of" }[L.working.phase] || "Working on";
+      now.textContent = L.working.paused
+        ? `${L.working.paused}. Next up: ${titleOf({ name: L.working.name, type: "" })}`
+        : `${what} ${titleOf({ name: L.working.name, type: "" })}${L.working.phase === "making" ? `, ${Math.floor(L.working.progress * 100)}%` : ""}`;
+    } else now.textContent = L.waiting ? `${L.waiting} waiting for a quiet moment` : "All caught up";
+    dc.append(now);
+    const tot = el("p", "set-stat");
+    tot.innerHTML = L.done
+      ? `<b>${L.done}</b> ${L.done === 1 ? "copy" : "copies"} made, downloads are <b>${fmtSize(L.saved)}</b> lighter in total. They take up ${fmtSize(L.bytes)} on the SSD.`
+      : "No copies yet.";
+    if (L.skipped) tot.append(` ${L.skipped} ${L.skipped === 1 ? "video was" : "videos were"} skipped since ${L.skipped === 1 ? "it's" : "they're"} already small enough.`);
+    dc.append(tot);
+    if (L.done) {
+      const clear = el("button", "link", "Delete all download copies");
+      clear.addEventListener("click", async () => {
+        if (!(await askSure("Delete all download copies?", `Frees ${fmtSize(L.bytes)}. Your videos stay, downloads just go back to using the full files.`, "Delete them", "Nah"))) return;
+        try { setUI.data = await api("/api/light/clear", { method: "POST" }).then(() => api("/api/settings")); toast("Download copies deleted."); renderSettings(); refresh().catch(() => {}); }
+        catch (e) { toast(e.message, true); }
+      });
+      dc.append(clear);
+    }
+    dc.append(el("p", "set-note", "Copies count toward your storage, and they're the first thing deleted if an upload needs the room."));
+    parts.push(dc);
+
+    const C = setUI.clean;
+    if (C) {
+      // Where the space is going
+      const where = card("Where ur space is going");
+      where.append(barRows(C.kinds, C.used));
+      if (C.shows.length) { where.append(el("h4", "", "Biggest shows")); where.append(barRows(C.shows.slice(0, 6), C.used)); }
+      if (C.folders.length > 1) { where.append(el("h4", "", "Folders")); where.append(barRows(C.folders, C.used)); }
+      parts.push(where);
+      parts.push(cleanupCard(C));
+    }
+    body.replaceChildren(...parts);
+  }
+
+  function cleanupCard(C) {
+    const c = card("Smart Cleanup", "Stuff that might be worth clearing out. Nothing gets deleted unless you say so, twice.");
+    const items = C.items;
+    // Space goal: picks the best candidates until it's reached.
+    const goal = el("div", "goal");
+    goal.append(el("span", "", "Free up"));
+    for (const g of [5, 10, 25]) {
+      const b = el("button", "chip", g + " GB"); b.type = "button";
+      b.setAttribute("aria-pressed", String(setUI.goal === g));
+      b.addEventListener("click", () => {
+        setUI.goal = setUI.goal === g ? 0 : g;
+        setUI.picked.clear();
+        if (setUI.goal) {
+          let sum = 0;
+          for (const i of items) { if (sum >= setUI.goal * GB) break; setUI.picked.add(i.key); sum += i.size; }
+          if (sum < setUI.goal * GB) toast(`Only ${fmtSize(sum)} worth of suggestions rn, so I picked all of them.`);
+        }
+        renderSettings();
+      });
+      goal.append(b);
+    }
+    c.append(goal);
+    const st = el("p", "set-stat");
+    st.textContent = C.scanning ? (C.scanning === "full" ? "Checking every file for busted ones, this takes a minute..." : "Scanning...")
+      : C.unchecked ? `${C.unchecked} new ${C.unchecked === 1 ? "video hasn't" : "videos haven't"} been looked at yet.`
+      : C.scanAt ? `Last full check ${new Date(C.scanAt).toLocaleDateString()}.` : "";
+    c.append(st);
+    const scans = el("div", "set-row");
+    const quick = el("button", "btn ghost small", "Scan again"); quick.disabled = !!C.scanning;
+    const deep = el("button", "btn ghost small", "Check for busted files"); deep.disabled = !!C.scanning;
+    deep.title = "Plays the end of every video to find ones that got cut off. Takes a while.";
+    for (const [b, full] of [[quick, false], [deep, true]]) b.addEventListener("click", async () => {
+      try { setUI.clean = await api("/api/cleanup/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ full }) }); renderSettings(); loadSettings(true); }
+      catch (e) { toast(e.message, true); }
+    });
+    scans.append(quick, deep);
+    c.append(scans);
+
+    if (!items.length) {
+      c.append(el("p", "set-stat", "Nothing to clean up rn, ur good."));
+    } else {
+      const list = el("ul", "clean-list");
+      for (const i of items) {
+        const li = el("li", "clean-item");
+        const box = el("input"); box.type = "checkbox"; box.checked = setUI.picked.has(i.key);
+        box.setAttribute("aria-label", "Pick " + titleOf({ name: i.name, type: "" }));
+        box.addEventListener("change", () => { box.checked ? setUI.picked.add(i.key) : setUI.picked.delete(i.key); setUI.goal = 0; renderSettings(); });
+        const why = el("ul", "clean-why");
+        for (const r of i.reasons) why.append(el("li", "", r.text));
+        const acts = el("div", "clean-acts");
+        const keep = el("button", "link", "Keep it");
+        keep.title = "Hides this suggestion";
+        keep.addEventListener("click", () => cleanupMark(i, "dismiss"));
+        const never = el("button", "link", "Never flag this");
+        never.addEventListener("click", () => cleanupMark(i, "ignore"));
+        acts.append(keep, never);
+        li.append(box, el("b", "", titleOf({ name: i.name, type: "" })), el("span", "size", fmtSize(i.size)), why, acts);
+        list.append(li);
+      }
+      c.append(list);
+    }
+    if (C.ignored.length) {
+      const ig = el("details", "set-note");
+      ig.append(el("summary", "", `${C.ignored.length} ${C.ignored.length === 1 ? "file" : "files"} you said never to flag`));
+      for (const k of C.ignored) {
+        const r = el("div", "set-row");
+        const back = el("button", "link", "Flag again");
+        back.addEventListener("click", async () => {
+          try { await api("/api/cleanup/ignore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: k, on: false }) }); loadSettings(true); }
+          catch (e) { toast(e.message, true); }
+        });
+        r.append(el("span", "", titleOf({ name: k.replace(/^[0-9a-f]{8}-/, ""), type: "" })), back);
+        ig.append(r);
+      }
+      c.append(ig);
+    }
+    const picked = items.filter((i) => setUI.picked.has(i.key));
+    if (picked.length) {
+      const bar = el("div", "clean-bar");
+      const total = picked.reduce((a, i) => a + i.size, 0);
+      bar.append(el("span", "set-stat", `${picked.length} picked, frees ${fmtSize(total)}`));
+      const del = el("button", "btn stop small", "Delete them");
+      del.addEventListener("click", () => cleanupDelete(picked, total));
+      bar.append(del);
+      c.append(bar);
+    }
+    return c;
+  }
+
+  async function cleanupMark(i, how) {
+    try {
+      if (how === "ignore") await api("/api/cleanup/ignore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: i.key, on: true }) });
+      else for (const r of i.reasons) await api("/api/cleanup/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: i.key, code: r.code }) });
+      setUI.picked.delete(i.key);
+      toast(how === "ignore" ? "Bet, won't flag that one again." : "Bet, keeping it.");
+      loadSettings(true);
+    } catch (e) { toast(e.message, true); }
+  }
+
+  // Asking twice, in two separate steps, before anything is gone for good.
+  function askSure(title, text, yes, no) {
+    return new Promise((resolve) => {
+      const d = $("sureDlg");
+      $("sureTitle").textContent = title; $("sureText").textContent = text;
+      $("sureYes").textContent = yes; $("sureNo").textContent = no;
+      const done = (v) => { d.close(); resolve(v); };
+      $("sureYes").onclick = () => done(true);
+      $("sureNo").onclick = () => done(false);
+      d.oncancel = (e) => { e.preventDefault(); done(false); };
+      d.showModal();
+    });
+  }
+  async function cleanupDelete(picked, total) {
+    const n = picked.length, what = n === 1 ? titleOf({ name: picked[0].name, type: "" }) : `${n} videos`;
+    if (!(await askSure(`Delete ${what}?`, `That frees up ${fmtSize(total)}.`, "Yeah delete", "Nah"))) return;
+    if (!(await askSure("You sure sure?", `Once ${n === 1 ? "it's" : "they're"} gone ${n === 1 ? "it's" : "they're"} gone gang. This can't be undone.`, "Delete for good", "Wait no"))) return;
+    try {
+      const r = await api("/api/cleanup/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ keys: picked.map((i) => i.key), sure: 2 }) });
+      for (const k of r.deleted || []) {
+        const local = dl.items.get(dlId(backend.id, k));
+        if (local) await dlRemoveNow(local).catch(() => {});
+      }
+      setUI.picked.clear(); setUI.goal = 0;
+      toast(`Deleted ${(r.deleted || []).length}, freed ${fmtSize(r.freed || 0)}. Im pm done.`);
+      await refresh().catch(() => {});
+      loadSettings(true);
+    } catch (e) { toast(e.message, true); }
+  }
+
+  // A heads-up once a day when storage passes the line picked in Settings.
+  function storageHeadsUp() {
+    const at = state.storageAlert;
+    if (!at || !state.limit || state.offline) return;
+    const pct = (state.used / state.limit) * 100;
+    if (pct < at) return;
+    const day = new Date().toDateString(), key = "mocloud-heads-up-" + backend.id;
+    try { if (localStorage.getItem(key) === day) return; localStorage.setItem(key, day); } catch {}
+    toast(`Heads up, MoCloud is ${Math.round(pct)}% full.${backend.id === "pi" ? " Smart Cleanup in Settings can free some space." : ""}`, true);
+  }
+
   // ---------- Uploads ----------
   function renderQueue() {
     const list = $("queue");
-    list.replaceChildren(...state.queue.map((q) => {
+    const asking = state.queue.filter((q) => q.status === "ask");
+    list.replaceChildren(...(asking.length > 1 ? [askAllRow(asking)] : []), ...state.queue.map((q) => {
+      if (q.status === "ask") return askRow(q);
       const li = document.createElement("li");
       const held = q.status === "paused" || (state.offline && ["uploading", "converting", "finishing"].includes(q.status));
       if (q.status === "failed") li.className = "failed";
@@ -3209,6 +3599,7 @@ self.onmessage = async (e) => {
         : q.file.size ? Math.floor((q.sent / q.file.size) * 100) : 0;
       stat.textContent = held ? "Paused until MoCloud is back" : {
         waiting: "Waiting",
+        checking: "Checking it isn't already in MoCloud",
         converting: q.prepStage === "fix" ? `Converting and uploading, ${prepPct}%${speed}` : "Checking audio",
         uploading: `${pct}% of ${fmtSize(q.file.size)}${speed}`,
         finishing: "Finishing",
@@ -3237,14 +3628,164 @@ self.onmessage = async (e) => {
     renderGauge();
   }
 
+  // ---------- Duplicates ----------
+  // Nothing goes up twice. Each video or photo gets a fingerprint (a hash of its size plus its first
+  // and last megabyte; the Pi and the Cloudflare Worker use the same recipe), and storage turns away
+  // anything it already has before a byte is sent. The same episode (or movie and year) as a different
+  // file asks first: skip it, replace the old one, or keep both.
+  const FP_SPAN = 1024 * 1024;
+  async function fileFp(file) {
+    try {
+      if (!crypto.subtle) return "";
+      const head = await file.slice(0, Math.min(file.size, FP_SPAN)).arrayBuffer();
+      const tail = file.size > FP_SPAN ? await file.slice(Math.max(FP_SPAN, file.size - FP_SPAN)).arrayBuffer() : new ArrayBuffer(0);
+      const pre = new TextEncoder().encode(file.size + ":");
+      const all = new Uint8Array(pre.length + head.byteLength + tail.byteLength);
+      all.set(pre, 0); all.set(new Uint8Array(head), pre.length); all.set(new Uint8Array(tail), pre.length + head.byteLength);
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", all));
+      return Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+    } catch { return ""; }
+  }
+
+  // Which episode or movie a video is: "ep:<show>:<season>:<episode>", "mv:<title><year>", or "".
+  // Home videos and photos are never matched by name, only as the very same file.
+  const plainId = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const noBrackets = (s) => String(s).replace(/[\[\(][^\]\)]*[\]\)]/g, " ");
+  function mediaIdent(name) {
+    if (!VIDEO_EXT.test(name) || /^mocloud-|^\./.test(name)) return "";
+    const stem = String(name).replace(/\.[a-z0-9]{2,4}$/i, "");
+    const m = stem.match(/^(.*?)[\s._\-]*S(\d{1,2})[\s._\-]*E(?:P)?(\d{1,3})(?!\d)/i)
+           || stem.match(/^(.*?)[\s._\-]+Season[\s._\-]*(\d{1,2})[\s._\-]*Episode[\s._\-]*(\d{1,3})/i)
+           || stem.match(/^(.*?)[\s._\-]+(\d{1,2})x(\d{2,3})(?!\d)/i);
+    if (m) { const show = plainId(noBrackets(m[1])); return show ? `ep:${show}:${+m[2]}:${+m[3]}` : ""; }
+    if (CAMERA.test(stem.trim())) return "";
+    const y = stem.match(/^(.+)[\s._\-\(\[]+((?:19|20)\d{2})(?=$|[\s._\-\)\]])/);
+    if (y && plainId(noBrackets(y[1]))) return `mv:${plainId(noBrackets(y[1]).replace(/&/g, "and"))}${y[2]}`;
+    const cut = stem.search(JUNK);
+    if (cut < 0) return "";
+    const title = plainId(noBrackets(cut > 0 ? stem.slice(0, cut) : stem).replace(/&/g, "and"));
+    return title ? "mv:" + title : "";
+  }
+
+  const sameFile = (f, file) => f.name.toLowerCase() === file.name.toLowerCase() && f.size === file.size;
+
+  // A first look at what's already loaded, so obvious repeats never even ask storage.
+  function localDupe(q) {
+    const same = state.files.find((f) => sameFile(f, q.file));
+    if (same) return ["DUPLICATE", same.key];
+    const ident = mediaIdent(q.file.name);
+    if (ident && !q.keepBoth) {
+      const m = state.files.find((f) => f.key !== q.replace && mediaIdent(f.name) === ident);
+      if (m) return ["MATCH", m.key];
+    }
+    return null;
+  }
+
+  function dupeError(code, existing) {
+    const err = new Error(code);
+    err.code = code; err.existing = existing;
+    return err;
+  }
+
+  // What storage needs for its own checks: sent with every upload start.
+  const dupeFields = (q) => ({
+    fp: q.fp || undefined, origName: q.file.name, origSize: q.file.size,
+    replace: q.replace || undefined, keepBoth: q.keepBoth || undefined,
+  });
+
+  // Repeats are dropped quietly, with one message for the lot.
+  const skippedDupes = { names: [], uploading: 0, timer: null, as: "" };
+  function noteSkipped(q, code, existing) {
+    state.queue = state.queue.filter((x) => x !== q);
+    skippedDupes.names.push(prettyTitle(q.file.name));
+    const have = existingTitle(existing);
+    skippedDupes.as = have && have !== prettyTitle(q.file.name) ? have : "";
+    if (code === "UPLOADING") skippedDupes.uploading++;
+    clearTimeout(skippedDupes.timer);
+    skippedDupes.timer = setTimeout(() => {
+      const { names, uploading } = skippedDupes;
+      const as = skippedDupes.as;
+      skippedDupes.names = []; skippedDupes.uploading = 0; skippedDupes.as = "";
+      if (!names.length) return;
+      toast(names.length === 1
+        ? (uploading ? `Skipped ${names[0]}, another device is already uploading it.`
+          : `Skipped ${names[0]}, it's already in MoCloud${as ? ` as ${as}` : ""}.`)
+        : `Skipped ${names.length} files that are already in MoCloud${uploading ? " or being uploaded from another device" : ""}.`);
+    }, 700);
+    renderQueue();
+  }
+
+  function existingTitle(key) {
+    const f = state.files.find((x) => x.key === key);
+    return f ? titleOf(f) : "";
+  }
+
+  function answerDupe(q, choice) {
+    if (choice === "skip") { state.queue = state.queue.filter((x) => x !== q); renderQueue(); return; }
+    if (choice === "replace") q.replace = q.existing;
+    if (choice === "both") q.keepBoth = true;
+    Object.assign(q, { status: "waiting", sent: 0, prep: 0, key: null, uploadId: null, cancelled: false });
+    renderQueue();
+    runQueue();
+  }
+
+  function askRow(q) {
+    const li = document.createElement("li"); li.className = "ask";
+    const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.file.name;
+    const stat = document.createElement("span"); stat.className = "q-stat";
+    const have = existingTitle(q.existing);
+    stat.textContent = have ? `${have} is already in MoCloud` : "This is already in MoCloud";
+    const row = document.createElement("div"); row.className = "q-ask";
+    const skip = document.createElement("button"); skip.className = "btn ghost"; skip.textContent = "Skip";
+    skip.addEventListener("click", () => answerDupe(q, "skip"));
+    const repl = document.createElement("button"); repl.className = "btn"; repl.textContent = "Replace";
+    repl.title = "Upload this one and delete the copy that's there now";
+    repl.addEventListener("click", () => answerDupe(q, "replace"));
+    const both = document.createElement("button"); both.className = "link"; both.textContent = "Keep both";
+    both.title = "Only if they're really different, like two cuts of a movie";
+    both.addEventListener("click", () => answerDupe(q, "both"));
+    row.append(skip, repl, both);
+    li.append(name, stat, row);
+    return li;
+  }
+
+  function askAllRow(asking) {
+    const li = document.createElement("li"); li.className = "ask-all";
+    const label = document.createElement("span"); label.textContent = `${asking.length} are already in MoCloud:`;
+    const skip = document.createElement("button"); skip.className = "link"; skip.textContent = "Skip all";
+    skip.addEventListener("click", () => asking.forEach((q) => answerDupe(q, "skip")));
+    const repl = document.createElement("button"); repl.className = "link"; repl.textContent = "Replace all";
+    repl.addEventListener("click", () => asking.forEach((q) => answerDupe(q, "replace")));
+    li.append(label, skip, repl);
+    return li;
+  }
+
+  // A replaced file keeps its place: same folder and the same spot in Continue watching.
+  function carryOver(oldKey, newKey) {
+    if (!oldKey || oldKey === newKey) return;
+    if (state.meta.place[oldKey] !== undefined) changeMeta((m) => { if (m.place[newKey] === undefined) m.place[newKey] = m.place[oldKey]; delete m.place[oldKey]; });
+    if (prog.map[oldKey]) {
+      prog.map[newKey] = { ...prog.map[oldKey], at: Date.now() };
+      delete prog.map[oldKey];
+      prog.dirty = true;
+      progSaveLocal();
+      scheduleProgSync(1500);
+    }
+  }
+
   function addFiles(fileList) {
     if (!configured) { toast("Connect storage first: paste your MoCloud server address into index.html.", true); return; }
     let blocked = false, skipped = 0, added = 0;
+    const dupes = [];
     // Name order, so episodes upload 1, 2, 3 ... 10 rather than 1, 10, 2.
     const files = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     for (const file of files) {
       if (file.name.startsWith(".") || (!isVideo(file) && !isImage(file))) { skipped++; continue; } // dot files are system leftovers
       // FAIL-SAFE (browser side): never queue past the limit.
+      // The same file already waiting in line, or already in MoCloud: dropped straight away.
+      if (state.queue.some((q) => q.status !== "failed" && sameFile(q.file, file)) || state.files.some((f) => sameFile(f, file))) {
+        dupes.push(prettyTitle(file.name)); continue;
+      }
       if (state.used + pendingBytes() + file.size > state.limit) { blocked = true; continue; }
       state.queue.push({ file, status: "waiting", sent: 0, xhrs: new Set(), cancelled: false, folder: state.view }); // lands in the open folder
       added++;
@@ -3252,6 +3793,7 @@ self.onmessage = async (e) => {
     if (added && state.offline) toast("MoCloud is offline. These will upload by themselves once it's back. Keep this tab open.", true);
     else if (blocked) toast(added ? "Not everything fits. The rest was left out so storage stays under the limit." : "Max amount reached. Delete something to upload more.", true);
     else if (skipped) toast("Only videos and photos can be uploaded.", true);
+    else if (dupes.length) toast(dupes.length === 1 ? `Skipped ${dupes[0]}, it's already in MoCloud.` : `Skipped ${dupes.length} files that are already in MoCloud.`);
     renderQueue();
     runQueue();
   }
@@ -3416,7 +3958,7 @@ self.onmessage = async (e) => {
             started = api("/api/upload/start", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name: m.name, size: original.size, type: "video/mp4" }),
+              body: JSON.stringify({ name: m.name, size: original.size, type: "video/mp4", ...dupeFields(q) }),
             }).then((s) => {
               if (settled) { // cancelled while the upload was being opened: close it again
                 api("/api/upload/abort", {
@@ -3465,7 +4007,7 @@ self.onmessage = async (e) => {
     const start = await api("/api/upload/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: file.name, size: file.size, type: file.type }),
+      body: JSON.stringify({ name: file.name, size: file.size, type: file.type, ...dupeFields(q) }),
     });
     q.key = start.key; q.uploadId = start.uploadId;
     const partSize = start.partSize;
@@ -3494,6 +4036,13 @@ self.onmessage = async (e) => {
   async function uploadOne(q) {
     if (state.offline) { q.status = "paused"; renderQueue(); return; }
     try {
+      if (q.fp === undefined) {
+        q.status = "checking"; renderQueue();
+        q.fp = await fileFp(q.file);
+      }
+      if (q.cancelled) throw new Error("cancelled");
+      const local = localDupe(q);
+      if (local) throw dupeError(local[0], local[1]);
       let parts = null;
       if (CHECK_EXT.test(q.file.name) && !(backend.id === "pi" && state.piFixes)) { // the Pi does it better and faster
         q.status = "converting"; q.prep = 0; q.prepStage = "check"; renderQueue();
@@ -3513,11 +4062,14 @@ self.onmessage = async (e) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ key: q.key, uploadId: q.uploadId, parts }),
           });
+          if (done && done.duplicate) throw dupeError(done.duplicate, done.key); // another copy finished first
           if (done && done.key) q.key = done.key; // the Pi may store a fixed MP4 under a new name
+          q.replaced = (done && done.replaced) || null;
           q.fixing = !!(done && done.processing);
           q.subs = !!(done && done.subs);
           break;
         } catch (e) {
+          if (e.code === "DUPLICATE" || e.code === "MATCH") throw e;
           // Every chunk is already safe on the server, so if it dropped, just wait and finish later.
           if (e.code === "OFFLINE") { await waitForServer(q); continue; }
           // The reply can get lost even though storage did finish. Check before calling it failed.
@@ -3535,14 +4087,28 @@ self.onmessage = async (e) => {
         grabFrame(local).then((t) => { t.src = src; thumbs.set(key, t); thumbStore(key, t); return shareThumb(key, t); })
           .catch(() => {}).finally(() => { URL.revokeObjectURL(local); if (!$("player").open) renderLibrary(); });
       }
-      toast((q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.` : `Uploaded ${prettyTitle(q.outName || q.file.name)}.`)
+      toast((q.replaced ? "Replaced. " : "") + (q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.` : `Uploaded ${prettyTitle(q.outName || q.file.name)}.`)
         + (q.subs ? " Looking for subtitles, you can already watch it." : ""));
       if (q.folder && state.meta.folders[q.folder]) changeMeta((m) => { m.place[q.key] = q.folder; }); // into the folder that was open
+      if (q.replaced) carryOver(q.replaced, q.key);
       await refresh();
       renderQueue();
     } catch (e) {
       if (q.stopConvert) q.stopConvert(e);
       q.xhrs.forEach((x) => x.abort());
+      if (!q.cancelled && ["DUPLICATE", "UPLOADING", "MATCH"].includes(e.code)) {
+        if (q.uploadId && !q.finished) {
+          api("/api/upload/abort", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key: q.key, uploadId: q.uploadId }),
+          }).catch(() => {});
+        }
+        Object.assign(q, { key: null, uploadId: null, sent: 0, prep: 0 });
+        if (e.code === "MATCH") { q.status = "ask"; q.existing = e.existing; renderQueue(); }
+        else noteSkipped(q, e.code, e.existing);
+        refresh().catch(() => {});
+        return;
+      }
       if (e.code === "OFFLINE" && !q.cancelled) {
         // Couldn't start because the server is offline. Nothing is lost: it goes back in line
         // and starts again by itself once MoCloud is back.
@@ -3692,7 +4258,15 @@ self.onmessage = async (e) => {
     const id = dlId(backend.id, f.key);
     let it = dl.items.get(id);
     if ((it && it.done) || dl.queue.includes(id) || (dl.active && dl.active.id === id)) return;
-    const need = f.size - (it && it.size === f.size ? it.got : 0);
+    // The Pi's lighter copy when there is one (same picture, way smaller). A download that already
+    // started keeps going with whichever version it began with.
+    const lightSize = backend.id === "pi" && state.light ? state.light[f.key] || 0 : 0;
+    let useLight = it && it.got ? !!it.light : !!lightSize;
+    if (it && it.got && it.light && !lightSize) { // its light copy is gone: start over with the original
+      await dlDeleteFile(it).catch(() => {}); it.got = 0; useLight = false;
+    }
+    const size = useLight ? lightSize : f.size;
+    const need = size - (it && it.size === size ? it.got : 0);
     try {
       const est = await navigator.storage.estimate();
       const room = (est.quota || 0) - (est.usage || 0);
@@ -3705,10 +4279,11 @@ self.onmessage = async (e) => {
       navigator.storage.persist().then((ok) => { dl.persisted = ok; renderDownloadsPanel(); }).catch(() => {});
     }
     if (!it) {
-      it = { id, src: backend.id, key: f.key, name: f.name, size: f.size, got: 0, done: false, added: Date.now(), fname: await dlFileName(id) };
+      it = { id, src: backend.id, key: f.key, name: f.name, size, got: 0, done: false, added: Date.now(), fname: await dlFileName(id) };
       dl.items.set(id, it);
     }
-    it.size = f.size; it.error = "";
+    if (useLight && !it.got && !it.light) toast(`Grabbing the lighter copy: ${fmtSize(lightSize)} instead of ${fmtSize(f.size)}, same picture.`);
+    it.size = size; it.light = useLight; it.error = "";
     await dlSave(it);
     dl.queue.push(id);
     renderDlState();
@@ -3758,7 +4333,7 @@ self.onmessage = async (e) => {
       finish(m);
     };
     w.onerror = () => finish({ type: "error", message: "the downloader couldn't run in this browser", size: it.got });
-    w.postMessage({ type: "start", name: it.fname, url: `${base}/file/${encodeURIComponent(it.key)}`, total: it.size });
+    w.postMessage({ type: "start", name: it.fname, url: `${base}/${it.light ? "light" : "file"}/${encodeURIComponent(it.key)}`, total: it.size });
     renderDlState();
   }
 
@@ -3861,7 +4436,7 @@ self.onmessage = async (e) => {
   const dlEst = { text: "", at: 0 };
   function dlStatText(it) {
     const busy = dl.active && dl.active.id === it.id;
-    return it.done ? fmtSize(it.size)
+    return it.done ? fmtSize(it.size) + (it.light ? " (lighter copy)" : "")
       : busy ? `${dlVibe(dlPct(it))}, ${fmtSize(it.got)} of ${fmtSize(it.size)}`
       : dl.queue.includes(it.id) ? "Waiting to download"
       : it.error ? `Stopped at ${dlPct(it)}%: ${it.error}`
