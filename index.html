@@ -24,6 +24,8 @@
     --green: #8ED6AD;        /* finished */
     --amber: #FB923C;        /* heads up */
     --red: #F87171;          /* went wrong */
+    --subs-yes: #E8C07A;     /* subtitles downloaded: champagne gold */
+    --subs-no: #7C8291;      /* no subtitles yet: muted steel */
     --on-accent: #111318;    /* text on gold */
     --on-red: #111318;
     --accent-rgb: 232,192,122;
@@ -244,6 +246,50 @@
     border: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
     box-shadow: 0 10px 30px rgba(0,0,0,.35); }
   .btn.stop.small, .btn.small { padding: 7px 14px; font-size: 14px; }
+  #devPage { position: fixed; inset: 0; z-index: 41; background: var(--ink); overflow-y: auto; overscroll-behavior: contain; }
+  #devPage[hidden] { display: none; }
+  #subsPage { position: fixed; inset: 0; z-index: 41; background: var(--ink); overflow-y: auto; overscroll-behavior: contain; }
+  #subsPage[hidden] { display: none; }
+  /* Subtitle dots: gold = downloaded, steel = not yet. Same colors on the Subtitles page. */
+  .subs-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--subs-no); margin-right: 7px; vertical-align: 2px; flex: none; }
+  .subs-dot.yes { background: var(--subs-yes); }
+  .subs-tally { display: flex; gap: 22px; flex-wrap: wrap; margin: 4px 0 14px; }
+  .subs-tally span { display: inline-flex; align-items: center; gap: 8px; color: var(--dim); font-size: 14px; }
+  .subs-tally b { color: var(--paper); font-size: 20px; font-variant-numeric: tabular-nums; }
+  .subs-tally .subs-dot { width: 10px; height: 10px; margin: 0; vertical-align: 0; }
+  .subs-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .subs-group h4 { margin: 18px 0 6px; font-size: 15px; font-weight: 600; color: var(--subs-no); }
+  .subs-group h4.yes { color: var(--subs-yes); }
+  .subs-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .subs-row .subs-dot { margin: 0; vertical-align: 0; }
+  .subs-row .what { flex: 1; min-width: 0; }
+  .subs-row .what b { display: block; font-weight: 500; font-size: 15px; color: var(--subs-no); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .subs-row.yes .what b { color: var(--subs-yes); }
+  .subs-row .what small { display: block; color: var(--dim); font-size: 13px; }
+  .subs-row .link { font-size: 13px; flex: none; }
+  #pinDlg { background: var(--panel); border-radius: var(--r-lg); padding: 26px; width: min(400px, 92vw); }
+  #pinDlg h3 { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
+  #pinDlg p { margin: 0 0 14px; color: var(--dim); font-size: 14px; }
+  #pinInput { width: 100%; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink);
+    color: var(--paper); font-size: 22px; letter-spacing: .4em; text-align: center; margin-bottom: 8px; }
+  #pinErr { min-height: 20px; color: var(--red); font-size: 14px; margin: 0 0 12px; }
+  .pin-acts { display: flex; align-items: center; gap: 10px; }
+  .pin-acts .push { margin-right: auto; }
+  .speed-h { margin: 18px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--dim); font-weight: 600; }
+  .speed-list { list-style: none; margin: 0 0 10px; padding: 0; }
+  .speed-item { border-top: 1px solid var(--line); padding: 12px 0; }
+  .speed-item.fresh { border: 1px solid var(--accent); border-radius: var(--r-sm); padding: 12px 14px; }
+  .speed-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+  .speed-link { font-size: 12px; padding: 2px 10px; border-radius: 999px; background: var(--panel-2); color: var(--dim); }
+  .speed-link.eth { color: var(--green); }
+  .speed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 14px; margin-top: 8px; }
+  .speed-grid span { display: block; font-size: 12px; color: var(--dim); }
+  .speed-grid b { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .speed-item .set-note { margin-top: 6px; }
+  .set-stat.bad { color: var(--red); }
+  .dbx-banner { margin-bottom: 22px; }
+  .thumb .doc-ext { position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; font-weight: 700;
+    letter-spacing: .06em; color: var(--accent-2); background: var(--panel-2); }
   #sureDlg { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(440px, 92vw); }
   #sureDlg h3 { margin: 0 0 8px; font-size: 19px; font-weight: 600; }
   #sureDlg p { margin: 0 0 18px; color: var(--dim); font-size: 14px; }
@@ -539,6 +585,7 @@
         <div class="source" role="group" aria-label="Which storage to use">
           <button type="button" data-source="pi" aria-pressed="true">Pi</button>
           <button type="button" data-source="cloud" aria-pressed="false">Cloudflare</button>
+          <button type="button" data-source="flash" aria-pressed="false">Flash drive</button>
         </div>
         <button type="button" class="btn ghost small dl-open" id="dlOpen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg><span id="dlOpenLabel">Downloads</span></button>
         <button type="button" class="btn ghost gear-btn" id="setOpen" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.9 4.6 1.7 1.7 0 0 0 9.97 3.04V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.26.6.85 1 1.51 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg></button>
@@ -651,6 +698,41 @@
     <div id="setBody"></div>
   </div>
 </section>
+
+<section id="devPage" hidden aria-labelledby="devTitle">
+  <div class="set-wrap">
+    <div class="set-top">
+      <button type="button" class="btn ghost small set-back" id="devBack">&larr; Back</button>
+      <h2 id="devTitle">Developer settings</h2>
+    </div>
+    <div id="devBody"></div>
+  </div>
+</section>
+
+<section id="subsPage" hidden aria-labelledby="subsTitle">
+  <div class="set-wrap">
+    <div class="set-top">
+      <button type="button" class="btn ghost small set-back" id="subsBack">&larr; Back</button>
+      <h2 id="subsTitle">Subtitles</h2>
+    </div>
+    <div id="subsBody"></div>
+  </div>
+</section>
+
+<dialog id="pinDlg" aria-labelledby="pinTitle">
+  <div id="pinMain">
+    <h3 id="pinTitle">wats the pass gang</h3>
+    <p id="pinText" hidden></p>
+    <input type="password" id="pinInput" inputmode="numeric" autocomplete="off" aria-label="Pass">
+    <p id="pinErr" role="alert"></p>
+    <div class="pin-acts"><button type="button" class="link push" id="pinForgot">Forgot pass</button><button type="button" class="btn ghost" id="pinCancel">Nah</button><button type="button" class="btn" id="pinGo">Unlock</button></div>
+  </div>
+  <div id="pinForgotAsk" hidden>
+    <h3>Forgot the pass?</h3>
+    <p id="pinForgotText"></p>
+    <div class="pin-acts"><button type="button" class="btn ghost push" id="pinBack">Nah</button><button type="button" class="btn" id="pinSend">Send it</button></div>
+  </div>
+</dialog>
 
 <dialog id="sureDlg" aria-labelledby="sureTitle">
   <h3 id="sureTitle"></h3>
@@ -955,13 +1037,21 @@ self.onmessage = async (e) => {
   // for example when the Pi is offline and you still want what's on Cloudflare.
   const CLOUD_URL = "https://crimson-pond-7d8a.benmostafa1010.workers.dev";
 
+  // The 128 GB flash drive plugged into the same Pi: its own storage, locked with the pin.
+  const FLASH_URL = /^https?:\/\//.test(SERVER_URL) ? SERVER_URL.replace(/\/+$/, "") + ":8443" : "";
+
   const BACKENDS = {
     pi: { id: "pi", name: "Pi", url: SERVER_URL.replace(/\/+$/, "") },
     cloud: { id: "cloud", name: "Cloudflare", url: CLOUD_URL.replace(/\/+$/, "") },
+    flash: { id: "flash", name: "Flash drive", url: FLASH_URL },
   };
   const isUrl = (u) => /^https?:\/\//.test(u);
+  const onPi = () => backend.id !== "cloud"; // the Pi's SSD or the flash drive: both run the Pi's server
   let backend = (() => {
-    try { const saved = localStorage.getItem("mocloud-source"); if (BACKENDS[saved] && isUrl(BACKENDS[saved].url)) return BACKENDS[saved]; } catch {}
+    try {
+      const saved = localStorage.getItem("mocloud-source");
+      if (saved !== "flash" && BACKENDS[saved] && isUrl(BACKENDS[saved].url)) return BACKENDS[saved]; // the flash drive always asks for the pin first
+    } catch {}
     return BACKENDS.pi;
   })();
   let API = backend.url;
@@ -1000,11 +1090,13 @@ self.onmessage = async (e) => {
   const isImage = (f) => (f.type || "").startsWith("image/") || IMAGE_EXT.test(f.name);
 
   // Each storage has its own passcode, remembered separately in this browser.
+  let flashPin = ""; // never saved: the flash drive asks for the pin every time you open it
   function readPasscode() {
+    if (backend.id === "flash") return flashPin;
     try { return localStorage.getItem("mocloud-passcode-" + backend.id) || localStorage.getItem("stash-passcode") || ""; }
     catch { return ""; }
   }
-  function savePasscode(v) { try { localStorage.setItem("mocloud-passcode-" + backend.id, v); } catch {} }
+  function savePasscode(v) { if (backend.id === "flash") { flashPin = v; return; } try { localStorage.setItem("mocloud-passcode-" + backend.id, v); } catch {} }
 
   function fmtSize(bytes) {
     if (bytes >= GB) return parseFloat((bytes / GB).toFixed(2)) + " GB";
@@ -1013,7 +1105,7 @@ self.onmessage = async (e) => {
     return Math.max(1, Math.round(bytes / 1e3)) + " KB";
   }
   const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  const fileUrl = (key) => `${API}/file/${encodeURIComponent(key)}`;
+  const fileUrl = (key) => `${API}/file/${encodeURIComponent(key)}` + (backend.id === "flash" ? "?p=" + encodeURIComponent(flashPin) : "");
 
   // ---------- Readable titles ----------
   // Turns a messy file name into something you'd actually call the video, and works out
@@ -1056,7 +1148,7 @@ self.onmessage = async (e) => {
     const cut = stem.search(JUNK);
     return { title: tidy(cut > 0 ? stem.slice(0, cut) : stem) || stem };
   }
-  const prettyTitle = (fileName) => parseName(fileName).title;
+  const prettyTitle = (fileName) => VIDEO_EXT.test(fileName) ? parseName(fileName).title : fileName; // photos and other files keep their name
 
   // Sorts the library into shows (by season, then episode) and everything else.
   function groupFiles(files) {
@@ -1101,6 +1193,11 @@ self.onmessage = async (e) => {
 
   // ---------- Talking to the Worker ----------
   function askPasscode() {
+    if (backend.id === "flash") {
+      const from = backend;
+      return askPin({ text: "The flash drive needs the pass.", forgotUrl: BACKENDS.flash.url, verify: (p) => checkFlashPin(p) })
+        .then((p) => { if (p) { flashPin = p; state.passcode = p; } else if (backend === from) switchSource("pi"); });
+    }
     return new Promise((resolve) => {
       const gate = $("gate"), input = $("gateInput");
       input.value = "";
@@ -1299,7 +1396,7 @@ self.onmessage = async (e) => {
   const thumbHash = (key) => { let h = 5381; for (const c of String(key)) h = ((h * 33) ^ c.codePointAt(0)) >>> 0; return h.toString(16); };
   const THUMB_RE = /^mocloud-thumb-([0-9a-f]+)(?:-(\d+(?:\.\d+)?)x(\d+)x(\d+))?(-hq)?\.jpg$/;
   // The Pi makes its own sharp picture for every video ("-hq"); those beat browser-made ones.
-  const piMakesThumbs = () => backend.id === "pi" && state.piThumbs;
+  const piMakesThumbs = () => onPi() && state.piThumbs;
   function sharedThumb(key) {
     const h = thumbHash(key);
     let best = null, bestM = null;
@@ -1767,6 +1864,27 @@ self.onmessage = async (e) => {
     return state.sysFiles.find((x) => { const m = SUBS_RE.exec(x.name); return m && m[1] === h; }) || null;
   };
   const subsJob = (key) => (state.subs || []).find((s) => s.key === key) || null;
+  // Which videos have subtitles, looked up once per library refresh (not once per tile).
+  const subsIdx = { src: null, len: -1, set: new Set() };
+  const hasSubs = (key) => {
+    if (subsIdx.src !== state.sysFiles || subsIdx.len !== state.sysFiles.length) {
+      subsIdx.src = state.sysFiles; subsIdx.len = state.sysFiles.length;
+      subsIdx.set = new Set(state.sysFiles.map((x) => (SUBS_RE.exec(x.name) || [])[1]).filter(Boolean));
+    }
+    return subsIdx.set.has(thumbHash(key));
+  };
+  // The little dot by a title: gold once the subtitles are downloaded (for a show: every
+  // episode), steel grey until then. Only on the Pi, where subtitles are found.
+  function subsDot(files) {
+    if (backend.id !== "pi" || !state.piSubs || !files.length) return null;
+    const on = files.every((f) => hasSubs(f.key));
+    const d = document.createElement("span");
+    d.className = "subs-dot" + (on ? " yes" : "");
+    d.setAttribute("role", "img");
+    d.setAttribute("aria-label", on ? "Has subtitles" : "No subtitles yet");
+    d.title = on ? "Has subtitles" : "No subtitles yet";
+    return d;
+  }
   const subsOn = () => { try { return localStorage.getItem("mocloud-subs-on") === "1"; } catch { return false; } };
   const setSubsOn = (on) => { try { localStorage.setItem("mocloud-subs-on", on ? "1" : "0"); } catch {} };
   const fmtClock = (ms) => {
@@ -1893,7 +2011,7 @@ self.onmessage = async (e) => {
     box.append(go);
     stage.append(box);
     // Looked up as it plays: the library may still be loading when a video opens from a link.
-    const introOf = () => (backend.id === "pi" && state.intros ? state.intros[f.key] : null);
+    const introOf = () => (onPi() && state.intros ? state.intros[f.key] : null);
     const nextOf = () => (f._dl ? null : nextEpisodeOf(f));
     let mode = "", timer = null;
     const set = (m, label) => { mode = m; box.hidden = !m; go.textContent = label || ""; };
@@ -2049,6 +2167,7 @@ self.onmessage = async (e) => {
   }
 
   // The row at the top: videos you're partway through, and the next episode of a show you're watching.
+  const CONTINUE_DAYS = 3;
   function continueItems() {
     const byKey = new Map(state.files.filter(isVideo).map((f) => [f.key, f]));
     const latest = new Map(); // show (or single video) -> its most recently watched video
@@ -2060,8 +2179,10 @@ self.onmessage = async (e) => {
       if (!cur || p.at > cur.p.at) latest.set(group, { f, p, group });
     }
     const out = [];
+    const stale = Date.now() - CONTINUE_DAYS * 86400000;
     for (const { f, p, group } of latest.values()) {
       if (((prog.map["dismiss:" + group] || {}).at || 0) >= p.at) continue; // removed from the row
+      if ((p.at || 0) < stale) continue; // not touched in 3 days: drops off the row (the show still remembers where you were)
       if (p.t > 0) { out.push({ f, at: p.at, kind: "resume", p }); continue; }
       if (!p.done || !showIdOfName(f.name)) continue;
       const info = parseName(f.name); // finished: suggest the next episode, if it's here and not started
@@ -2301,10 +2422,14 @@ self.onmessage = async (e) => {
         thumb._wantThumb = () => { if (!state.offline) getThumb(f.key).then(show, () => {}); }; // no picture: the plain tile stays
         if (thumbWatcher) thumbWatcher.observe(thumb); else thumb._wantThumb();
       }
-    } else {
+    } else if (isImage(f)) {
       const img = document.createElement("img");
       img.loading = "lazy"; img.alt = ""; img.src = fileUrl(f.key);
       thumb.append(img);
+    } else { // any other file (PDFs, docs, zips...): its type, opened in a new tab
+      const ext = (f.name.match(/\.([a-z0-9]{1,5})$/i) || [, "file"])[1].toUpperCase();
+      const tag = document.createElement("span"); tag.className = "doc-ext"; tag.textContent = ext;
+      thumb.append(tag);
     }
     const saved = video && isDownloaded(f);
     const locked = state.offline && !saved; // downloaded videos keep playing offline
@@ -2324,6 +2449,7 @@ self.onmessage = async (e) => {
     }
     thumb.addEventListener("click", () => {
       if (locked) return toast("Locked until MoCloud is back online. Nothing has been deleted.", true);
+      if (!video && !isImage(f)) { window.open(fileUrl(f.key), "_blank", "noopener"); return; }
       openPlayer(f);
     });
     if (locked) {
@@ -2335,6 +2461,8 @@ self.onmessage = async (e) => {
     }
 
     const name = document.createElement("h3"); name.textContent = label || titleOf(f); name.title = f.name;
+    const dot = video ? subsDot([f]) : null;
+    if (dot) name.prepend(dot);
     const meta = document.createElement("p"); meta.className = "meta";
     meta.textContent = `${fmtSize(f.size)}, added ${fmtDate(f.uploaded)}`;
 
@@ -2575,6 +2703,8 @@ self.onmessage = async (e) => {
     box.append(tag);
     box.addEventListener("click", () => openShow(show));
     const name = document.createElement("h3"); name.textContent = show.name; name.title = show.name;
+    const dot = subsDot(files);
+    if (dot) name.prepend(dot);
     const meta = document.createElement("p"); meta.className = "meta";
     const seasons = show.seasons.map((s) => s.number);
     const seen = files.filter((f) => (getProg(f.key) || {}).done).length;
@@ -2588,9 +2718,9 @@ self.onmessage = async (e) => {
   // The chips at the top show just one kind. Newest upload first, or A to Z.
   let shelfPick = (() => { try { return localStorage.getItem("mocloud-shelf") || "all"; } catch { return "all"; } })();
   function shelves(shows, other, folderGrid) {
-    const movies = [], videos = [], photos = [];
+    const movies = [], videos = [], photos = [], docs = [];
     for (const f of other) {
-      if (!isVideo(f)) { photos.push(f); continue; }
+      if (!isVideo(f)) { (isImage(f) ? photos : docs).push(f); continue; }
       const mi = movieInfo(f);
       if (mi) posterWant(mi);
       if (mi && (mi.year || mi.img)) movies.push({ f, mi }); else videos.push(f);
@@ -2608,6 +2738,7 @@ self.onmessage = async (e) => {
       }, true],
       ["videos", "Videos", videos.length, () => order(videos.map((f) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
       ["photos", "Photos", photos.length, () => order(photos.map((f) => ({ name: f.name, at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
+      ["files", "Files", docs.length, () => order(docs.map((f) => ({ name: f.name, at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
     ].filter((g) => g[2]);
     const out = [];
     if (!groups.length) { if (folderGrid) out.push(folderGrid); return out; }
@@ -2822,6 +2953,7 @@ self.onmessage = async (e) => {
     if (openedShow) parts.push(showPage(openedShow));
     else if (openedCol) parts.push(collectionPage(openedCol));
     else if (!found) {
+      if (!view && backend.id === "flash" && dbxBannerWanted()) parts.push(dropboxCard(state.dropbox, true));
       if (!view) { const row = continueRow(); if (row) parts.push(row); }
       let folderGrid = null;
       if (subfolders.length) { folderGrid = gridOf(subfolders.map(folderCard)); folderGrid.classList.add("folder-grid"); }
@@ -2856,6 +2988,7 @@ self.onmessage = async (e) => {
     } else if (nothing) {
       empty.innerHTML = view
         ? "<b>This folder is empty</b>Tap Move under any video to put it here. Videos you upload while this folder is open land here too."
+        : backend.id === "flash" ? "<b>Nothing here yet</b>Drop any files anywhere on this page and they show up here."
         : "<b>Nothing here yet</b>Drop videos or photos anywhere on this page and they show up here.";
     }
   }
@@ -2897,6 +3030,14 @@ self.onmessage = async (e) => {
     renderQueue();
     watchFixes();
     noticeSubs();
+    if (backend.id === "flash" && !dbxTimer) dbxRefresh();
+  }
+  function dbxBannerWanted() {
+    const D = state.dropbox;
+    if (!D || !D.configured) return false;
+    if (["scanning", "ready", "moving", "paused", "error"].includes(D.phase)) return true;
+    let nah = false; try { nah = localStorage.getItem("mocloud-dbx-nah") === "1"; } catch {}
+    return D.phase === "idle" && !nah;
   }
 
   // ---------- When the server can't be reached ----------
@@ -2905,6 +3046,7 @@ self.onmessage = async (e) => {
   // it: the files live on the Pi and come back the moment it does.
   const libraryKey = () => "mocloud-library-" + backend.id;
   function saveLibrary() {
+    if (backend.id === "flash") return; // what's on the locked flash drive is never kept on this device
     try {
       localStorage.setItem(libraryKey(), JSON.stringify({
         files: state.files, used: state.used, limit: state.limit, freeTier: state.freeTier, at: Date.now(),
@@ -2913,6 +3055,7 @@ self.onmessage = async (e) => {
     } catch {}
   }
   function loadLibrary() {
+    if (backend.id === "flash") return false;
     try {
       const saved = JSON.parse(localStorage.getItem(libraryKey()) || (backend.id === "pi" ? localStorage.getItem("mocloud-library") : "null"));
       if (saved && Array.isArray(saved.files)) {
@@ -3201,6 +3344,8 @@ self.onmessage = async (e) => {
     $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || knownThumb(f.key));
     $("pCtrls").hidden = !isVideo(f);
     $("ccBtn").hidden = true;
+    if (isVideo(f) && backend.id === "pi" && (state.processing || []).some((p) => p.key === f.key && p.later))
+      toast("Heads up, the Pi's still fixing this one's sound for browsers. If it's quiet or silent here, it'll be right in a bit (iPhone and Apple TV are fine already)."); 
     player.f = isVideo(f) ? f : null;
     $("pResume").hidden = true;
     paintPlayerDesc();
@@ -3257,7 +3402,7 @@ self.onmessage = async (e) => {
   $("player").addEventListener("click", (e) => { if (e.target === $("player")) $("player").close(); });
 
   function openFromHash() {
-    if (location.hash === "#settings") { if (!isSettingsOpen()) openSettings(false); return; }
+    if (location.hash === "#settings" || location.hash === "#dev") { if (!isSettingsOpen()) openSettings(false); return; }
     const m = location.hash.match(/^#watch=(.+)$/);
     if (!m) return;
     const key = decodeURIComponent(m[1]);
@@ -3288,23 +3433,19 @@ self.onmessage = async (e) => {
   }
   $("setOpen").addEventListener("click", () => openSettings());
   $("setBack").addEventListener("click", () => closeSettings());
-  window.addEventListener("popstate", () => { if (location.hash !== "#settings") closeSettings(true); });
+  window.addEventListener("popstate", () => { if (!["#settings", "#dev", "#subs"].includes(location.hash)) closeSettings(true); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isSettingsOpen() && !document.querySelector("dialog[open]")) closeSettings(); });
 
-  async function loadSettings(withCleanup) {
+  async function loadSettings() {
     clearTimeout(setUI.timer);
+    if (backend.id === "flash") { renderSettings(); dbxRefresh(); return; }
     if (backend.id !== "pi" || state.offline) { renderSettings(); return; }
     setUI.loading = true;
-    try {
-      const [st, cl] = await Promise.all([api("/api/settings"), withCleanup ? api("/api/cleanup") : Promise.resolve(setUI.clean)]);
-      setUI.data = st; setUI.clean = cl; setUI.err = "";
-    } catch (e) { setUI.err = e.message; }
+    try { setUI.data = await api("/api/settings"); setUI.err = ""; } catch (e) { setUI.err = e.message; }
     setUI.loading = false;
     if (!isSettingsOpen()) return;
     renderSettings();
-    // Live progress while the page is open: the copy being made, or a scan that's running.
-    const scanning = setUI.clean && setUI.clean.scanning;
-    setUI.timer = setTimeout(() => loadSettings(!!scanning), scanning ? 3000 : 5000);
+    setUI.timer = setTimeout(loadSettings, 5000); // live progress on the copy being made
   }
 
   function el(tag, cls, text) {
@@ -3338,7 +3479,7 @@ self.onmessage = async (e) => {
     const pct = state.limit ? Math.round((state.used / state.limit) * 100) : 0;
 
     // Storage + heads-up
-    const stor = card("Storage", backend.id === "pi" ? "Your Pi's SSD." : "Your Cloudflare storage.");
+    const stor = card("Storage", backend.id === "pi" ? "Your Pi's SSD." : backend.id === "flash" ? "Ur flash drive, plugged into the Pi." : "Your Cloudflare storage.");
     const line = el("div", "set-stat");
     line.innerHTML = `<b>${fmtSize(state.used)}</b> used of ${fmtSize(state.limit)} (${pct}%)`;
     const usage = el("div", "usage" + (state.storageAlert && pct >= state.storageAlert ? " hot" : ""));
@@ -3360,24 +3501,24 @@ self.onmessage = async (e) => {
     }
     parts.push(stor);
 
-    if (backend.id !== "pi") {
-      parts.push(card("Download copies and Smart Cleanup", "These live on the Pi. Switch to the Pi up top to use them."));
-      body.replaceChildren(...parts);
-      return;
-    }
-    if (state.offline) {
+    if (backend.id === "flash") {
+      parts.push(dropboxCard(state.dropbox));
+    } else if (backend.id !== "pi") {
+      parts.push(card("Download copies", "These live on the Pi. Switch to the Pi up top to use them."));
+    } else if (state.offline) {
       parts.push(card("MoCloud is offline", "Settings come back once the Pi does."));
-      body.replaceChildren(...parts);
-      return;
-    }
-    if (!setUI.data) {
+    } else if (!setUI.data) {
       parts.push(card(setUI.err ? "Couldn't load settings" : "Loading", setUI.err || "ii calm one sec"));
-      body.replaceChildren(...parts);
-      return;
+    } else {
+      parts.push(lightCard(setUI.data.light));
     }
+    parts.push(subsCard());
+    parts.push(devCard());
+    body.replaceChildren(...parts);
+  }
 
-    // Lighter download copies
-    const L = setUI.data.light;
+  // Lighter download copies
+  function lightCard(L) {
     const dc = card("Lighter download copies",
       "When nobody's using MoCloud, the Pi makes smaller copies of big videos so downloads go way faster. " +
       "Same resolution, and every copy gets checked against the original before it's kept. Watching still streams the full thing. " +
@@ -3417,19 +3558,380 @@ self.onmessage = async (e) => {
       dc.append(clear);
     }
     dc.append(el("p", "set-note", "Copies count toward your storage, and they're the first thing deleted if an upload needs the room."));
-    parts.push(dc);
+    return dc;
+  }
 
-    const C = setUI.clean;
-    if (C) {
-      // Where the space is going
-      const where = card("Where ur space is going");
+  function subsCard() {
+    const c = card("Subtitles", "Which videos have their subtitles and which ones are still missing them.");
+    const b = el("button", "btn ghost small", "See them"); b.type = "button";
+    b.addEventListener("click", openSubsPage);
+    c.append(b);
+    return c;
+  }
+
+  // ---------- Subtitles page: every episode and movie, gold if it has subtitles, steel grey if not ----------
+  const subsUI = { filter: "missing", asking: false };
+  function isSubsOpen() { return !$("subsPage").hidden; }
+  function openSubsPage() {
+    $("subsPage").hidden = false;
+    if (location.hash !== "#subs") history.pushState({ mocloudSubs: 1 }, "", "#subs");
+    renderSubsPage();
+    refresh().then(() => { if (isSubsOpen()) renderSubsPage(); }, () => {});
+  }
+  function closeSubsPage(fromHistory) {
+    if (!isSubsOpen()) return;
+    $("subsPage").hidden = true;
+    if (!fromHistory && location.hash === "#subs") history.back();
+  }
+  $("subsBack").addEventListener("click", () => closeSubsPage());
+  window.addEventListener("popstate", () => { if (location.hash !== "#subs") closeSubsPage(true); });
+
+  function renderSubsPage() {
+    const body = $("subsBody");
+    const box = el("div", "set-card");
+    if (backend.id !== "pi") { box.append(el("p", "sub", "Subtitles live on the Pi. Switch to the Pi up top to see them.")); return body.replaceChildren(box); }
+    if (!state.piSubs) { box.append(el("p", "sub", "Subtitle search isn't set up on the Pi yet, so nothing's getting subtitles.")); return body.replaceChildren(box); }
+    const videos = state.files.filter(isVideo);
+    const have = videos.filter((f) => hasSubs(f.key)).length, missing = videos.length - have;
+    const pass = (f) => subsUI.filter === "all" || (subsUI.filter === "have") === hasSubs(f.key);
+
+    const tally = el("div", "subs-tally");
+    for (const [n, label, yes] of [[have, "have them", true], [missing, "missing", false]]) {
+      const t = el("span"); const d = el("span", "subs-dot" + (yes ? " yes" : ""));
+      t.append(d, el("b", "", String(n)), document.createTextNode(label));
+      tally.append(t);
+    }
+    const chips = el("div", "subs-filter");
+    for (const [id, label] of [["missing", "Missing"], ["have", "Have them"], ["all", "All"]]) {
+      const c = el("button", "chip", label); c.type = "button";
+      c.setAttribute("aria-pressed", String(subsUI.filter === id));
+      c.addEventListener("click", () => { subsUI.filter = id; renderSubsPage(); });
+      chips.append(c);
+    }
+    box.append(tally, chips);
+    if (missing > 0) {
+      const all = el("button", "btn ghost small", subsUI.asking ? "Asking the Pi..." : `Look again for all ${missing} missing`); all.type = "button";
+      all.disabled = subsUI.asking || state.offline;
+      all.addEventListener("click", findAllMissingSubs);
+      box.append(all);
+    }
+    const q = state.subsQuota;
+    if (q) box.append(el("p", "set-note", `${q.remaining} of ${q.limit} subtitle downloads left today.`));
+
+    const row = (f, title) => {
+      const on = hasSubs(f.key);
+      const r = el("div", "subs-row" + (on ? " yes" : ""));
+      const what = el("div", "what");
+      what.append(el("b", "", title));
+      const line = subsLine(f);
+      if (line) what.append(el("small", "", line));
+      r.append(el("span", "subs-dot" + (on ? " yes" : "")), what);
+      const job = subsJob(f.key);
+      if (!on && !state.offline && !(job && !SUBS_DONE.includes(job.state))) {
+        const b = el("button", "link", "Look again"); b.type = "button";
+        b.addEventListener("click", async () => { await findSubs(f); if (isSubsOpen()) renderSubsPage(); });
+        r.append(b);
+      }
+      return r;
+    };
+    const parts = [box];
+    const { shows, other } = groupFiles(videos);
+    let shown = 0;
+    for (const show of shows) {
+      const eps = show.seasons.flatMap((s) => s.episodes.map((e) => ({ ...e, season: s.number }))).filter((e) => pass(e.file));
+      if (!eps.length) continue;
+      const g = el("div", "set-card subs-group");
+      g.append(el("h4", showFiles(show).every((f) => hasSubs(f.key)) ? "yes" : "", show.name));
+      for (const e of eps) {
+        const name = e.name || (tvEpisode(e.file) || {}).name || "";
+        g.append(row(e.file, `S${e.season} E${e.episode}${name ? " · " + name : ""}`));
+      }
+      parts.push(g); shown += eps.length;
+    }
+    const rest = other.filter(pass).sort((a, b) => titleOf(a).localeCompare(titleOf(b), undefined, { numeric: true }));
+    if (rest.length) {
+      const g = el("div", "set-card subs-group");
+      g.append(el("h4", rest.every((f) => hasSubs(f.key)) ? "yes" : "", "Movies and other videos"));
+      for (const f of rest) g.append(row(f, titleOf(f)));
+      parts.push(g); shown += rest.length;
+    }
+    if (!shown) {
+      const e = el("div", "set-card");
+      e.append(el("p", "sub", subsUI.filter === "missing" ? "Everything has subtitles rn, bet." : "Nothing here yet."));
+      parts.push(e);
+    }
+    body.replaceChildren(...parts);
+  }
+
+  async function findAllMissingSubs() {
+    const missing = state.files.filter((f) => isVideo(f) && !hasSubs(f.key)
+      && !((subsJob(f.key) || {}).state && !SUBS_DONE.includes(subsJob(f.key).state)));
+    if (!missing.length) return;
+    if (!confirm(`Look again for all ${missing.length} missing? A free OpenSubtitles account gets 20 downloads a day, so if there's a lot, the rest go through after the daily reset by themselves.`)) return;
+    subsUI.asking = true; renderSubsPage();
+    let asked = 0;
+    for (const f of missing) {
+      try { await api("/api/subs/find", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: f.key }) }); asked++; } catch {}
+    }
+    subsUI.asking = false;
+    toast(asked ? `The Pi's looking for ${asked} of them.` : "Couldn't reach the Pi.", !asked);
+    await refresh().catch(() => {});
+    if (isSubsOpen()) renderSubsPage();
+  }
+
+  function devCard() {
+    const c = card("Developer settings", "Smart Cleanup, where ur space is going, and the speed test. Needs the pass.");
+    const b = el("button", "btn ghost small", "Developer settings"); b.type = "button";
+    b.disabled = !isUrl(BACKENDS.pi.url);
+    b.addEventListener("click", unlockDev);
+    c.append(b);
+    return c;
+  }
+
+  // ---------- The pin: Developer settings and the Flash drive ----------
+  // Checked on the Pi, never in this page (anyone can read a website's code). After 5 wrong
+  // tries the Pi locks it for 15 minutes. "Forgot pass" has the Pi email it, only ever to Mo.
+  const MASKED_EMAIL = "b*********1010@gmail.com";
+  function askPin({ title = "wats the pass gang", text = "", verify, forgotUrl }) {
+    return new Promise((resolve) => {
+      const d = $("pinDlg"), input = $("pinInput"), err = $("pinErr");
+      $("pinTitle").textContent = title; $("pinText").textContent = text; $("pinText").hidden = !text;
+      input.value = ""; err.textContent = ""; $("pinMain").hidden = false; $("pinForgotAsk").hidden = true;
+      let busy = false;
+      const finish = (v) => { d.close(); cleanup(); resolve(v); };
+      const go = async () => {
+        if (busy || !input.value) return;
+        busy = true; err.textContent = ""; $("pinGo").disabled = true;
+        try {
+          await verify(input.value);
+          finish(input.value);
+        } catch (e) {
+          err.textContent = e.message || "Nah that's not it.";
+          input.value = ""; input.focus();
+        } finally { busy = false; $("pinGo").disabled = false; }
+      };
+      const onKey = (e) => { if (e.key === "Enter") go(); };
+      const cancel = () => finish(null);
+      const forgot = () => { $("pinMain").hidden = true; $("pinForgotAsk").hidden = false; $("pinForgotText").textContent = `Send the pass to ${MASKED_EMAIL}?`; };
+      const back = () => { $("pinMain").hidden = false; $("pinForgotAsk").hidden = true; input.focus(); };
+      const send = async () => {
+        $("pinSend").disabled = true;
+        try {
+          const res = await fetch(forgotUrl + "/api/forgot", { method: "POST" });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "Couldn't send it rn.");
+          toast(`Sent it to ${data.email || MASKED_EMAIL}, check ur email.`);
+          back();
+        } catch (e) { toast(e.message === "Failed to fetch" ? (forgotUrl === BACKENDS.flash.url ? "Can't reach the flash drive rn. Is the Pi on?" : "Can't reach the Pi rn.") : e.message, true); }
+        finally { $("pinSend").disabled = false; }
+      };
+      function cleanup() {
+        $("pinGo").removeEventListener("click", go); input.removeEventListener("keydown", onKey);
+        $("pinCancel").removeEventListener("click", cancel); $("pinForgot").removeEventListener("click", forgot);
+        $("pinBack").removeEventListener("click", back); $("pinSend").removeEventListener("click", send);
+        d.removeEventListener("cancel", onEsc);
+      }
+      const onEsc = (e) => { e.preventDefault(); cancel(); };
+      $("pinGo").addEventListener("click", go); input.addEventListener("keydown", onKey);
+      $("pinCancel").addEventListener("click", cancel); $("pinForgot").addEventListener("click", forgot);
+      $("pinBack").addEventListener("click", back); $("pinSend").addEventListener("click", send);
+      d.addEventListener("cancel", onEsc);
+      if (!d.open) d.showModal();
+      input.focus();
+    });
+  }
+  async function pinError(res) {
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 423 || data.code === "PIN_LOCKED") return new Error(data.error || "Too many wrong tries gang. Locked for a bit.");
+    if (res.status === 401 || res.status === 403) {
+      const left = data.triesLeft;
+      return new Error(left != null ? `Nah that's not it. ${left} ${left === 1 ? "try" : "tries"} left.` : "Nah that's not it.");
+    }
+    return new Error(data.error || `The Pi said no (${res.status}).`);
+  }
+  function piPasscode() { try { return localStorage.getItem("mocloud-passcode-pi") || ""; } catch { return ""; } }
+
+  // ---------- Developer settings page ----------
+  const devUI = { token: "", clean: null, goal: 0, picked: new Set(), timer: null, err: "", hist: null, link: "", speed: null };
+  function isDevOpen() { return !$("devPage").hidden; }
+  async function unlockDev() {
+    const pin = await askPin({
+      forgotUrl: BACKENDS.pi.url,
+      verify: async (p) => {
+        let res;
+        try {
+          res = await fetch(BACKENDS.pi.url + "/api/dev/unlock", { method: "POST", headers: { "Content-Type": "application/json", "X-Passcode": piPasscode() }, body: JSON.stringify({ pin: p }) });
+        } catch { throw new Error("Can't reach the Pi rn."); }
+        if (!res.ok) throw await pinError(res);
+        devUI.token = (await res.json()).token;
+      },
+    });
+    if (pin) openDev();
+  }
+  function openDev() {
+    $("devPage").hidden = false;
+    if (location.hash !== "#dev") history.pushState({ mocloudDev: 1 }, "", "#dev");
+    devUI.picked.clear(); devUI.goal = 0; devUI.speed = null;
+    renderDev();
+    loadDev(true);
+  }
+  function closeDev(fromHistory) {
+    if (!isDevOpen()) return;
+    $("devPage").hidden = true;
+    clearTimeout(devUI.timer);
+    devUI.token = ""; // the pass is asked again next time
+    if (!fromHistory && location.hash === "#dev") history.back();
+  }
+  $("devBack").addEventListener("click", () => closeDev());
+  window.addEventListener("popstate", () => { if (location.hash !== "#dev") closeDev(true); });
+
+  async function devApi(path, options = {}) {
+    let res;
+    try {
+      res = await fetch(BACKENDS.pi.url + path, { ...options, headers: { ...(options.headers || {}), "X-Passcode": piPasscode(), "X-Dev": devUI.token } });
+    } catch { throw new Error("Can't reach the Pi rn."); }
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 403 && data.code === "DEV_LOCKED") { closeDev(); toast("Developer settings locked again. Enter the pass to get back in.", true); throw new Error("locked"); }
+    if (!res.ok) throw new Error(data.error || `The Pi said no (${res.status}).`);
+    return data;
+  }
+  const jsonPost = (body) => ({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+  async function loadDev(withHistory) {
+    clearTimeout(devUI.timer);
+    try {
+      const [cl, h] = await Promise.all([devApi("/api/cleanup"), withHistory || !devUI.hist ? devApi("/api/dev/speed/history") : Promise.resolve(null)]);
+      devUI.clean = cl; devUI.err = "";
+      if (h) { devUI.hist = h.history; devUI.link = h.link; }
+      devUI.picked = new Set([...devUI.picked].filter((k) => cl.items.some((i) => i.key === k)));
+    } catch (e) { if (e.message === "locked") return; devUI.err = e.message; }
+    if (!isDevOpen()) return;
+    renderDev();
+    const scanning = devUI.clean && devUI.clean.scanning;
+    devUI.timer = setTimeout(() => loadDev(false), scanning ? 3000 : 8000);
+  }
+
+  function renderDev() {
+    const parts = [speedCard()];
+    const C = devUI.clean;
+    if (!C) parts.push(card(devUI.err ? "Couldn't load it" : "Loading", devUI.err || "ii calm one sec"));
+    else {
+      const where = card("Where ur space is going", "On the Pi's SSD.");
       where.append(barRows(C.kinds, C.used));
       if (C.shows.length) { where.append(el("h4", "", "Biggest shows")); where.append(barRows(C.shows.slice(0, 6), C.used)); }
       if (C.folders.length > 1) { where.append(el("h4", "", "Folders")); where.append(barRows(C.folders, C.used)); }
-      parts.push(where);
-      parts.push(cleanupCard(C));
+      parts.push(where, cleanupCard(C));
     }
-    body.replaceChildren(...parts);
+    $("devBody").replaceChildren(...parts);
+  }
+
+  // ---------- Speed test ----------
+  // 999 Mbps and under stays Mbps; 1000 and up turns into Gbps (1.24 Gbps).
+  const fmtSpeed = (v, small, big) => v == null ? "–"
+    : Math.round(v) >= 1000 ? `${(v / 1000).toFixed(2)} ${big}`
+    : `${v >= 100 ? Math.round(v) : v.toFixed(1)} ${small}`;
+  const fmtMbps = (v) => fmtSpeed(v, "Mbps", "Gbps");
+  const fmtMBs = (v) => fmtSpeed(v, "MB/s", "GB/s");
+  function deviceLabel() {
+    const ua = navigator.userAgent;
+    return "Website on " + (/iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Mac/.test(ua) ? "Mac" : /Android/.test(ua) ? "Android" : /Windows/.test(ua) ? "PC" : "a browser");
+  }
+  function speedCard() {
+    const c = card("Speed test", "How fast the Pi's drives read and write, and how fast this device sends to and gets from the Pi. Run it before and after plugging the Pi into the router to see the difference.");
+    c.append(el("p", "set-stat", devUI.link ? `The Pi is on ${devUI.link} rn.` : ""));
+    const S = devUI.speed;
+    const row = el("div", "set-row");
+    const run = el("button", "btn small", S && S.running ? "ii calm one sec" : "Run speed test"); run.type = "button";
+    run.disabled = !!(S && S.running);
+    run.addEventListener("click", runSpeedTest);
+    row.append(run);
+    if (S && S.running) row.append(el("span", "set-stat live", S.phase));
+    c.append(row);
+    const H = devUI.hist || [];
+    if (H.length) {
+      c.append(el("h4", "speed-h", "History"));
+      const list = el("ul", "speed-list");
+      H.forEach((r, i) => { const li = speedResult(r, false); if (i === 0 && S && S.result) li.classList.add("fresh"); list.append(li); });
+      c.append(list);
+      const clear = el("button", "link", "Clear history"); clear.type = "button";
+      clear.addEventListener("click", async () => {
+        if (!(await askSure("Clear the speed test history?", "Every past result goes.", "Clear it", "Nah"))) return;
+        try { devUI.hist = (await devApi("/api/dev/speed/history", { method: "DELETE" })).history; renderDev(); } catch (e) { toast(e.message, true); }
+      });
+      c.append(clear);
+    } else c.append(el("p", "set-note", "No tests yet. Run one now, then again once the Pi is on Ethernet."));
+    return c;
+  }
+  function speedResult(r, fresh) {
+    const li = el(fresh ? "div" : "li", "speed-item" + (fresh ? " fresh" : ""));
+    const when = new Date(r.at);
+    const head = el("div", "speed-head");
+    head.append(el("b", "", fresh ? "Just now" : when.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })),
+      el("span", "speed-link" + (r.link === "Ethernet" ? " eth" : ""), r.link ? `Pi on ${r.link}` : "Pi link unknown"));
+    const grid = el("div", "speed-grid");
+    const cell = (k, v) => { const d = el("div", ""); d.append(el("span", "", k), el("b", "", v)); return d; };
+    grid.append(cell("Download", fmtMbps(r.down)), cell("Upload", fmtMbps(r.up)));
+    for (const [name, d] of Object.entries(r.disk || {})) {
+      if (d.error) grid.append(cell(name, "Couldn't test"));
+      else grid.append(cell(`${name} write`, fmtMBs(d.write)), cell(`${name} read`, fmtMBs(d.read)));
+    }
+    li.append(head, grid, el("p", "set-note", [r.device, r.route === "home" ? "home Wi-Fi" : r.route === "direct" ? "over Tailscale" : r.route === "funnel" ? "through Tailscale's public link" : ""].filter(Boolean).join(", ")));
+    return li;
+  }
+  async function runSpeedTest() {
+    const S = devUI.speed = { running: true, phase: "Checking the connection..." };
+    const step = (p) => { S.phase = p; if (isDevOpen()) renderDev(); };
+    renderDev();
+    const base = BACKENDS.pi.url, hdr = { "X-Passcode": piPasscode(), "X-Dev": devUI.token };
+    try {
+      let route = "";
+      try { route = (await (await fetch(base + "/api/health", { cache: "no-store" })).json()).route || ""; } catch {}
+      // Download: as much as arrives in 8 seconds.
+      step("Download test...");
+      let down = null;
+      {
+        const ctrl = new AbortController(); const t0 = performance.now(); let got = 0;
+        const stop = setTimeout(() => ctrl.abort(), 8000);
+        try {
+          const res = await fetch(`${base}/api/dev/speed/down?mb=1000`, { headers: hdr, signal: ctrl.signal, cache: "no-store" });
+          const reader = res.body.getReader();
+          for (;;) { const { done, value } = await reader.read(); if (done) break; got += value.length; }
+        } catch {}
+        clearTimeout(stop);
+        const secs = (performance.now() - t0) / 1000;
+        if (got) down = (got * 8) / secs / 1e6;
+      }
+      // Upload: 8 MB pieces, one after another, for 8 seconds.
+      step("Upload test...");
+      let up = null;
+      {
+        const piece = new Uint8Array(8 * 1024 * 1024); crypto.getRandomValues(piece.subarray(0, 65536));
+        const t0 = performance.now(); let sent = 0;
+        while (performance.now() - t0 < 8000) {
+          const res = await fetch(`${base}/api/dev/speed/up`, { method: "PUT", headers: hdr, body: piece }).catch(() => null);
+          if (!res || !res.ok) break;
+          sent += piece.length;
+        }
+        const secs = (performance.now() - t0) / 1000;
+        if (sent) up = (sent * 8) / secs / 1e6;
+      }
+      // The drives themselves, on the Pi.
+      step("Testing the drives on the Pi (about 30 seconds)...");
+      await devApi("/api/dev/speed/disk", { method: "POST" });
+      for (let i = 0; i < 120; i++) {
+        await sleep(1500);
+        const st = await devApi("/api/dev/speed/disk");
+        if (!st.running) break;
+      }
+      const saved = await devApi("/api/dev/speed/save", jsonPost({ down, up, device: deviceLabel(), route }));
+      devUI.hist = saved.history; devUI.link = saved.entry.link;
+      devUI.speed = { running: false, result: saved.entry };
+      toast("Speed test done. Im pm done.");
+    } catch (e) {
+      devUI.speed = { running: false };
+      if (e.message !== "locked") toast(e.message, true);
+    }
+    if (isDevOpen()) renderDev();
   }
 
   function cleanupCard(C) {
@@ -3440,16 +3942,16 @@ self.onmessage = async (e) => {
     goal.append(el("span", "", "Free up"));
     for (const g of [5, 10, 25]) {
       const b = el("button", "chip", g + " GB"); b.type = "button";
-      b.setAttribute("aria-pressed", String(setUI.goal === g));
+      b.setAttribute("aria-pressed", String(devUI.goal === g));
       b.addEventListener("click", () => {
-        setUI.goal = setUI.goal === g ? 0 : g;
-        setUI.picked.clear();
-        if (setUI.goal) {
+        devUI.goal = devUI.goal === g ? 0 : g;
+        devUI.picked.clear();
+        if (devUI.goal) {
           let sum = 0;
-          for (const i of items) { if (sum >= setUI.goal * GB) break; setUI.picked.add(i.key); sum += i.size; }
-          if (sum < setUI.goal * GB) toast(`Only ${fmtSize(sum)} worth of suggestions rn, so I picked all of them.`);
+          for (const i of items) { if (sum >= devUI.goal * GB) break; devUI.picked.add(i.key); sum += i.size; }
+          if (sum < devUI.goal * GB) toast(`Only ${fmtSize(sum)} worth of suggestions rn, so I picked all of them.`);
         }
-        renderSettings();
+        renderDev();
       });
       goal.append(b);
     }
@@ -3464,8 +3966,8 @@ self.onmessage = async (e) => {
     const deep = el("button", "btn ghost small", "Check for busted files"); deep.disabled = !!C.scanning;
     deep.title = "Plays the end of every video to find ones that got cut off. Takes a while.";
     for (const [b, full] of [[quick, false], [deep, true]]) b.addEventListener("click", async () => {
-      try { setUI.clean = await api("/api/cleanup/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ full }) }); renderSettings(); loadSettings(true); }
-      catch (e) { toast(e.message, true); }
+      try { devUI.clean = await devApi("/api/cleanup/scan", jsonPost({ full })); renderDev(); loadDev(false); }
+      catch (e) { if (e.message !== "locked") toast(e.message, true); }
     });
     scans.append(quick, deep);
     c.append(scans);
@@ -3476,9 +3978,9 @@ self.onmessage = async (e) => {
       const list = el("ul", "clean-list");
       for (const i of items) {
         const li = el("li", "clean-item");
-        const box = el("input"); box.type = "checkbox"; box.checked = setUI.picked.has(i.key);
+        const box = el("input"); box.type = "checkbox"; box.checked = devUI.picked.has(i.key);
         box.setAttribute("aria-label", "Pick " + titleOf({ name: i.name, type: "" }));
-        box.addEventListener("change", () => { box.checked ? setUI.picked.add(i.key) : setUI.picked.delete(i.key); setUI.goal = 0; renderSettings(); });
+        box.addEventListener("change", () => { box.checked ? devUI.picked.add(i.key) : devUI.picked.delete(i.key); devUI.goal = 0; renderDev(); });
         const why = el("ul", "clean-why");
         for (const r of i.reasons) why.append(el("li", "", r.text));
         const acts = el("div", "clean-acts");
@@ -3500,15 +4002,15 @@ self.onmessage = async (e) => {
         const r = el("div", "set-row");
         const back = el("button", "link", "Flag again");
         back.addEventListener("click", async () => {
-          try { await api("/api/cleanup/ignore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: k, on: false }) }); loadSettings(true); }
-          catch (e) { toast(e.message, true); }
+          try { await devApi("/api/cleanup/ignore", jsonPost({ key: k, on: false })); loadDev(false); }
+          catch (e) { if (e.message !== "locked") toast(e.message, true); }
         });
         r.append(el("span", "", titleOf({ name: k.replace(/^[0-9a-f]{8}-/, ""), type: "" })), back);
         ig.append(r);
       }
       c.append(ig);
     }
-    const picked = items.filter((i) => setUI.picked.has(i.key));
+    const picked = items.filter((i) => devUI.picked.has(i.key));
     if (picked.length) {
       const bar = el("div", "clean-bar");
       const total = picked.reduce((a, i) => a + i.size, 0);
@@ -3523,12 +4025,12 @@ self.onmessage = async (e) => {
 
   async function cleanupMark(i, how) {
     try {
-      if (how === "ignore") await api("/api/cleanup/ignore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: i.key, on: true }) });
-      else for (const r of i.reasons) await api("/api/cleanup/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: i.key, code: r.code }) });
-      setUI.picked.delete(i.key);
+      if (how === "ignore") await devApi("/api/cleanup/ignore", jsonPost({ key: i.key, on: true }));
+      else for (const r of i.reasons) await devApi("/api/cleanup/dismiss", jsonPost({ key: i.key, code: r.code }));
+      devUI.picked.delete(i.key);
       toast(how === "ignore" ? "Bet, won't flag that one again." : "Bet, keeping it.");
-      loadSettings(true);
-    } catch (e) { toast(e.message, true); }
+      loadDev(false);
+    } catch (e) { if (e.message !== "locked") toast(e.message, true); }
   }
 
   // Asking twice, in two separate steps, before anything is gone for good.
@@ -3549,16 +4051,90 @@ self.onmessage = async (e) => {
     if (!(await askSure(`Delete ${what}?`, `That frees up ${fmtSize(total)}.`, "Yeah delete", "Nah"))) return;
     if (!(await askSure("You sure sure?", `Once ${n === 1 ? "it's" : "they're"} gone ${n === 1 ? "it's" : "they're"} gone gang. This can't be undone.`, "Delete for good", "Wait no"))) return;
     try {
-      const r = await api("/api/cleanup/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ keys: picked.map((i) => i.key), sure: 2 }) });
+      const r = await devApi("/api/cleanup/delete", jsonPost({ keys: picked.map((i) => i.key), sure: 2 }));
       for (const k of r.deleted || []) {
-        const local = dl.items.get(dlId(backend.id, k));
+        const local = dl.items.get(dlId("pi", k));
         if (local) await dlRemoveNow(local).catch(() => {});
       }
-      setUI.picked.clear(); setUI.goal = 0;
+      devUI.picked.clear(); devUI.goal = 0;
       toast(`Deleted ${(r.deleted || []).length}, freed ${fmtSize(r.freed || 0)}. Im pm done.`);
-      await refresh().catch(() => {});
-      loadSettings(true);
-    } catch (e) { toast(e.message, true); }
+      if (backend.id === "pi") await refresh().catch(() => {});
+      loadDev(false);
+    } catch (e) { if (e.message !== "locked") toast(e.message, true); }
+  }
+
+  // ---------- Flash drive: moving stuff over from Dropbox ----------
+  function dropboxCard(D, banner) {
+    const c = card(banner ? "Got stuff on Dropbox?" : "Move stuff from Dropbox",
+      banner ? "MoCloud can move everything from ur Dropbox onto this flash drive by itself, so you can stop paying for Dropbox."
+        : "The Pi pulls everything straight from Dropbox onto this flash drive, folders and all. You can close MoCloud while it works. Nothing on Dropbox gets deleted.");
+    if (banner) c.classList.add("dbx-banner");
+    const row = el("div", "set-row");
+    const btn = (text, fn, ghost) => { const b = el("button", ghost ? "btn ghost small" : "btn small", text); b.type = "button"; b.addEventListener("click", fn); row.append(b); return b; };
+    if (!D) {
+      c.append(el("p", "set-stat", "ii calm one sec"));
+      return c;
+    }
+    const pctOf = () => D.total ? Math.min(100, (D.doneBytes / D.total) * 100) : 0;
+    if (!D.configured) {
+      c.append(el("p", "set-stat", "Dropbox isn't hooked up on the Pi yet. On the Pi run: sudo mocloud-dropbox-setup"));
+    } else if (D.phase === "scanning") {
+      c.append(el("p", "set-stat live", "ii calm one sec, adding up what's in ur Dropbox..."));
+    } else if (D.phase === "ready") {
+      const s = el("p", "set-stat");
+      s.innerHTML = `Move <b>${fmtSize(D.leftBytes)}</b> (${D.leftCount.toLocaleString()} ${D.leftCount === 1 ? "file" : "files"}) to the flash drive?`
+        + (D.doneCount ? ` ${D.doneCount.toLocaleString()} already made it over.` : "");
+      c.append(s);
+      if (D.skipped.length) c.append(el("p", "set-note", `${D.skipped.length} Dropbox ${D.skipped.length === 1 ? "doc" : "docs"} (like Paper docs) can't be downloaded, so ${D.skipped.length === 1 ? "it stays" : "they stay"} on Dropbox.`));
+      btn("Yeah move it", () => dbxCall("/api/dropbox/go"));
+      btn("Nah", () => dbxCall("/api/dropbox/forget"), true);
+    } else if (D.phase === "moving" || D.phase === "paused") {
+      const s = el("p", "set-stat" + (D.phase === "moving" ? " live" : ""));
+      s.textContent = D.phase === "paused" ? `Paused at ${fmtSize(D.doneBytes)} of ${fmtSize(D.total)}.`
+        : `Moving ${fmtSize(D.doneBytes)} of ${fmtSize(D.total)} (${D.doneCount.toLocaleString()} of ${D.count.toLocaleString()} files)${D.rate ? `, ${fmtMBs(D.rate / 1e6)}` : ""}`;
+      const usage = el("div", "usage"); const f = el("i"); f.style.width = pctOf() + "%"; usage.append(f);
+      c.append(s, usage);
+      if (D.phase === "moving" && D.current) c.append(el("p", "set-note", D.current.replace(/^\//, "")));
+      if (D.phase === "moving" && D.rate) {
+        const hrs = (D.total - D.doneBytes) / D.rate / 3600;
+        c.append(el("p", "set-note", hrs < 1 ? "Under an hour to go." : `About ${Math.round(hrs)} ${Math.round(hrs) === 1 ? "hour" : "hours"} to go.`));
+      }
+      if (D.phase === "moving") btn("Pause", () => dbxCall("/api/dropbox/stop"), true);
+      else btn("Keep going", () => dbxCall("/api/dropbox/go"));
+    } else if (D.phase === "done") {
+      c.append(el("p", "set-stat", `Im pm done. Moved ${D.doneCount.toLocaleString()} ${D.doneCount === 1 ? "file" : "files"} (${fmtSize(D.doneBytes)}). Nothing was deleted from Dropbox, so check everything's here before you cancel it.`));
+      if (D.failed.length) c.append(el("p", "set-note", `${D.failed.length} didn't come through: ${D.failed.slice(0, 5).join(", ")}${D.failed.length > 5 ? "..." : ""}. Press Check again to retry them.`));
+      btn("Check again", () => dbxCall("/api/dropbox/scan"), true);
+    } else {
+      if (D.phase === "error") c.append(el("p", "set-stat bad", D.error));
+      btn(D.connected ? "Check Dropbox again" : "Move stuff from Dropbox", () => D.connected ? dbxCall("/api/dropbox/scan") : dbxLogin());
+      if (banner) btn("Nah", () => { try { localStorage.setItem("mocloud-dbx-nah", "1"); } catch {} renderLibrary(); }, true);
+    }
+    if (row.childElementCount) c.append(row);
+    return c;
+  }
+  let dbxTimer = null;
+  async function dbxRefresh() {
+    clearTimeout(dbxTimer);
+    if (backend.id !== "flash" || state.offline) return;
+    try { state.dropbox = await api("/api/dropbox"); } catch { return; }
+    if (isSettingsOpen()) renderSettings(); else renderLibrary();
+    const busy = ["scanning", "moving"].includes(state.dropbox.phase);
+    dbxTimer = setTimeout(dbxRefresh, busy ? 3000 : 30000);
+  }
+  async function dbxCall(path) {
+    try { state.dropbox = await api(path, { method: "POST" }); } catch (e) { toast(e.message, true); }
+    dbxRefresh();
+  }
+  async function dbxLogin() {
+    // Opened straight away (browsers block pop-ups opened after waiting on the network).
+    const win = window.open("", "_blank");
+    try {
+      const { url } = await api("/api/dropbox/start", { method: "POST" });
+      if (win) win.location = url; else location.href = url;
+      toast("Sign in to Dropbox in the new tab, then come back here.");
+      dbxRefresh();
+    } catch (e) { if (win) win.close(); toast(e.message, true); }
   }
 
   // A heads-up once a day when storage passes the line picked in Settings.
@@ -3569,7 +4145,7 @@ self.onmessage = async (e) => {
     if (pct < at) return;
     const day = new Date().toDateString(), key = "mocloud-heads-up-" + backend.id;
     try { if (localStorage.getItem(key) === day) return; localStorage.setItem(key, day); } catch {}
-    toast(`Heads up, MoCloud is ${Math.round(pct)}% full.${backend.id === "pi" ? " Smart Cleanup in Settings can free some space." : ""}`, true);
+    toast(`Heads up, ${backend.id === "flash" ? "the flash drive" : "MoCloud"} is ${Math.round(pct)}% full.${backend.id === "pi" ? " Smart Cleanup in Developer settings can free some space." : ""}`, true);
   }
 
   // ---------- Uploads ----------
@@ -3613,12 +4189,16 @@ self.onmessage = async (e) => {
       bar.append(fill);
       li.append(name, stat, btn, bar);
       return li;
-    }), ...(backend.id === "pi" ? state.processing || [] : []).map((p) => {
+    }), ...(onPi() ? state.processing || [] : []).map((p) => {
       const li = document.createElement("li"); li.className = "fixing";
       const name = document.createElement("span"); name.className = "q-name"; name.textContent = p.name;
       const stat = document.createElement("span"); stat.className = "q-stat";
       const pct = Math.floor((p.progress || 0) * 100);
-      stat.textContent = p.inPlace ? `Pi is fixing the sound, ${pct}%` : `Pi is fixing the sound, ${pct}%. Shows up when done`;
+      const what = p.picture ? "Pi is making it playable" : p.quick ? "Getting it ready for iPhone and Apple TV"
+        : p.later ? "Fixing the sound for the website" : "Pi is fixing the sound";
+      stat.textContent = p.later && p.waiting ? "Website sound fix waits till nobody's watching it"
+        : p.later ? `${what}, ${pct}%. Already plays on iPhone and Apple TV`
+        : p.inPlace ? `${what}, ${pct}%` : `${what}, ${pct}%. Shows up when done`;
       const bar = document.createElement("div"); bar.className = "q-bar";
       const fill = document.createElement("i"); fill.style.width = pct + "%";
       bar.append(fill);
@@ -3780,7 +4360,7 @@ self.onmessage = async (e) => {
     // Name order, so episodes upload 1, 2, 3 ... 10 rather than 1, 10, 2.
     const files = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     for (const file of files) {
-      if (file.name.startsWith(".") || (!isVideo(file) && !isImage(file))) { skipped++; continue; } // dot files are system leftovers
+      if (file.name.startsWith(".") || (!isVideo(file) && !isImage(file) && backend.id !== "flash")) { skipped++; continue; } // dot files are system leftovers
       // FAIL-SAFE (browser side): never queue past the limit.
       // The same file already waiting in line, or already in MoCloud: dropped straight away.
       if (state.queue.some((q) => q.status !== "failed" && sameFile(q.file, file)) || state.files.some((f) => sameFile(f, file))) {
@@ -4044,7 +4624,7 @@ self.onmessage = async (e) => {
       const local = localDupe(q);
       if (local) throw dupeError(local[0], local[1]);
       let parts = null;
-      if (CHECK_EXT.test(q.file.name) && !(backend.id === "pi" && state.piFixes)) { // the Pi does it better and faster
+      if (CHECK_EXT.test(q.file.name) && !(onPi() && state.piFixes)) { // the Pi does it better and faster
         q.status = "converting"; q.prep = 0; q.prepStage = "check"; renderQueue();
         const result = await convertAndUpload(q);
         if (q.cancelled) throw new Error("cancelled");
@@ -4066,6 +4646,9 @@ self.onmessage = async (e) => {
           if (done && done.key) q.key = done.key; // the Pi may store a fixed MP4 under a new name
           q.replaced = (done && done.replaced) || null;
           q.fixing = !!(done && done.processing);
+          q.picture = !!(done && done.picture);
+          q.quick = !!(done && done.quick);           // only its box changes first: on iPhone and Apple TV in a minute
+          q.soundLater = !!(done && done.soundLater); // plays on iPhone and Apple TV now, sound fix for browsers after
           q.subs = !!(done && done.subs);
           break;
         } catch (e) {
@@ -4087,8 +4670,13 @@ self.onmessage = async (e) => {
         grabFrame(local).then((t) => { t.src = src; thumbs.set(key, t); thumbStore(key, t); return shareThumb(key, t); })
           .catch(() => {}).finally(() => { URL.revokeObjectURL(local); if (!$("player").open) renderLibrary(); });
       }
-      toast((q.replaced ? "Replaced. " : "") + (q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.` : `Uploaded ${prettyTitle(q.outName || q.file.name)}.`)
-        + (q.subs ? " Looking for subtitles, you can already watch it." : ""));
+      toast((q.replaced ? "Replaced. " : "") + (q.picture ? `Uploaded ${prettyTitle(q.file.name)}. This one won't play on Apple stuff as is, so the Pi's redoing the picture. Takes about as long as the video, it shows up when done.`
+        : q.quick ? `Uploaded ${prettyTitle(q.file.name)}. It's on ur iPhone and Apple TV in a minute, the website gets fixed sound right after.`
+        : q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.`
+        : q.soundLater ? `Uploaded ${prettyTitle(q.outName || q.file.name)}. Plays on ur iPhone and Apple TV now, the website gets fixed sound in a bit.`
+        : `Uploaded ${prettyTitle(q.outName || q.file.name)}.`)
+        + (q.subs && !q.picture ? " Looking for subtitles, you can already watch it." : ""));
+      if (backend.id === "cloud") tellPhone("uploaded", q.file.name); // the Pi announces its own uploads by itself
       if (q.folder && state.meta.folders[q.folder]) changeMeta((m) => { m.place[q.key] = q.folder; }); // into the folder that was open
       if (q.replaced) carryOver(q.replaced, q.key);
       await refresh();
@@ -4126,11 +4714,21 @@ self.onmessage = async (e) => {
       else {
         q.status = "failed";
         q.error = e.code === "LIMIT" ? "Max amount reached" : e.message;
+        tellPhone("failed", q.file.name, q.error);
         if (e.code === "LIMIT") toast("Max amount reached. Delete something to upload more.", true);
       }
       renderQueue();
       refresh().catch(() => {});
     }
+  }
+
+  // The phone notification (ntfy, set up on the Pi): the Pi sends it, whichever storage this was.
+  function tellPhone(kind, name, error) {
+    if (!isUrl(BACKENDS.pi.url)) return;
+    fetch(BACKENDS.pi.url + "/api/notify", {
+      method: "POST", headers: { "Content-Type": "application/json", "X-Passcode": piPasscode() },
+      body: JSON.stringify({ kind, name, error: error || "", storage: backend.id }),
+    }).catch(() => {});
   }
 
   function cancelItem(q) {
@@ -4333,7 +4931,7 @@ self.onmessage = async (e) => {
       finish(m);
     };
     w.onerror = () => finish({ type: "error", message: "the downloader couldn't run in this browser", size: it.got });
-    w.postMessage({ type: "start", name: it.fname, url: `${base}/${it.light ? "light" : "file"}/${encodeURIComponent(it.key)}`, total: it.size });
+    w.postMessage({ type: "start", name: it.fname, url: `${base}/${it.light ? "light" : "file"}/${encodeURIComponent(it.key)}` + (it.src === "flash" ? "?p=" + encodeURIComponent(flashPin) : ""), total: it.size });
     renderDlState();
   }
 
@@ -4520,19 +5118,35 @@ self.onmessage = async (e) => {
     group.hidden = !isUrl(BACKENDS.cloud.url) || !isUrl(BACKENDS.pi.url); // only one storage set up: nothing to switch
     group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.source === backend.id)));
     const note = $("sourceNote");
-    note.classList.toggle("slow", backend.id === "pi" && state.route === "funnel");
+    note.classList.toggle("slow", onPi() && state.route === "funnel");
     note.textContent = backend.id === "cloud" ? "Showing your Cloudflare storage"
+      : backend.id === "flash" ? "Showing ur flash drive (locked with the pass)"
       // Tailscale speed-limits its public link (Funnel). Devices with Tailscale on skip it and go straight to the Pi.
       : state.route === "funnel" ? "Slow lane: uploads to the Pi are speed-limited on this device. Turn on Tailscale here for full speed."
       : state.route === "direct" ? "Fast lane: straight to the Pi over Tailscale."
       : "";
-    document.title = backend.id === "cloud" ? "MoCloud (Cloudflare)" : "MoCloud";
+    document.title = backend.id === "cloud" ? "MoCloud (Cloudflare)" : backend.id === "flash" ? "MoCloud (Flash drive)" : "MoCloud";
+    $("fileInput").accept = backend.id === "flash" ? "" : "video/*,image/*,.mkv,.avi,.mov,.heic"; // the flash drive takes any file
+    document.querySelector("#drop b").textContent = backend.id === "flash" ? "Drop any files anywhere on this page." : "Drop videos or photos anywhere on this page.";
   }
 
-  function switchSource(id) {
+  async function checkFlashPin(p) {
+    let res;
+    try { res = await fetch(BACKENDS.flash.url + "/api/files", { headers: { "X-Passcode": p }, cache: "no-store" }); }
+    catch { throw new Error("Can't reach the flash drive rn. Is the Pi on?"); }
+    if (GATEWAY.includes(res.status)) throw new Error("The flash drive isn't answering. Is it plugged into the Pi?");
+    if (res.status === 503) throw new Error("The flash drive isn't plugged into the Pi.");
+    if (!res.ok) throw await pinError(res);
+  }
+  async function switchSource(id) {
     const next = BACKENDS[id];
     if (!next || next === backend) return;
     if (!isUrl(next.url)) { toast(`${next.name} storage isn't set up in index.html.`, true); return; }
+    if (id === "flash") {
+      const pin = await askPin({ forgotUrl: BACKENDS.flash.url, verify: (p) => checkFlashPin(p) });
+      if (!pin) return;
+      flashPin = pin;
+    }
     const active = state.queue.filter((q) => ["converting", "uploading", "finishing"].includes(q.status));
     if (active.length && !window.confirm(`An upload is in progress to your ${backend.name} storage. Switching stops it, and you'd need to upload it again. Switch anyway?`)) return;
     active.forEach((q) => { q.cancelled = true; if (q.stopConvert) q.stopConvert(new Error("cancelled")); q.xhrs.forEach((x) => x.abort()); });
@@ -4540,6 +5154,7 @@ self.onmessage = async (e) => {
     generation++;
     backend = next; API = next.url; configured = true;
     try { localStorage.setItem("mocloud-source", id); } catch {}
+    clearTimeout(dbxTimer); dbxTimer = null; state.dropbox = null;
     clearTimeout(checkTimer); clearInterval(countdownTimer); checking = false;
     if ($("player").open) $("player").close();
     thumbJobs.clear();
