@@ -379,6 +379,7 @@
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
   .poster .thumb.has-name .box-tag { bottom: auto; top: 10px; }
+  .show-acts { display: flex; gap: 10px; flex-wrap: wrap; }
   .show-hero { display: grid; grid-template-columns: 150px 1fr; gap: 22px; align-items: end; }
   .show-hero.no-art { grid-template-columns: 1fr; }
   .show-hero img { width: 150px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: var(--radius); display: block; background: var(--panel); }
@@ -604,7 +605,7 @@
   </header>
 
   <section class="drop" id="drop">
-    <p><b>Drop videos or photos anywhere on this page.</b></p>
+    <p><b>Drop videos or photos anywhere on this jawn.</b></p>
     <div class="drop-btns">
       <button class="btn" id="pick">Choose files</button>
     </div>
@@ -616,9 +617,9 @@
   <ul class="queue" id="queue"></ul>
 
   <div class="lib-head" id="libTop">
-    <h2 class="crumbs" id="crumbs">Your files</h2>
+    <h2 class="crumbs" id="crumbs">Ur files</h2>
     <div class="lib-tools">
-      <input type="search" id="search" class="search" placeholder="Search stuff" aria-label="Search your library" autocomplete="off">
+      <input type="search" id="search" class="search" placeholder="Search stuff" aria-label="Search ur library" autocomplete="off">
       <span id="count"></span><button class="btn ghost small" id="newFolder">New folder</button><button class="btn ghost small" id="moveBtn">Move</button>
     </div>
   </div>
@@ -671,9 +672,9 @@
 </dialog>
 
 <dialog id="moveDlg">
-  <h3 id="moveTitle">What we moving?</h3>
+  <h3 id="moveTitle">Wat we moving?</h3>
   <div id="movePick">
-    <input type="search" id="moveFilter" class="move-filter" placeholder="Find something" aria-label="Find what to move" autocomplete="off">
+    <input type="search" id="moveFilter" class="move-filter" placeholder="Find something" aria-label="Find wat to move" autocomplete="off">
     <div class="move-list" id="moveItems"></div>
   </div>
   <div class="move-list" id="moveDest" hidden></div>
@@ -802,7 +803,7 @@ function makeParts(partSize) {
   let next = 1; // lowest piece (after the first) not yet handed over
 
   const buf = (i) => {
-    if (sent.has(i)) throw new Error("The converter rewrote a piece that was already uploaded.");
+    if (sent.has(i)) throw new Error("The converter rewrote a piece that was alr uploaded.");
     let b = bufs.get(i);
     if (!b) { b = new Uint8Array(partSize); bufs.set(i, b); }
     return b;
@@ -982,7 +983,7 @@ self.onmessage = async (e) => {
           for (;;) {
             const { done, value } = await reader.read();
             if (done) break;
-            if (pos + value.length > m.total) throw new Error("the video is bigger than MoCloud said, so it was stopped to protect your storage");
+            if (pos + value.length > m.total) throw new Error("the video is bigger than MoCloud said, so it was stopped to protect ur storage");
             handle.write(value, { at: pos }); pos += value.length; unflushed += value.length;
             if (unflushed >= FLUSH_EVERY) { handle.flush(); unflushed = 0; }
             const now = Date.now();
@@ -996,7 +997,7 @@ self.onmessage = async (e) => {
         ctrl = new AbortController(); handle.truncate(0); pos = 0; next = 0; restarted = true;
         continue;
       }
-      if (pos + buf.length > m.total) throw new Error("the video is bigger than MoCloud said, so it was stopped to protect your storage");
+      if (pos + buf.length > m.total) throw new Error("the video is bigger than MoCloud said, so it was stopped to protect ur storage");
       handle.write(buf, { at: pos });
       pos += buf.length;
       unflushed += buf.length;
@@ -1201,7 +1202,7 @@ self.onmessage = async (e) => {
     return new Promise((resolve) => {
       const gate = $("gate"), input = $("gateInput");
       input.value = "";
-      $("gateText").textContent = `Enter the passcode for your ${backend.name} storage. It's remembered on this device after that.`;
+      $("gateText").textContent = `Enter the passcode for ur ${backend.name} storage. It's remembered on this device after that.`;
       const done = () => {
         if (!input.value) return;
         state.passcode = input.value;
@@ -1564,7 +1565,7 @@ self.onmessage = async (e) => {
       saveLibrary();
       for (const f of state.sysFiles.filter((x) => x.name === META_NAME && x.key !== rec.key)) await deleteSysFile(f.key).catch(() => {});
     } catch (e) {
-      if (e.code !== "SWITCHED") toast(`Couldn't save your folders: ${e.message}`, true);
+      if (e.code !== "SWITCHED") toast(`Couldn't save ur folders: ${e.message}`, true);
     } finally {
       metaSaving = false;
       if (metaAgain) { metaAgain = false; saveMeta(); }
@@ -1647,7 +1648,7 @@ self.onmessage = async (e) => {
   // ----- Move: pick what (folders, shows, videos, several at once), then where -----
   // what: { kind: "file", f } | { kind: "show", id, name } | { kind: "folder", id }
   const moveSel = new Map();
-  const whereName = (id) => (id ? state.meta.folders[id].name : "Your files");
+  const whereName = (id) => (id ? state.meta.folders[id].name : "Ur files");
   function moveAll(items, dest) {
     changeMeta((m) => {
       for (const what of items) {
@@ -1701,7 +1702,7 @@ self.onmessage = async (e) => {
     const picking = where === "pick";
     $("movePick").hidden = !picking; $("moveDest").hidden = picking;
     $("moveNext").hidden = !picking; $("moveBack").hidden = picking; $("moveNew").hidden = picking;
-    if (picking) { $("moveTitle").textContent = "What we moving?"; paintMoveItems(); return; }
+    if (picking) { $("moveTitle").textContent = "Wat we moving?"; paintMoveItems(); return; }
     const items = [...moveSel.values()];
     $("moveTitle").textContent = items.length === 1 ? "Move it where?" : `Move ${items.length} things where?`;
     const moving = items.filter((w) => w.kind === "folder").map((w) => w.id);
@@ -1710,8 +1711,8 @@ self.onmessage = async (e) => {
     const row = (id, depth) => {
       const b = document.createElement("button");
       b.className = "move-row"; b.style.paddingLeft = 14 + depth * 20 + "px";
-      b.textContent = id ? state.meta.folders[id].name : "Your files (no folder)";
-      if (items.every((w) => current(w) === id)) { b.disabled = true; b.textContent += "  (already here)"; }
+      b.textContent = id ? state.meta.folders[id].name : "Ur files (no folder)";
+      if (items.every((w) => current(w) === id)) { b.disabled = true; b.textContent += "  (alr here)"; }
       if (moving.some((m) => folderPath(id).includes(m))) b.disabled = true; // a folder can't go inside itself
       b.addEventListener("click", () => { $("moveDlg").close(); moveAll(items, id); });
       return b;
@@ -1781,7 +1782,7 @@ self.onmessage = async (e) => {
     const deeper = path.length || state.show || state.collection; // anything after "Your files" to click back from
     const parts = [];
     const home = document.createElement(deeper ? "button" : "span");
-    home.textContent = "Your files";
+    home.textContent = "Ur files";
     if (deeper) { home.className = "crumb"; home.addEventListener("click", () => setView("")); }
     parts.push(home);
     path.forEach((id, i) => {
@@ -1997,7 +1998,20 @@ self.onmessage = async (e) => {
   // The Pi finds each show's intro (the theme song that repeats across episodes). During it, a
   // Skip Intro button shows. In the last minute, Next Episode shows, and when an episode ends the
   // next one starts by itself 5 seconds later.
+  // Shuffle (a button on every show): the episodes in a random order, one after another.
+  let shuffleKeys = [];
+  function shuffleShow(show) {
+    const list = showFiles(show).filter((x) => !state.offline || isDownloaded(x));
+    for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; }
+    if (!list.length) return toast("Locked until MoCloud is back online. Nothing has been deleted.", true);
+    shuffleKeys = list.map((x) => x.key);
+    openPlayer(list[0]);
+  }
   function nextEpisodeOf(f) {
+    if (shuffleKeys.includes(f.key)) {
+      const i = shuffleKeys.indexOf(f.key);
+      return i + 1 < shuffleKeys.length ? state.files.find((x) => x.key === shuffleKeys[i + 1]) || null : null;
+    }
     const sid = showIdOfName(f.name);
     if (!sid) return null;
     const eps = state.files.filter((x) => isVideo(x) && showIdOfName(x.name) === sid).map((x) => ({ x, i: parseName(x.name) }))
@@ -2138,7 +2152,7 @@ self.onmessage = async (e) => {
   // Keeps track while a video plays, and starts it where you left off.
   function trackProgress(f, v) {
     const p = getProg(f.key);
-    const resumeAt = p && p.t > 10 ? p.t : 0;
+    const resumeAt = p && p.t > 10 && !shuffleKeys.includes(f.key) ? p.t : 0; // shuffle starts each one from the top
     let ready = !resumeAt, lastSave = 0;
     const note = $("pResume");
     note.hidden = true;
@@ -2359,7 +2373,7 @@ self.onmessage = async (e) => {
         });
         list.replaceChildren(...(rows.length ? rows : [Object.assign(document.createElement("p"), { className: "show-note", textContent: "Nothing found. Try a different name." })]));
       } catch {
-        list.replaceChildren(Object.assign(document.createElement("p"), { className: "show-note", textContent: "Couldn't reach TVmaze. Check your internet connection." }));
+        list.replaceChildren(Object.assign(document.createElement("p"), { className: "show-note", textContent: "Couldn't reach TVmaze. Check ur internet connection." }));
       }
     };
     const pick = (id) => {
@@ -2889,7 +2903,14 @@ self.onmessage = async (e) => {
       if (state.offline && !isDownloaded(next.ep.file)) return toast("Locked until MoCloud is back online. Nothing has been deleted.", true);
       openPlayer(next.ep.file);
     });
-    info.append(play);
+    const acts = document.createElement("div"); acts.className = "show-acts";
+    acts.append(play);
+    if (show.count > 1) {
+      const shuf = document.createElement("button"); shuf.className = "btn ghost show-play"; shuf.textContent = "Shuffle";
+      shuf.addEventListener("click", () => shuffleShow(show));
+      acts.append(shuf);
+    }
+    info.append(acts);
     const hero = document.createElement("div"); hero.className = "show-hero";
     const tvs = tvShow(show.id);
     if (tvs && tvs.img) {
@@ -2987,7 +3008,7 @@ self.onmessage = async (e) => {
         "Try a show name, an episode name, a folder, or a word from an episode's description.");
     } else if (nothing) {
       empty.innerHTML = view
-        ? "<b>This folder is empty</b>Tap Move under any video to put it here. Videos you upload while this folder is open land here too."
+        ? "<b>This folder is empty</b>Tap Move under any video to put it here. Videos u upload while this folder is open land here too."
         : backend.id === "flash" ? "<b>Nothing here yet</b>Drop any files anywhere on this page and they show up here."
         : "<b>Nothing here yet</b>Drop videos or photos anywhere on this page and they show up here.";
     }
@@ -3209,25 +3230,25 @@ self.onmessage = async (e) => {
       tone = "bad"; foot = true;
       const since = new Date(state.offlineSince).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       if (state.offlineReason === "internet") {
-        title = "You're offline";
-        lines.push(`This device has no internet connection, so MoCloud can't be reached. Your files are safe on ${backend.id === "cloud" ? "Cloudflare" : "the Pi"}.`);
+        title = "Ur offline";
+        lines.push(`This device has no internet connection, so MoCloud can't be reached. Ur files are safe on ${backend.id === "cloud" ? "Cloudflare" : "the Pi"}.`);
       } else if (state.offlineReason === "drive") {
         title = "MoCloud's SSD is disconnected";
-        lines.push("The Pi is on, but it can't find the SSD that holds your files. Plug it back into one of the Pi's blue USB ports.");
-        lines.push("Your files are safe on the SSD. Nothing has been deleted, they're just locked. This page unlocks on its own within about 30 seconds of the SSD going back in.");
+        lines.push("The Pi is on, but it can't find the SSD that holds ur files. Plug it back into one of the Pi's blue USB ports.");
+        lines.push("Ur files are safe on the SSD. Nothing has been deleted, they're just locked. This page unlocks on its own within about 30 seconds of the SSD going back in.");
       } else if (state.offlineReason === "server" && backend.id === "cloud") {
-        title = "Can't reach your Cloudflare storage";
-        lines.push(`Cloudflare stopped answering at ${since}. This is usually brief. Your files there are safe.`);
+        title = "Can't reach ur Cloudflare storage";
+        lines.push(`Cloudflare stopped answering at ${since}. This is usually brief. Ur files there are safe.`);
       } else if (state.offlineReason === "server") {
         title = "MoCloud server is offline";
         lines.push(`The Pi stopped answering at ${since}. It may be unplugged, restarting, or its internet may be down.`);
-        lines.push("Your files are safe on it. Nothing has been deleted, they're just locked until it's back. Plug it back in and this page unlocks on its own, usually within 2 minutes of it starting.");
+        lines.push("Ur files are safe on it. Nothing has been deleted, they're just locked until it's back. Plug it back in and this page unlocks on its own, usually within 2 minutes of it starting.");
       } else {
         title = "Can't reach MoCloud";
-        lines.push("Working out whether it's your internet or the Pi…");
+        lines.push("Working out whether it's ur internet or the Pi…");
       }
-      if ([...dl.items.values()].some((i) => i.done)) lines.push("Videos you've downloaded to this device still play. They're the ones marked Downloaded.");
-      if (!state.files.length) lines.push("This browser hasn't loaded your library before, so there's nothing to show until MoCloud is back.");
+      if ([...dl.items.values()].some((i) => i.done)) lines.push("Videos u've downloaded to this device still play. They're the ones marked Downloaded.");
+      if (!state.files.length) lines.push("This browser hasn't loaded ur library before, so there's nothing to show until MoCloud is back.");
       if (state.queue.some((q) => ["paused", "uploading", "converting", "finishing"].includes(q.status))) {
         lines.push("Uploads are paused and pick up where they left off once it's back. Keep this tab open.");
       }
@@ -3331,6 +3352,7 @@ self.onmessage = async (e) => {
 
   // ---------- Player ----------
   function openPlayer(f) {
+    if (!shuffleKeys.includes(f.key)) shuffleKeys = []; // picking something else ends a shuffle
     const stage = $("pStage");
     stage.querySelectorAll("video").forEach((old) => { // the next episode replaces this one: tidy it up first
       if (old._saveProgress) { old._saveProgress(); scheduleProgSync(800); }
@@ -3345,7 +3367,7 @@ self.onmessage = async (e) => {
     $("pCtrls").hidden = !isVideo(f);
     $("ccBtn").hidden = true;
     if (isVideo(f) && backend.id === "pi" && (state.processing || []).some((p) => p.key === f.key && p.later))
-      toast("Heads up, the Pi's still fixing this one's sound for browsers. If it's quiet or silent here, it'll be right in a bit (iPhone and Apple TV are fine already)."); 
+      toast("Heads up, the Pi's still fixing this one's sound for browsers. If it's quiet or silent here, it'll be right in a bit (iPhone and Apple TV are fine alr)."); 
     player.f = isVideo(f) ? f : null;
     $("pResume").hidden = true;
     paintPlayerDesc();
@@ -3479,7 +3501,7 @@ self.onmessage = async (e) => {
     const pct = state.limit ? Math.round((state.used / state.limit) * 100) : 0;
 
     // Storage + heads-up
-    const stor = card("Storage", backend.id === "pi" ? "Your Pi's SSD." : backend.id === "flash" ? "Ur flash drive, plugged into the Pi." : "Your Cloudflare storage.");
+    const stor = card("Storage", backend.id === "pi" ? "Ur Pi's SSD." : backend.id === "flash" ? "Ur flash drive, plugged into the Pi." : "Ur Cloudflare storage.");
     const line = el("div", "set-stat");
     line.innerHTML = `<b>${fmtSize(state.used)}</b> used of ${fmtSize(state.limit)} (${pct}%)`;
     const usage = el("div", "usage" + (state.storageAlert && pct >= state.storageAlert ? " hot" : ""));
@@ -3546,18 +3568,18 @@ self.onmessage = async (e) => {
     tot.innerHTML = L.done
       ? `<b>${L.done}</b> ${L.done === 1 ? "copy" : "copies"} made, downloads are <b>${fmtSize(L.saved)}</b> lighter in total. They take up ${fmtSize(L.bytes)} on the SSD.`
       : "No copies yet.";
-    if (L.skipped) tot.append(` ${L.skipped} ${L.skipped === 1 ? "video was" : "videos were"} skipped since ${L.skipped === 1 ? "it's" : "they're"} already small enough.`);
+    if (L.skipped) tot.append(` ${L.skipped} ${L.skipped === 1 ? "video was" : "videos were"} skipped since ${L.skipped === 1 ? "it's" : "they're"} alr small enough.`);
     dc.append(tot);
     if (L.done) {
       const clear = el("button", "link", "Delete all download copies");
       clear.addEventListener("click", async () => {
-        if (!(await askSure("Delete all download copies?", `Frees ${fmtSize(L.bytes)}. Your videos stay, downloads just go back to using the full files.`, "Delete them", "Nah"))) return;
+        if (!(await askSure("Delete all download copies?", `Frees ${fmtSize(L.bytes)}. Ur videos stay, downloads just go back to using the full files.`, "Delete them", "Nah"))) return;
         try { setUI.data = await api("/api/light/clear", { method: "POST" }).then(() => api("/api/settings")); toast("Download copies deleted."); renderSettings(); refresh().catch(() => {}); }
         catch (e) { toast(e.message, true); }
       });
       dc.append(clear);
     }
-    dc.append(el("p", "set-note", "Copies count toward your storage, and they're the first thing deleted if an upload needs the room."));
+    dc.append(el("p", "set-note", "Copies count toward ur storage, and they're the first thing deleted if an upload needs the room."));
     return dc;
   }
 
@@ -3657,7 +3679,7 @@ self.onmessage = async (e) => {
     }
     if (!shown) {
       const e = el("div", "set-card");
-      e.append(el("p", "sub", subsUI.filter === "missing" ? "Everything has subtitles rn, bet." : "Nothing here yet."));
+      e.append(el("p", "sub", subsUI.filter === "missing" ? "Everything has subtitles rn, type shi." : "Nothing here yet."));
       parts.push(e);
     }
     body.replaceChildren(...parts);
@@ -3926,7 +3948,7 @@ self.onmessage = async (e) => {
       const saved = await devApi("/api/dev/speed/save", jsonPost({ down, up, device: deviceLabel(), route }));
       devUI.hist = saved.history; devUI.link = saved.entry.link;
       devUI.speed = { running: false, result: saved.entry };
-      toast("Speed test done. Im pm done.");
+      toast("I'm done. Speed test's saved in the history.");
     } catch (e) {
       devUI.speed = { running: false };
       if (e.message !== "locked") toast(e.message, true);
@@ -3935,7 +3957,7 @@ self.onmessage = async (e) => {
   }
 
   function cleanupCard(C) {
-    const c = card("Smart Cleanup", "Stuff that might be worth clearing out. Nothing gets deleted unless you say so, twice.");
+    const c = card("Smart Cleanup", "Stuff that might be worth clearing out. Nothing gets deleted unless u say so, twice.");
     const items = C.items;
     // Space goal: picks the best candidates until it's reached.
     const goal = el("div", "goal");
@@ -3973,7 +3995,7 @@ self.onmessage = async (e) => {
     c.append(scans);
 
     if (!items.length) {
-      c.append(el("p", "set-stat", "Nothing to clean up rn, ur good."));
+      c.append(el("p", "set-stat", "Nothing to clean up rn, ur good type shi."));
     } else {
       const list = el("ul", "clean-list");
       for (const i of items) {
@@ -3997,7 +4019,7 @@ self.onmessage = async (e) => {
     }
     if (C.ignored.length) {
       const ig = el("details", "set-note");
-      ig.append(el("summary", "", `${C.ignored.length} ${C.ignored.length === 1 ? "file" : "files"} you said never to flag`));
+      ig.append(el("summary", "", `${C.ignored.length} ${C.ignored.length === 1 ? "file" : "files"} u said never to flag`));
       for (const k of C.ignored) {
         const r = el("div", "set-row");
         const back = el("button", "link", "Flag again");
@@ -4049,7 +4071,7 @@ self.onmessage = async (e) => {
   async function cleanupDelete(picked, total) {
     const n = picked.length, what = n === 1 ? titleOf({ name: picked[0].name, type: "" }) : `${n} videos`;
     if (!(await askSure(`Delete ${what}?`, `That frees up ${fmtSize(total)}.`, "Yeah delete", "Nah"))) return;
-    if (!(await askSure("You sure sure?", `Once ${n === 1 ? "it's" : "they're"} gone ${n === 1 ? "it's" : "they're"} gone gang. This can't be undone.`, "Delete for good", "Wait no"))) return;
+    if (!(await askSure("U sure sure?", `Once ${n === 1 ? "it's" : "they're"} gone ${n === 1 ? "it's" : "they're"} gone gang. This can't be undone.`, "Delete for good", "Wait no"))) return;
     try {
       const r = await devApi("/api/cleanup/delete", jsonPost({ keys: picked.map((i) => i.key), sure: 2 }));
       for (const k of r.deleted || []) {
@@ -4057,7 +4079,7 @@ self.onmessage = async (e) => {
         if (local) await dlRemoveNow(local).catch(() => {});
       }
       devUI.picked.clear(); devUI.goal = 0;
-      toast(`Deleted ${(r.deleted || []).length}, freed ${fmtSize(r.freed || 0)}. Im pm done.`);
+      toast(`Deleted ${(r.deleted || []).length}, freed ${fmtSize(r.freed || 0)}. I'm done.`);
       if (backend.id === "pi") await refresh().catch(() => {});
       loadDev(false);
     } catch (e) { if (e.message !== "locked") toast(e.message, true); }
@@ -4066,8 +4088,8 @@ self.onmessage = async (e) => {
   // ---------- Flash drive: moving stuff over from Dropbox ----------
   function dropboxCard(D, banner) {
     const c = card(banner ? "Got stuff on Dropbox?" : "Move stuff from Dropbox",
-      banner ? "MoCloud can move everything from ur Dropbox onto this flash drive by itself, so you can stop paying for Dropbox."
-        : "The Pi pulls everything straight from Dropbox onto this flash drive, folders and all. You can close MoCloud while it works. Nothing on Dropbox gets deleted.");
+      banner ? "MoCloud can move everything from ur Dropbox onto this flash drive by itself, so u can stop paying for Dropbox."
+        : "The Pi pulls everything straight from Dropbox onto this flash drive, folders and all. U can close MoCloud while it works. Nothing on Dropbox gets deleted.");
     if (banner) c.classList.add("dbx-banner");
     const row = el("div", "set-row");
     const btn = (text, fn, ghost) => { const b = el("button", ghost ? "btn ghost small" : "btn small", text); b.type = "button"; b.addEventListener("click", fn); row.append(b); return b; };
@@ -4079,11 +4101,11 @@ self.onmessage = async (e) => {
     if (!D.configured) {
       c.append(el("p", "set-stat", "Dropbox isn't hooked up on the Pi yet. On the Pi run: sudo mocloud-dropbox-setup"));
     } else if (D.phase === "scanning") {
-      c.append(el("p", "set-stat live", "ii calm one sec, adding up what's in ur Dropbox..."));
+      c.append(el("p", "set-stat live", "ii calm one sec, adding up wat's in ur Dropbox..."));
     } else if (D.phase === "ready") {
       const s = el("p", "set-stat");
       s.innerHTML = `Move <b>${fmtSize(D.leftBytes)}</b> (${D.leftCount.toLocaleString()} ${D.leftCount === 1 ? "file" : "files"}) to the flash drive?`
-        + (D.doneCount ? ` ${D.doneCount.toLocaleString()} already made it over.` : "");
+        + (D.doneCount ? ` ${D.doneCount.toLocaleString()} alr made it over.` : "");
       c.append(s);
       if (D.skipped.length) c.append(el("p", "set-note", `${D.skipped.length} Dropbox ${D.skipped.length === 1 ? "doc" : "docs"} (like Paper docs) can't be downloaded, so ${D.skipped.length === 1 ? "it stays" : "they stay"} on Dropbox.`));
       btn("Yeah move it", () => dbxCall("/api/dropbox/go"));
@@ -4102,7 +4124,7 @@ self.onmessage = async (e) => {
       if (D.phase === "moving") btn("Pause", () => dbxCall("/api/dropbox/stop"), true);
       else btn("Keep going", () => dbxCall("/api/dropbox/go"));
     } else if (D.phase === "done") {
-      c.append(el("p", "set-stat", `Im pm done. Moved ${D.doneCount.toLocaleString()} ${D.doneCount === 1 ? "file" : "files"} (${fmtSize(D.doneBytes)}). Nothing was deleted from Dropbox, so check everything's here before you cancel it.`));
+      c.append(el("p", "set-stat", `I'm done. Moved ${D.doneCount.toLocaleString()} ${D.doneCount === 1 ? "file" : "files"} (${fmtSize(D.doneBytes)}). Nothing was deleted from Dropbox, so check everything's here before u cancel it.`));
       if (D.failed.length) c.append(el("p", "set-note", `${D.failed.length} didn't come through: ${D.failed.slice(0, 5).join(", ")}${D.failed.length > 5 ? "..." : ""}. Press Check again to retry them.`));
       btn("Check again", () => dbxCall("/api/dropbox/scan"), true);
     } else {
@@ -4175,7 +4197,7 @@ self.onmessage = async (e) => {
         : q.file.size ? Math.floor((q.sent / q.file.size) * 100) : 0;
       stat.textContent = held ? "Paused until MoCloud is back" : {
         waiting: "Waiting",
-        checking: "Checking it isn't already in MoCloud",
+        checking: "Checking it isn't alr in MoCloud",
         converting: q.prepStage === "fix" ? `Converting and uploading, ${prepPct}%${speed}` : "Checking audio",
         uploading: `${pct}% of ${fmtSize(q.file.size)}${speed}`,
         finishing: "Finishing",
@@ -4197,7 +4219,7 @@ self.onmessage = async (e) => {
       const what = p.picture ? "Pi is making it playable" : p.quick ? "Getting it ready for iPhone and Apple TV"
         : p.later ? "Fixing the sound for the website" : "Pi is fixing the sound";
       stat.textContent = p.later && p.waiting ? "Website sound fix waits till nobody's watching it"
-        : p.later ? `${what}, ${pct}%. Already plays on iPhone and Apple TV`
+        : p.later ? `${what}, ${pct}%. Alr plays on iPhone and Apple TV`
         : p.inPlace ? `${what}, ${pct}%` : `${what}, ${pct}%. Shows up when done`;
       const bar = document.createElement("div"); bar.className = "q-bar";
       const fill = document.createElement("i"); fill.style.width = pct + "%";
@@ -4288,9 +4310,9 @@ self.onmessage = async (e) => {
       skippedDupes.names = []; skippedDupes.uploading = 0; skippedDupes.as = "";
       if (!names.length) return;
       toast(names.length === 1
-        ? (uploading ? `Skipped ${names[0]}, another device is already uploading it.`
-          : `Skipped ${names[0]}, it's already in MoCloud${as ? ` as ${as}` : ""}.`)
-        : `Skipped ${names.length} files that are already in MoCloud${uploading ? " or being uploaded from another device" : ""}.`);
+        ? (uploading ? `Skipped ${names[0]}, another device is alr uploading it.`
+          : `Skipped ${names[0]}, it's alr in MoCloud${as ? ` as ${as}` : ""}.`)
+        : `Skipped ${names.length} files that are alr in MoCloud${uploading ? " or being uploaded from another device" : ""}.`);
     }, 700);
     renderQueue();
   }
@@ -4314,7 +4336,7 @@ self.onmessage = async (e) => {
     const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.file.name;
     const stat = document.createElement("span"); stat.className = "q-stat";
     const have = existingTitle(q.existing);
-    stat.textContent = have ? `${have} is already in MoCloud` : "This is already in MoCloud";
+    stat.textContent = have ? `${have} is alr in MoCloud` : "This jawn is alr in MoCloud";
     const row = document.createElement("div"); row.className = "q-ask";
     const skip = document.createElement("button"); skip.className = "btn ghost"; skip.textContent = "Skip";
     skip.addEventListener("click", () => answerDupe(q, "skip"));
@@ -4331,7 +4353,7 @@ self.onmessage = async (e) => {
 
   function askAllRow(asking) {
     const li = document.createElement("li"); li.className = "ask-all";
-    const label = document.createElement("span"); label.textContent = `${asking.length} are already in MoCloud:`;
+    const label = document.createElement("span"); label.textContent = `${asking.length} are alr in MoCloud:`;
     const skip = document.createElement("button"); skip.className = "link"; skip.textContent = "Skip all";
     skip.addEventListener("click", () => asking.forEach((q) => answerDupe(q, "skip")));
     const repl = document.createElement("button"); repl.className = "link"; repl.textContent = "Replace all";
@@ -4354,7 +4376,7 @@ self.onmessage = async (e) => {
   }
 
   function addFiles(fileList) {
-    if (!configured) { toast("Connect storage first: paste your MoCloud server address into index.html.", true); return; }
+    if (!configured) { toast("Connect storage first: paste ur MoCloud server address into index.html.", true); return; }
     let blocked = false, skipped = 0, added = 0;
     const dupes = [];
     // Name order, so episodes upload 1, 2, 3 ... 10 rather than 1, 10, 2.
@@ -4373,7 +4395,7 @@ self.onmessage = async (e) => {
     if (added && state.offline) toast("MoCloud is offline. These will upload by themselves once it's back. Keep this tab open.", true);
     else if (blocked) toast(added ? "Not everything fits. The rest was left out so storage stays under the limit." : "Max amount reached. Delete something to upload more.", true);
     else if (skipped) toast("Only videos and photos can be uploaded.", true);
-    else if (dupes.length) toast(dupes.length === 1 ? `Skipped ${dupes[0]}, it's already in MoCloud.` : `Skipped ${dupes.length} files that are already in MoCloud.`);
+    else if (dupes.length) toast(dupes.length === 1 ? `Skipped ${dupes[0]}, it's alr in MoCloud.` : `Skipped ${dupes.length} files that are alr in MoCloud.`);
     renderQueue();
     runQueue();
   }
@@ -4518,7 +4540,7 @@ self.onmessage = async (e) => {
         return;
       }
 
-      worker.onerror = () => fail(new Error("Converter didn’t load. Check your connection."));
+      worker.onerror = () => fail(new Error("Converter didn’t load. Check ur connection."));
       worker.onmessage = async ({ data: m }) => {
         if (settled) return;
         try {
@@ -4675,7 +4697,7 @@ self.onmessage = async (e) => {
         : q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.`
         : q.soundLater ? `Uploaded ${prettyTitle(q.outName || q.file.name)}. Plays on ur iPhone and Apple TV now, the website gets fixed sound in a bit.`
         : `Uploaded ${prettyTitle(q.outName || q.file.name)}.`)
-        + (q.subs && !q.picture ? " Looking for subtitles, you can already watch it." : ""));
+        + (q.subs && !q.picture ? " Looking for subtitles, u can alr watch it." : ""));
       if (backend.id === "cloud") tellPhone("uploaded", q.file.name); // the Pi announces its own uploads by itself
       if (q.folder && state.meta.folders[q.folder]) changeMeta((m) => { m.place[q.key] = q.folder; }); // into the folder that was open
       if (q.replaced) carryOver(q.replaced, q.key);
@@ -4722,7 +4744,8 @@ self.onmessage = async (e) => {
     }
   }
 
-  // The phone notification (ntfy, set up on the Pi): the Pi sends it, whichever storage this was.
+  // The phone notification (ntfy, set up on the Pi): an upload failed, or a Cloudflare one finished.
+  // Pi and flash drive uploads that finish, the Pi already knows about.
   function tellPhone(kind, name, error) {
     if (!isUrl(BACKENDS.pi.url)) return;
     fetch(BACKENDS.pi.url + "/api/notify", {
@@ -5010,8 +5033,8 @@ self.onmessage = async (e) => {
   function askStopDownload(id) {
     const it = dl.items.get(id);
     if (!it) return;
-    $("dlStopText").textContent = `${titleOf({ name: it.name, type: "" })} is ${dlPct(it)}% downloaded. Stopping deletes what's downloaded so far from this device. The video stays on MoCloud.`;
-    $("dlStopGo").onclick = () => { $("dlStop").close(); removeDownload(id, true); toast("Download stopped."); };
+    $("dlStopText").textContent = `${titleOf({ name: it.name, type: "" })} is ${dlPct(it)}% downloaded. Stopping deletes wat's downloaded so far from this device. The video stays on MoCloud.`;
+    $("dlStopGo").onclick = () => { $("dlStop").close(); removeDownload(id, true); toast("I'm done. Stopped the download."); };
     $("dlStopKeep").onclick = () => $("dlStop").close();
     if (!$("dlStop").open) $("dlStop").showModal();
   }
@@ -5101,9 +5124,9 @@ self.onmessage = async (e) => {
     }
     const notes = [];
     if (!dl.supported) notes.push("This browser can't save videos for offline viewing. Chrome and Safari can.");
-    if (dl.persisted === false && items.length) notes.push("Your browser may clear downloads if this device runs very low on space.");
-    if (/iPhone|iPad/.test(navigator.userAgent)) notes.push("On iPhone or iPad, add MoCloud to your Home Screen (Share, then Add to Home Screen), or Safari may clear downloads if you don't open MoCloud for a week.");
-    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) notes.push("To open MoCloud with no internet at all, sw.js needs to sit next to index.html on your site.");
+    if (dl.persisted === false && items.length) notes.push("Ur browser may clear downloads if this device runs very low on space.");
+    if (/iPhone|iPad/.test(navigator.userAgent)) notes.push("On iPhone or iPad, add MoCloud to ur Home Screen (Share, then Add to Home Screen), or Safari may clear downloads if u don't open MoCloud for a week.");
+    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) notes.push("To open MoCloud with no internet at all, sw.js needs to sit next to index.html on ur site.");
     const note = notes.join(" ");
     if ($("dlNote").textContent !== note) $("dlNote").textContent = note;
   }
@@ -5119,7 +5142,7 @@ self.onmessage = async (e) => {
     group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.source === backend.id)));
     const note = $("sourceNote");
     note.classList.toggle("slow", onPi() && state.route === "funnel");
-    note.textContent = backend.id === "cloud" ? "Showing your Cloudflare storage"
+    note.textContent = backend.id === "cloud" ? "Showing ur Cloudflare storage"
       : backend.id === "flash" ? "Showing ur flash drive (locked with the pass)"
       // Tailscale speed-limits its public link (Funnel). Devices with Tailscale on skip it and go straight to the Pi.
       : state.route === "funnel" ? "Slow lane: uploads to the Pi are speed-limited on this device. Turn on Tailscale here for full speed."
@@ -5127,7 +5150,7 @@ self.onmessage = async (e) => {
       : "";
     document.title = backend.id === "cloud" ? "MoCloud (Cloudflare)" : backend.id === "flash" ? "MoCloud (Flash drive)" : "MoCloud";
     $("fileInput").accept = backend.id === "flash" ? "" : "video/*,image/*,.mkv,.avi,.mov,.heic"; // the flash drive takes any file
-    document.querySelector("#drop b").textContent = backend.id === "flash" ? "Drop any files anywhere on this page." : "Drop videos or photos anywhere on this page.";
+    document.querySelector("#drop b").textContent = backend.id === "flash" ? "Drop any files anywhere on this jawn." : "Drop videos or photos anywhere on this jawn.";
   }
 
   async function checkFlashPin(p) {
@@ -5148,7 +5171,7 @@ self.onmessage = async (e) => {
       flashPin = pin;
     }
     const active = state.queue.filter((q) => ["converting", "uploading", "finishing"].includes(q.status));
-    if (active.length && !window.confirm(`An upload is in progress to your ${backend.name} storage. Switching stops it, and you'd need to upload it again. Switch anyway?`)) return;
+    if (active.length && !window.confirm(`An upload is in progress to ur ${backend.name} storage. Switching stops it, and u'd need to upload it again. Switch anyway?`)) return;
     active.forEach((q) => { q.cancelled = true; if (q.stopConvert) q.stopConvert(new Error("cancelled")); q.xhrs.forEach((x) => x.abort()); });
 
     generation++;
@@ -5172,7 +5195,7 @@ self.onmessage = async (e) => {
     renderLibrary();
     $("gaugeUsed").textContent = "Checking storage"; $("gaugeLeft").textContent = ""; $("gaugeNote").textContent = "";
     const g = generation;
-    refresh().then(() => { if (g === generation) { checkHealth(); toast(`Now using your ${next.name} storage`); } }, (e) => {
+    refresh().then(() => { if (g === generation) { checkHealth(); toast(`Now using ur ${next.name} storage`); } }, (e) => {
       if (e.code === "OFFLINE" || e.code === "SWITCHED" || g !== generation) return;
       toast(`Can't reach ${next.name} storage: ${e.message}`, true);
     });
@@ -5194,7 +5217,7 @@ self.onmessage = async (e) => {
   if (!configured) {
     $("gaugeUsed").textContent = "Storage not connected";
     $("empty").hidden = false;
-    $("empty").innerHTML = "<b>Connect your storage</b>Open <code>index.html</code>, find <code>SERVER_URL</code> near the top of the script, and paste in the address the Pi's installer printed.";
+    $("empty").innerHTML = "<b>Connect ur storage</b>Open <code>index.html</code>, find <code>SERVER_URL</code> near the top of the script, and paste in the address the Pi's installer printed.";
     $("pick").disabled = true; $("newFolder").disabled = true;
   } else {
     state.view = readView();
