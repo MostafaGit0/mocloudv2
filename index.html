@@ -142,6 +142,24 @@
   .dl-note { color: var(--dim); font-size: 13px; margin: 14px 0 0; }
   .p-src { color: var(--accent-2); font-size: 14px; }
 
+  /* ---------- Uploads going up from ur other devices ---------- */
+  .live-strip {
+    display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; align-items: center; width: 100%;
+    margin-top: 16px; padding: 14px 18px; border-radius: var(--radius); text-align: left;
+    background: var(--panel); border: 1px solid var(--line); color: var(--paper); font-size: 15px;
+  }
+  .live-strip:hover { border-color: var(--accent-2); }
+  .live-strip b { font-weight: 500; }
+  .live-strip .live-go { color: var(--accent-2); font-size: 14px; white-space: nowrap; }
+  .live-strip .q-bar { grid-column: 1 / -1; height: 4px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+  .live-strip .q-bar i { display: block; height: 100%; width: 0%; background: var(--accent-2); transition: width .6s ease; }
+  #liveDlg { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(620px, 94vw); max-height: 86dvh; margin: 7dvh auto auto; overflow-y: auto; }
+  .live-dev { margin: 18px 0 0; font-size: 15px; font-weight: 500; display: flex; justify-content: space-between; gap: 12px; }
+  .live-dev span { color: var(--dim); font-weight: 400; font-size: 13px; font-variant-numeric: tabular-nums; }
+  #liveDlg .queue { margin-top: 10px; }
+  #liveDlg .queue li { grid-template-columns: 1fr auto; background: var(--panel-2); padding: 12px 14px; border-radius: 14px; }
+  #liveDlg .queue li.paused .q-stat { color: var(--accent); }
+
   /* ---------- Server status (offline, power, storage warnings) ---------- */
   .status {
     margin-top: 16px; padding: 16px 18px; border-radius: var(--radius);
@@ -324,7 +342,21 @@
   .p-resume { display: inline-flex; align-items: center; gap: 10px; color: var(--dim); font-size: 14px; }
   .p-desc { margin: 2px 16px 14px; color: var(--dim); font-size: 14px; line-height: 1.55; max-width: 85ch; }
   .p-desc b { display: block; color: var(--paper); font-weight: 500; margin-bottom: 2px; }
-  #showDlg { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(460px, 92vw); }
+  #showDlg { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(680px, 94vw); max-height: 88dvh; display: none; flex-direction: column; }
+  #showDlg[open] { display: flex; }
+  .show-scroll { overflow-y: auto; min-height: 0; margin: 0 -6px 16px; padding: 0 6px; }
+  .show-head { margin: 4px 0 10px; font-size: 14px; font-weight: 500; color: var(--dim); }
+  .poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 14px 12px; margin-bottom: 20px; }
+  .poster-grid .show-note { grid-column: 1 / -1; }
+  @media (max-width: 480px) { .poster-grid { grid-template-columns: repeat(auto-fill, minmax(94px, 1fr)); gap: 12px 10px; } }
+  .poster-pick { display: grid; gap: 4px; align-content: start; text-align: left; background: none; border: 0; padding: 0; min-width: 0; color: var(--paper); }
+  .pp-art { display: block; aspect-ratio: 2 / 3; border-radius: 10px; overflow: hidden; background: var(--panel-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .pp-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .poster-pick:hover .pp-art { box-shadow: 0 0 0 2px var(--accent-2); }
+  .poster-pick.chosen .pp-art { box-shadow: 0 0 0 2px var(--accent); }
+  .poster-pick b { font-weight: 500; font-size: 13px; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .pp-sub { font-size: 12px; color: var(--dim); line-height: 1.25; }
+  .poster-pick.chosen .pp-sub::before { content: "✓ "; color: var(--accent); }
   #showDlg h3 { margin: 0 0 14px; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
   .show-find { display: flex; gap: 8px; margin-bottom: 12px; }
   .show-find input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); }
@@ -616,6 +648,7 @@
 
   <div class="status" id="statusBanner" role="status" aria-live="polite" hidden></div>
   <div class="banner" id="fullBanner" hidden>Max amount reached. Delete something to upload more.</div>
+  <button class="live-strip" id="liveStrip" hidden><span id="liveText"></span><span class="live-go">See wat's queued ›</span><div class="q-bar"><i id="liveFill"></i></div></button>
   <ul class="queue" id="queue"></ul>
 
   <div class="lib-head" id="libTop">
@@ -662,8 +695,13 @@
 
 <dialog id="showDlg">
   <h3 id="showTitle">Which show is it?</h3>
-  <div class="show-find"><input type="search" id="showQuery" aria-label="Show name" autocomplete="off"><button class="btn ghost" id="showSearch">Search</button></div>
-  <div class="move-list" id="showList"></div>
+  <div class="show-scroll">
+    <h4 class="show-head" id="showPostersHead" hidden></h4>
+    <div class="poster-grid" id="showPosters" hidden></div>
+    <h4 class="show-head" id="showOtherHead">Pick the show</h4>
+    <div class="show-find"><input type="search" id="showQuery" aria-label="Show name" autocomplete="off"><button class="btn ghost" id="showSearch">Search</button></div>
+    <div class="poster-grid" id="showList"></div>
+  </div>
   <div class="dlg-acts"><button class="btn ghost push" id="showNone">No episode info</button><button class="btn ghost" id="showCancel">Cancel</button></div>
 </dialog>
 
@@ -747,6 +785,11 @@
   <h3 id="dlStopTitle">Stop this download?</h3>
   <p id="dlStopText"></p>
   <div class="dlg-acts"><button class="btn ghost" id="dlStopKeep">Keep downloading</button><button class="btn stop" id="dlStopGo">Stop download</button></div>
+</dialog>
+
+<dialog id="liveDlg" aria-labelledby="liveTitle">
+  <div class="dl-head"><h3 id="liveTitle">Wat's uploading</h3><button class="btn ghost" id="liveClose">Close</button></div>
+  <div id="liveBody"></div>
 </dialog>
 
 <dialog id="downloads" aria-labelledby="dlTitle">
@@ -1034,7 +1077,7 @@ self.onmessage = async (e) => {
   //  The Pi's installer prints it at the end, for example
   //  "https://mocloud.tail1234.ts.net"   (no slash at the end)
   // =====================================================================
-  const SERVER_URL = "https://mocloud.tail47b571.ts.net";
+  const SERVER_URL = "PASTE_YOUR_PI_ADDRESS_HERE";
 
   // Your old Cloudflare storage. The switch at the top of the page flips between the two,
   // for example when the Pi is offline and you still want what's on Cloudflare.
@@ -1078,7 +1121,9 @@ self.onmessage = async (e) => {
     fromCache: false,      // library shown is the copy remembered by this browser
     health: null,          // the Pi's own report: storage, power, temperature
     sysFiles: [],          // MoCloud's own small files in storage (the folder list)
-    meta: { v: 1, folders: {}, place: {}, tvmaze: {} }, // folders, which folder each video or show is in, shows picked by hand
+    meta: { v: 1, folders: {}, place: {}, tvmaze: {}, posters: {} }, // folders, which folder each video or show is in, shows and posters picked by hand
+    animeIds: {},          // show id -> the anime's TVmaze id, from the Pi (so One Piece is the anime, not Netflix's)
+    arcOrder: {},          // show id -> its arcs in story order (lower case), worked out by the Pi
     metaKey: null,         // the stored copy of the folder list that's been loaded
     view: "",              // the folder being looked at ("" is the top)
     q: "",                 // what's typed in the search box
@@ -1161,8 +1206,9 @@ self.onmessage = async (e) => {
   const prettyTitle = (fileName) => VIDEO_EXT.test(fileName) ? parseName(fileName).title : fileName; // photos and other files keep their name
 
   // Sorts the library into shows (by season, then episode) and everything else.
-  // Anime arcs come after any seasons, in story order: by first episode number, or by when they
-  // were uploaded if every arc starts back at episode 1. Arc tabs are numbered 1000 and up.
+  // Anime arcs come after any seasons, in story order: the order the Pi looked up (its list of the
+  // big anime's arcs, or Wikipedia), then by first episode number, or by when they were uploaded
+  // if every arc starts back at episode 1. Arc tabs are numbered 1000 and up.
   function groupFiles(files) {
     const shows = new Map(), other = [];
     for (const f of files) {
@@ -1173,7 +1219,7 @@ self.onmessage = async (e) => {
       const show = shows.get(id);
       if (info.arc) {
         const k = info.arc.toLowerCase();
-        if (!show.arcs.has(k)) show.arcs.set(k, { name: info.arc, eps: [] });
+        if (!show.arcs.has(k)) show.arcs.set(k, { key: k, name: info.arc, eps: [] });
         show.arcs.get(k).eps.push({ file: f, episode: info.episode, name: "" });
       } else {
         if (!show.seasons.has(info.season)) show.seasons.set(info.season, []);
@@ -1186,8 +1232,10 @@ self.onmessage = async (e) => {
     for (const show of list) {
       const seasons = [...show.seasons.entries()].sort((a, b) => a[0] - b[0])
         .map(([number, eps]) => ({ number, label: `Season ${number}`, episodes: eps.sort((a, b) => a.episode - b.episode) }));
-      const arcs = [...show.arcs.values()].sort((a, b) =>
-        (Math.min(...a.eps.map((e) => e.episode)) - Math.min(...b.eps.map((e) => e.episode))) || (firstUp(a.eps) - firstUp(b.eps)));
+      const order = Array.isArray(state.arcOrder[show.id]) ? state.arcOrder[show.id] : [];
+      const place = (a) => { const i = order.indexOf(a.key); return i < 0 ? Infinity : i; };
+      const arcs = [...show.arcs.values()].sort((a, b) => (place(a) - place(b) || 0)
+        || (Math.min(...a.eps.map((e) => e.episode)) - Math.min(...b.eps.map((e) => e.episode))) || (firstUp(a.eps) - firstUp(b.eps)));
       arcs.forEach((a, i) => seasons.push({ number: 1000 + i, arc: a.name, label: a.name, episodes: a.eps.sort((x, y) => x.episode - y.episode) }));
       show.seasons = seasons;
       show.hasArcs = arcs.length > 0;
@@ -1532,7 +1580,7 @@ self.onmessage = async (e) => {
   // the same on every device. It's hidden from the library.
   const META_NAME = "mocloud-folders.json";
   const isSys = (f) => f.name === META_NAME || f.name === "mocloud-progress.json" || /^mocloud-subs-[0-9a-f]+\.vtt$/.test(f.name) || THUMB_RE.test(f.name); // MoCloud's own files stay out of the library
-  const emptyMeta = () => ({ v: 1, folders: {}, place: {}, tvmaze: {} });
+  const emptyMeta = () => ({ v: 1, folders: {}, place: {}, tvmaze: {}, posters: {} });
   const newestFirst = (a, b) => new Date(b.uploaded) - new Date(a.uploaded) || (a.key < b.key ? 1 : -1);
 
   // Saves a small text file into the current storage, using the same upload steps as a video.
@@ -1569,6 +1617,7 @@ self.onmessage = async (e) => {
       }
       for (const [k, id] of Object.entries(m.place || {})) if (typeof id === "string") out.place[k] = id;
       for (const [k, id] of Object.entries(m.tvmaze || {})) if (typeof id === "string") out.tvmaze[k] = id; // show picked by hand
+      for (const [k, url] of Object.entries(m.posters || {})) if (typeof url === "string" && /^https:\/\//.test(url)) out.posters[k] = url; // poster picked by hand
     }
     for (const f of Object.values(out.folders)) if (f.parent && !out.folders[f.parent]) f.parent = "";
     return out;
@@ -2113,7 +2162,7 @@ self.onmessage = async (e) => {
     const sid = showIdOfName(f.name), show = sid ? tvShow(sid) : null;
     const mi = sid ? null : movieInfo(f);
     const th = knownThumb(f.key);
-    const art = (show && show.img) || (mi && mi.img) || (th && th.url) || "";
+    const art = (show && showImg(sid)) || (mi && mi.img) || (th && th.url) || "";
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: titleOf(f), artist: show ? show.name : "MoCloud", album: "MoCloud",
@@ -2330,7 +2379,10 @@ self.onmessage = async (e) => {
     }
   }
   const htmlText = (html) => (html ? new DOMParser().parseFromString(html, "text/html").body.textContent.trim() : "");
-  const tvChoice = (showId) => (state.meta.tvmaze || {})[showId];
+  // The show picked by hand, else the anime the Pi found (TVmaze's top match for "One Piece" is the live-action one).
+  const tvChoice = (showId) => (state.meta.tvmaze || {})[showId] || (state.animeIds[showId] ? String(state.animeIds[showId]) : undefined);
+  // The show's poster: the one picked by hand, else TVmaze's main one.
+  const showImg = (showId) => { const c = tvShow(showId); return c ? (state.meta.posters || {})[showId] || c.img || "" : ""; };
   function tvShow(showId) {
     const c = tv.cache[showId];
     if (!c) return null;
@@ -2409,44 +2461,87 @@ self.onmessage = async (e) => {
       const msg = choice === "none" ? "Episode info turned off for this show." : tv.cache[show.id] && tv.cache[show.id].none ? "No episode info found." : "";
       if (msg) p.append(msg);
     }
-    const b = document.createElement("button"); b.className = "link"; b.textContent = c ? "Wrong show?" : choice === "none" ? "Turn back on" : "Find it";
+    const b = document.createElement("button"); b.className = "link"; b.textContent = c ? "Wrong poster?" : choice === "none" ? "Turn back on" : "Find it";
     b.disabled = state.offline;
     b.addEventListener("click", () => openShowPicker(show));
     if (c || choice === "none" || (tv.cache[show.id] && tv.cache[show.id].none)) p.append(" ", b);
     return p.childNodes.length ? p : null;
   }
 
+  // "Wrong poster?": other posters for the show, or the right show (each match with its poster).
+  // Whatever's picked is saved with the folders, so every device shows it.
+  function posterButton(src, label, sub, chosen, onPick) {
+    const b = document.createElement("button"); b.className = "poster-pick" + (chosen ? " chosen" : "");
+    const art = document.createElement("span"); art.className = "pp-art";
+    if (src) {
+      const img = document.createElement("img"); img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer"; img.src = src;
+      img.onerror = () => img.remove();
+      art.append(img);
+    }
+    b.append(art);
+    if (label) { const t = document.createElement("b"); t.textContent = label; b.append(t); }
+    if (sub) { const t = document.createElement("span"); t.className = "pp-sub"; t.textContent = sub; b.append(t); }
+    b.addEventListener("click", onPick);
+    return b;
+  }
+  const note = (text) => Object.assign(document.createElement("p"), { className: "show-note", textContent: text });
+
   function openShowPicker(show) {
-    const d = $("showDlg"), input = $("showQuery"), list = $("showList");
-    $("showTitle").textContent = `Which show is “${show.name}”?`;
+    const d = $("showDlg"), input = $("showQuery"), list = $("showList"), mine = $("showPosters");
+    const current = tvShow(show.id), picked = (state.meta.posters || {})[show.id];
+    $("showTitle").textContent = current ? "Wrong poster?" : `Which show is “${show.name}”?`;
+    $("showOtherHead").textContent = current ? "Or is it a different show?" : "Pick the show";
     input.value = show.name;
+    const close = () => { d.close(); };
+    const setPoster = (url) => {
+      close();
+      changeMeta((m) => { m.posters = m.posters || {}; if (url) m.posters[show.id] = url; else delete m.posters[show.id]; });
+    };
+    const pick = (id) => {
+      close();
+      changeMeta((m) => {
+        m.tvmaze = m.tvmaze || {}; m.tvmaze[show.id] = id;
+        if (m.posters) delete m.posters[show.id]; // a different show: its own poster
+      });
+      tv.asked.delete(show.id);
+      if (id !== "none") tvWant(show.id, show.name);
+    };
+    // Every poster TVmaze has for the show it's matched to.
+    $("showPostersHead").hidden = mine.hidden = !current;
+    if (current) {
+      $("showPostersHead").textContent = `Posters for ${current.name}${current.year ? ` (${current.year})` : ""}`;
+      mine.replaceChildren(note("Getting the posters…"));
+      fetch(`${TVMAZE}/shows/${encodeURIComponent(current.id)}/images`).then((r) => (r.ok ? r.json() : [])).then((imgs) => {
+        const posters = (Array.isArray(imgs) ? imgs : []).filter((i) => i.type === "poster" && i.resolutions)
+          .sort((a, b) => (b.main ? 1 : 0) - (a.main ? 1 : 0))
+          .map((i) => ({ big: (i.resolutions.original || i.resolutions.medium).url, small: (i.resolutions.medium || i.resolutions.original).url, main: i.main }));
+        if (!posters.length && current.img) posters.push({ big: current.img, small: current.img, main: true });
+        const chosen = (p) => (picked ? p.big === picked : p.main);
+        mine.replaceChildren(...(posters.length ? posters.slice(0, 24).map((p) => posterButton(p.small, "", p.main ? "TVmaze's pick" : "", chosen(p),
+          () => setPoster(p.main ? "" : p.big))) : [note("TVmaze doesn't have any other posters for this one.")]));
+      }).catch(() => mine.replaceChildren(note("Couldn't reach TVmaze. Check ur internet connection.")));
+    }
     const search = async () => {
-      list.replaceChildren(Object.assign(document.createElement("p"), { className: "show-note", textContent: "Searching TVmaze…" }));
+      list.replaceChildren(note("Searching TVmaze…"));
       try {
         const res = await fetch(`${TVMAZE}/search/shows?q=${encodeURIComponent(input.value.trim())}`);
         const results = res.ok ? await res.json() : [];
-        const rows = results.slice(0, 8).map(({ show: s }) => {
-          const b = document.createElement("button"); b.className = "move-row";
+        const rows = results.slice(0, 12).map(({ show: s }) => {
           const where = (s.network && s.network.name) || (s.webChannel && s.webChannel.name) || "";
-          b.textContent = `${s.name}${s.premiered ? ` (${s.premiered.slice(0, 4)})` : ""}${where ? `, ${where}` : ""}`;
-          b.addEventListener("click", () => pick(String(s.id)));
-          return b;
+          const anime = (s.genres || []).includes("Anime") || (s.language === "Japanese" && s.type === "Animation");
+          const sub = [s.premiered ? s.premiered.slice(0, 4) : "", anime ? "Anime" : s.type === "Animation" ? "Cartoon" : "", where].filter(Boolean).join(" · ");
+          const img = s.image ? s.image.medium || s.image.original : "";
+          return posterButton(img, s.name, sub, current && String(current.id) === String(s.id), () => pick(String(s.id)));
         });
-        list.replaceChildren(...(rows.length ? rows : [Object.assign(document.createElement("p"), { className: "show-note", textContent: "Nothing found. Try a different name." })]));
+        list.replaceChildren(...(rows.length ? rows : [note("Nothing found. Try a different name.")]));
       } catch {
-        list.replaceChildren(Object.assign(document.createElement("p"), { className: "show-note", textContent: "Couldn't reach TVmaze. Check ur internet connection." }));
+        list.replaceChildren(note("Couldn't reach TVmaze. Check ur internet connection."));
       }
-    };
-    const pick = (id) => {
-      d.close();
-      changeMeta((m) => { m.tvmaze = m.tvmaze || {}; m.tvmaze[show.id] = id; });
-      tv.asked.delete(show.id);
-      if (id !== "none") tvWant(show.id, show.name);
     };
     $("showSearch").onclick = search;
     input.onkeydown = (e) => { if (e.key === "Enter") search(); };
     $("showNone").onclick = () => pick("none");
-    $("showCancel").onclick = () => d.close();
+    $("showCancel").onclick = close;
     d.showModal();
     search();
   }
@@ -2771,8 +2866,7 @@ self.onmessage = async (e) => {
     const el = document.createElement("article"); el.className = "tile show-card poster";
     const box = document.createElement("button"); box.className = "thumb";
     box.setAttribute("aria-label", `Open ${show.name}`);
-    const tvs = tvShow(show.id);
-    posterArt(box, tvs && tvs.img, files, show.name);
+    posterArt(box, showImg(show.id), files, show.name);
     const tag = document.createElement("span"); tag.className = "box-tag";
     tag.textContent = `${show.count} ${show.count === 1 ? "episode" : "episodes"}`;
     box.append(tag);
@@ -2973,9 +3067,9 @@ self.onmessage = async (e) => {
     }
     info.append(acts);
     const hero = document.createElement("div"); hero.className = "show-hero";
-    const tvs = tvShow(show.id);
-    if (tvs && tvs.img) {
-      const art = document.createElement("img"); art.alt = ""; art.referrerPolicy = "no-referrer"; art.src = tvs.img;
+    const heroImg = showImg(show.id);
+    if (heroImg) {
+      const art = document.createElement("img"); art.alt = ""; art.referrerPolicy = "no-referrer"; art.src = heroImg;
       art.onerror = () => { art.remove(); hero.classList.add("no-art"); };
       hero.append(art);
     } else hero.classList.add("no-art");
@@ -3099,6 +3193,9 @@ self.onmessage = async (e) => {
       light: backend.id === "pi" ? data.light || {} : {}, storageAlert: data.storageAlert === undefined ? 90 : data.storageAlert,
       freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
     });
+    if (data.live) liveTake(data.live);
+    state.animeIds = data.anime && typeof data.anime === "object" ? data.anime : {};
+    state.arcOrder = data.arcOrder && typeof data.arcOrder === "object" ? data.arcOrder : {};
     await loadMeta();
     storageHeadsUp();
     if (isSettingsOpen()) renderSettings();
@@ -3132,7 +3229,7 @@ self.onmessage = async (e) => {
     try {
       localStorage.setItem(libraryKey(), JSON.stringify({
         files: state.files, used: state.used, limit: state.limit, freeTier: state.freeTier, at: Date.now(),
-        sysFiles: state.sysFiles, meta: state.meta, metaKey: state.metaKey,
+        sysFiles: state.sysFiles, meta: state.meta, metaKey: state.metaKey, arcOrder: state.arcOrder,
       }));
     } catch {}
   }
@@ -3144,6 +3241,7 @@ self.onmessage = async (e) => {
         Object.assign(state, {
           files: saved.files.filter((f) => !isSys(f)), used: saved.used, limit: saved.limit, freeTier: saved.freeTier, fromCache: true,
           sysFiles: saved.sysFiles || [], meta: normalizeMeta(saved.meta), metaKey: saved.metaKey || null,
+          arcOrder: saved.arcOrder && typeof saved.arcOrder === "object" ? saved.arcOrder : {},
         });
         return saved;
       }
@@ -4290,7 +4388,165 @@ self.onmessage = async (e) => {
       return li;
     }), ...subsRows());
     renderGauge();
+    liveSoon();
   }
+
+  // ---------- Uploads on every device ----------
+  // While this device uploads, it tells the Pi its queue every couple of seconds. Every other
+  // device (website or iPhone app) asks the Pi wat's going up and shows "Uploading X files".
+  const live = { others: [], timer: 0, lastSent: 0, sentAny: false, pending: 0, polling: 0 };
+  const liveId = (() => {
+    try {
+      let id = localStorage.getItem("mocloud-device");
+      if (!/^[A-Za-z0-9_-]{6,64}$/.test(id || "")) {
+        id = "web-" + Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => b.toString(16).padStart(2, "0")).join("");
+        localStorage.setItem("mocloud-device", id);
+      }
+      return id;
+    } catch { return "web-" + Math.random().toString(36).slice(2, 14); }
+  })();
+  const liveLabel = (() => {
+    const ua = navigator.userAgent;
+    if (/iPhone/.test(ua)) return "iPhone";
+    if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "iPad";
+    if (/Macintosh|Mac OS X/.test(ua)) return "Mac";
+    if (/Windows/.test(ua)) return "PC";
+    if (/Android/.test(ua)) return "Android";
+    if (/CrOS|Linux/.test(ua)) return "computer";
+    return "other device";
+  })();
+  const fmtRate = (r) => r > 0 ? (r >= 1e6 ? (r / 1e6).toFixed(r >= 1e7 ? 0 : 1) + " MB/s" : Math.round(r / 1e3) + " KB/s") : "";
+
+  async function liveFetch(method, body) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    try {
+      const res = await fetch(API + "/api/uploads/live", {
+        method, signal: ctrl.signal, keepalive: method === "POST" && JSON.stringify(body).length < 60000,
+        headers: { "X-Passcode": state.passcode, ...(body ? { "Content-Type": "application/json" } : {}) },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      return res.ok ? await res.json().catch(() => null) : null;
+    } catch { return null; } finally { clearTimeout(timer); }
+  }
+
+  function liveItems() {
+    return state.queue.filter((q) => q.status !== "failed").map((q) => {
+      const held = q.status === "paused" || (state.offline && ["uploading", "converting", "finishing"].includes(q.status));
+      const size = q.file.size || 0, sent = Math.min(size, q.sent || 0);
+      return {
+        name: q.asName ? prettyTitle(q.asName) : q.file.name, size, sent,
+        rate: q.status === "uploading" || q.status === "converting" ? Math.round(q.rate || 0) : 0,
+        pct: q.status === "converting" ? Math.floor((q.prep || 0) * 100) : q.status === "finishing" ? 100 : size ? Math.floor((sent / size) * 100) : 0,
+        status: held ? "paused" : q.status,
+      };
+    });
+  }
+
+  // Sends this device's queue: right away when it empties, otherwise at most every 2 seconds.
+  function liveSoon() {
+    if (!onPi() || !configured) return;
+    const items = liveItems();
+    if (!items.length) {
+      clearTimeout(live.pending); live.pending = 0;
+      if (live.sentAny) { live.sentAny = false; liveFetch("POST", { device: liveId, label: liveLabel, items: [] }); }
+      return;
+    }
+    if (live.pending) return;
+    const wait = Math.max(0, 2000 - (Date.now() - live.lastSent));
+    live.pending = setTimeout(() => {
+      live.pending = 0; live.lastSent = Date.now();
+      const now = liveItems();
+      if (!now.length) return liveSoon();
+      live.sentAny = true;
+      liveFetch("POST", { device: liveId, label: liveLabel, items: now });
+    }, wait);
+  }
+  // Waiting files make no progress events, so a heartbeat keeps this device on the board.
+  setInterval(() => { if (live.sentAny || state.queue.length) liveSoon(); }, 10000);
+  window.addEventListener("pagehide", () => {
+    if (live.sentAny) liveFetch("POST", { device: liveId, label: liveLabel, items: [] });
+  });
+
+  function liveTake(devices) {
+    live.others = (Array.isArray(devices) ? devices : []).filter((d) => d.device !== liveId && d.items && d.items.length);
+    renderLive();
+  }
+
+  // Asks the Pi every few seconds (every second while the list is open).
+  async function livePoll() {
+    clearTimeout(live.polling);
+    if (!onPi() || !configured) liveTake([]);
+    else if (!state.offline && document.visibilityState === "visible") {
+      const data = await liveFetch("GET");
+      if (data) liveTake(data.devices);
+    }
+    live.polling = setTimeout(livePoll, $("liveDlg").open ? 1000 : live.others.length ? 3000 : 8000);
+  }
+
+  const liveNames = (list) => list.length < 3 ? list.join(" and ") : list.slice(0, -1).join(", ") + " and " + list[list.length - 1];
+  function renderLive() {
+    const others = onPi() ? live.others : [];
+    const items = others.flatMap((d) => d.items);
+    const strip = $("liveStrip");
+    strip.hidden = !items.length;
+    if (items.length) {
+      const labels = [...new Set(others.map((d) => d.label))];
+      const size = items.reduce((a, i) => a + (i.size || 0), 0), sent = items.reduce((a, i) => a + Math.min(i.size || 0, i.sent || 0), 0);
+      const rate = items.reduce((a, i) => a + (i.rate || 0), 0);
+      $("liveText").innerHTML = "";
+      const b = document.createElement("b");
+      b.textContent = `Uploading ${items.length} ${items.length === 1 ? "file" : "files"}`;
+      $("liveText").append(b, ` from ur ${liveNames(labels)}` + (rate ? `, ${fmtRate(rate)}` : ""));
+      $("liveFill").style.width = (size ? Math.floor((sent / size) * 100) : 0) + "%";
+    }
+    if ($("liveDlg").open) renderLiveDlg();
+  }
+
+  const LIVE_TEXT = {
+    waiting: () => "Waiting",
+    checking: () => "Checking it isn't alr in MoCloud",
+    ask: () => "Alr in MoCloud, waiting on u over there",
+    converting: (i) => `Converting and uploading, ${i.pct}%${i.rate ? ", " + fmtRate(i.rate) : ""}`,
+    uploading: (i) => `${i.pct}% of ${fmtSize(i.size)}${i.rate ? ", " + fmtRate(i.rate) : ""}`,
+    finishing: () => "Finishing",
+    paused: () => "Paused till that device is back on MoCloud",
+  };
+  function renderLiveDlg() {
+    const body = $("liveBody");
+    if (!live.others.length) {
+      const p = document.createElement("p"); p.className = "dl-sum";
+      p.textContent = "Nothing's going up from ur other devices rn.";
+      body.replaceChildren(p);
+      return;
+    }
+    body.replaceChildren(...live.others.flatMap((d) => {
+      const head = document.createElement("h4"); head.className = "live-dev";
+      const left = d.items.reduce((a, i) => a + Math.max(0, (i.size || 0) - (i.sent || 0)), 0);
+      const rate = d.items.reduce((a, i) => a + (i.rate || 0), 0);
+      const meta = document.createElement("span");
+      meta.textContent = `${d.items.length} ${d.items.length === 1 ? "file" : "files"}, ${fmtSize(left)} left` + (rate ? `, ${fmtRate(rate)}` : "");
+      head.append(`From ur ${d.label}`, meta);
+      const ul = document.createElement("ul"); ul.className = "queue";
+      ul.append(...d.items.map((i) => {
+        const li = document.createElement("li");
+        if (i.status === "paused" || i.status === "ask") li.className = "paused";
+        const name = document.createElement("span"); name.className = "q-name"; name.textContent = i.name;
+        const stat = document.createElement("span"); stat.className = "q-stat";
+        stat.textContent = (LIVE_TEXT[i.status] || LIVE_TEXT.waiting)(i);
+        const bar = document.createElement("div"); bar.className = "q-bar";
+        const fill = document.createElement("i"); fill.style.width = (i.pct || 0) + "%";
+        bar.append(fill);
+        li.append(name, stat, bar);
+        return li;
+      }));
+      return [head, ul];
+    }));
+  }
+  $("liveStrip").addEventListener("click", () => { renderLiveDlg(); $("liveDlg").showModal(); livePoll(); });
+  $("liveClose").addEventListener("click", () => $("liveDlg").close());
+  $("liveDlg").addEventListener("click", (e) => { if (e.target === $("liveDlg")) $("liveDlg").close(); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") livePoll(); });
 
   // ---------- Duplicates ----------
   // Nothing goes up twice. Each video or photo gets a fingerprint (a hash of its size plus its first
@@ -5357,6 +5613,7 @@ self.onmessage = async (e) => {
       toast(`Can’t reach storage: ${e.message}`, true);
     });
     setInterval(checkHealth, 20000);
+    setTimeout(livePoll, 1500); // uploads going up from ur other devices
     // Coming back to the tab, or the device reconnecting, checks straight away.
     window.addEventListener("online", () => { if (state.offline) checkNow(); });
     document.addEventListener("visibilitychange", () => {
