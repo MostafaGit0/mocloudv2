@@ -273,7 +273,7 @@
   #pinInput { width: 100%; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink);
     color: var(--paper); font-size: 22px; letter-spacing: .4em; text-align: center; margin-bottom: 8px; }
   #pinErr { min-height: 20px; color: var(--red); font-size: 14px; margin: 0 0 12px; }
-  .pin-acts { display: flex; align-items: center; gap: 10px; }
+  .pin-acts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .pin-acts .push { margin-right: auto; }
   .speed-h { margin: 18px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--dim); font-weight: 600; }
   .speed-list { list-style: none; margin: 0 0 10px; padding: 0; }
@@ -608,8 +608,10 @@
     <p><b>Drop videos or photos anywhere on this jawn.</b></p>
     <div class="drop-btns">
       <button class="btn" id="pick">Choose files</button>
+      <button class="btn ghost" id="pickFolder" title="A folder of episodes goes up as an anime arc">Upload a folder</button>
     </div>
     <input type="file" id="fileInput" accept="video/*,image/*,.mkv,.avi,.mov,.heic" multiple hidden>
+    <input type="file" id="folderInput" webkitdirectory multiple hidden>
   </section>
 
   <div class="status" id="statusBanner" role="status" aria-live="polite" hidden></div>
@@ -1113,6 +1115,8 @@ self.onmessage = async (e) => {
   // which show, season and episode it is so the library can sort itself.
   // Only what the page shows changes. The stored file and its download name stay as they were.
   const JUNK = /(^|[\s._\-\[\(])(2160p|1080[pi]|720p|480p|4k|uhd|hdr\d*|bluray|blu-ray|brrip|bdrip|dvdrip|webrip|web-?dl|web|hdtv|hdrip|remux|x26[45]|h\.?26[45]|hevc|avc|xvid|divx|ac3|eac3|dd[p+]?\d|dts|aac|atmos|truehd|10bit|proper|repack|extended|unrated|multi|dual)(?=$|[\s._\-\]\)])/i;
+  // Anime arcs, the name MoCloud gives them when a folder is uploaded: "One Piece [Arc - Wano Country] E1071"
+  const ARC_NAME = /^(.*?)\s*\[Arc - ([^\]]+)\]\s*E(\d{1,4})(?!\d)/i;
   function parseName(fileName) {
     const stem = String(fileName).replace(/\.[a-z0-9]{2,4}$/i, "");
     const tidy = (s) => {
@@ -1124,6 +1128,11 @@ self.onmessage = async (e) => {
       if (t && t === t.toLowerCase()) t = t.replace(/\b[a-z]/g, (c) => c.toUpperCase());
       return t;
     };
+    const arcM = stem.match(ARC_NAME);
+    if (arcM && tidy(arcM[1]) && arcM[2].trim()) {
+      const show = tidy(arcM[1]), episode = +arcM[3];
+      return { title: `${show} EP${episode}`, show, season: 0, episode, episodeName: "", arc: arcM[2].trim() };
+    }
     let m = stem.match(/^(.*?)[\s._\-]*S(\d{1,2})[\s._\-]*E(?:P)?(\d{1,3})(?!\d)/i)
          || stem.match(/^(.*?)[\s._\-]+Season[\s._\-]*(\d{1,2})[\s._\-]*Episode[\s._\-]*(\d{1,3})/i)
          || stem.match(/^(.*?)[\s._\-]+(\d{1,2})x(\d{2,3})(?!\d)/i);
@@ -1152,24 +1161,69 @@ self.onmessage = async (e) => {
   const prettyTitle = (fileName) => VIDEO_EXT.test(fileName) ? parseName(fileName).title : fileName; // photos and other files keep their name
 
   // Sorts the library into shows (by season, then episode) and everything else.
+  // Anime arcs come after any seasons, in story order: by first episode number, or by when they
+  // were uploaded if every arc starts back at episode 1. Arc tabs are numbered 1000 and up.
   function groupFiles(files) {
     const shows = new Map(), other = [];
     for (const f of files) {
       const info = isVideo(f) ? parseName(f.name) : null;
       if (!info || !info.show || info.season === undefined) { other.push(f); continue; }
       const id = info.show.toLowerCase().replace(/[^a-z0-9]+/g, "");
-      if (!shows.has(id)) shows.set(id, { id, name: info.show, seasons: new Map(), count: 0 });
+      if (!shows.has(id)) shows.set(id, { id, name: info.show, seasons: new Map(), arcs: new Map(), count: 0 });
       const show = shows.get(id);
-      if (!show.seasons.has(info.season)) show.seasons.set(info.season, []);
-      show.seasons.get(info.season).push({ file: f, episode: info.episode, name: info.episodeName });
+      if (info.arc) {
+        const k = info.arc.toLowerCase();
+        if (!show.arcs.has(k)) show.arcs.set(k, { name: info.arc, eps: [] });
+        show.arcs.get(k).eps.push({ file: f, episode: info.episode, name: "" });
+      } else {
+        if (!show.seasons.has(info.season)) show.seasons.set(info.season, []);
+        show.seasons.get(info.season).push({ file: f, episode: info.episode, name: info.episodeName });
+      }
       show.count++;
     }
     const list = [...shows.values()].sort((a, b) => a.name.localeCompare(b.name));
+    const firstUp = (eps) => Math.min(...eps.map((e) => new Date(e.file.uploaded || 0).getTime()));
     for (const show of list) {
-      show.seasons = [...show.seasons.entries()].sort((a, b) => a[0] - b[0])
-        .map(([number, eps]) => ({ number, episodes: eps.sort((a, b) => a.episode - b.episode) }));
+      const seasons = [...show.seasons.entries()].sort((a, b) => a[0] - b[0])
+        .map(([number, eps]) => ({ number, label: `Season ${number}`, episodes: eps.sort((a, b) => a.episode - b.episode) }));
+      const arcs = [...show.arcs.values()].sort((a, b) =>
+        (Math.min(...a.eps.map((e) => e.episode)) - Math.min(...b.eps.map((e) => e.episode))) || (firstUp(a.eps) - firstUp(b.eps)));
+      arcs.forEach((a, i) => seasons.push({ number: 1000 + i, arc: a.name, label: a.name, episodes: a.eps.sort((x, y) => x.episode - y.episode) }));
+      show.seasons = seasons;
+      show.hasArcs = arcs.length > 0;
+      delete show.arcs;
     }
     return { shows: list, other };
+  }
+  // "3 arcs", "2 seasons", or both.
+  function partsLabel(show) {
+    const arcs = show.seasons.filter((s) => s.arc).length, plain = show.seasons.length - arcs;
+    return [plain > 1 || (plain === 1 && arcs) ? `${plain} ${plain === 1 ? "season" : "seasons"}` : "",
+      arcs ? `${arcs} ${arcs === 1 ? "arc" : "arcs"}` : ""].filter(Boolean).join(" · ");
+  }
+  // "S2 E5", or "EP1071" in an anime arc.
+  const epTag = (season, episode) => (season >= 1000 ? `EP${episode}` : `S${season} E${episode}`);
+  // A show's episodes in watching order (seasons, then arcs), the same order as its page.
+  function showOrder(sid) {
+    const show = groupFiles(state.files.filter((x) => isVideo(x) && showIdOfName(x.name) === sid)).shows[0];
+    return show ? show.seasons.flatMap((s) => s.episodes.map((e) => e.file)) : [];
+  }
+  // Whether an anime's episode numbers run straight through its arcs (One Piece 1 to 1100), so
+  // TVmaze's episode names line up. Per-arc numbering (each arc from 1) would give wrong names.
+  const arcStraight = { src: null, map: new Map() };
+  function arcNumbersRunThrough(sid) {
+    if (arcStraight.src !== state.files) { arcStraight.src = state.files; arcStraight.map = new Map(); }
+    if (arcStraight.map.has(sid)) return arcStraight.map.get(sid);
+    const seen = new Set(); let ok = true;
+    for (const f of state.files) {
+      if (!isVideo(f)) continue;
+      const i = parseName(f.name);
+      if (!i.arc || showIdOfName(f.name) !== sid) continue;
+      if (seen.has(i.episode)) { ok = false; break; }
+      seen.add(i.episode);
+    }
+    arcStraight.map.set(sid, ok);
+    return ok;
   }
   // The name shown for a file. Episodes without a name in the file get theirs from TVmaze.
   const titleOf = (f) => {
@@ -1943,14 +1997,14 @@ self.onmessage = async (e) => {
     if (fresh.length) {
       try { localStorage.setItem(seenKey, String(Math.max(...fresh.map((x) => x.at)))); } catch {}
       const label = (x) => titleOf(state.files.find((f) => f.key === x.key) || { key: x.key, name: x.name, type: "video/mp4" });
-      const found = fresh.filter((x) => x.state === "found" && x.kind !== "retimed"), none = fresh.filter((x) => x.state === "none"),
+      const found = fresh.filter((x) => x.state === "found" && x.kind !== "retimed"), none = fresh.filter((x) => x.state === "none" && !(x.msg || "").startsWith("Anime:")),
         failed = fresh.filter((x) => x.state === "failed"), retimed = fresh.filter((x) => x.state === "found" && x.kind === "retimed");
       const parts = [];
       if (retimed.length) parts.push(retimed.length === 1 ? `Fixed the subtitle timing for ${label(retimed[0])}` : `Fixed the subtitle timing for ${retimed.length} videos`);
       if (found.length) parts.push(found.length === 1 ? `Subtitles ready for ${label(found[0])}` : `Subtitles ready for ${found.length} videos`);
       if (none.length) parts.push(none.length === 1 ? `Couldn't find subtitles for ${label(none[0])}` : `Couldn't find subtitles for ${none.length} videos`);
       if (failed.length) parts.push(failed.length === 1 ? (failed[0].msg || `Subtitles didn't work for ${label(failed[0])}`).replace(/\.$/, "") : `Subtitles didn't work for ${failed.length} videos`);
-      toast(parts.join(". ") + ".", !found.length && !retimed.length);
+      if (parts.length) toast(parts.join(". ") + ".", !found.length && !retimed.length);
     }
     const q = state.subsQuota;
     if (q && (q.warn || q.full)) {
@@ -2014,10 +2068,9 @@ self.onmessage = async (e) => {
     }
     const sid = showIdOfName(f.name);
     if (!sid) return null;
-    const eps = state.files.filter((x) => isVideo(x) && showIdOfName(x.name) === sid).map((x) => ({ x, i: parseName(x.name) }))
-      .sort((a, b) => a.i.season - b.i.season || a.i.episode - b.i.episode);
-    const at = eps.findIndex((e) => e.x.key === f.key);
-    return at >= 0 && at + 1 < eps.length ? eps[at + 1].x : null;
+    const eps = showOrder(sid);
+    const at = eps.findIndex((x) => x.key === f.key);
+    return at >= 0 && at + 1 < eps.length ? eps[at + 1] : null;
   }
   function playerPrompts(f, v, stage) {
     const box = document.createElement("div"); box.className = "p-prompt"; box.hidden = true;
@@ -2199,12 +2252,10 @@ self.onmessage = async (e) => {
       if ((p.at || 0) < stale) continue; // not touched in 3 days: drops off the row (the show still remembers where you were)
       if (p.t > 0) { out.push({ f, at: p.at, kind: "resume", p }); continue; }
       if (!p.done || !showIdOfName(f.name)) continue;
-      const info = parseName(f.name); // finished: suggest the next episode, if it's here and not started
-      const eps = state.files.filter((x) => isVideo(x) && showIdOfName(x.name) === group).map((x) => ({ x, i: parseName(x.name) }))
-        .sort((a, b) => a.i.season - b.i.season || a.i.episode - b.i.episode);
-      const at = eps.findIndex((e) => e.x.key === f.key);
-      const next = eps.slice(at + 1).find((e) => !(getProg(e.x.key) || {}).done && (e.i.season > info.season || e.i.episode > info.episode));
-      if (next) out.push({ f: next.x, at: p.at, kind: "next", group });
+      const eps = showOrder(group); // finished: suggest the next episode, if it's here and not started
+      const at = eps.findIndex((x) => x.key === f.key);
+      const next = at < 0 ? null : eps.slice(at + 1).find((x) => !(getProg(x.key) || {}).done);
+      if (next) out.push({ f: next, at: p.at, kind: "next", group });
     }
     return out.sort((a, b) => b.at - a.at).slice(0, 8);
   }
@@ -2236,7 +2287,8 @@ self.onmessage = async (e) => {
   function searchText(f) {
     const parts = [titleOf(f), f.name];
     const info = isVideo(f) ? parseName(f.name) : null;
-    if (info && info.show) parts.push(info.show, `s${info.season}e${info.episode}`, `season ${info.season}`);
+    if (info && info.show && info.arc) parts.push(info.show, info.arc, `ep ${info.episode}`, `episode ${info.episode}`);
+    else if (info && info.show) parts.push(info.show, `s${info.season}e${info.episode}`, `season ${info.season}`);
     const ep = tvEpisode(f);
     if (ep) parts.push(ep.name, ep.summary);
     for (const id of folderPath(folderOf(f))) parts.push(state.meta.folders[id].name);
@@ -2291,8 +2343,17 @@ self.onmessage = async (e) => {
     if (!isVideo(f)) return null;
     const info = parseName(f.name);
     if (!info.show || info.season === undefined) return null;
-    const show = tvShow(showIdOfName(f.name));
-    return show ? show.eps[`${info.season}x${info.episode}`] || null : null;
+    const sid = showIdOfName(f.name), show = tvShow(sid);
+    if (!show) return null;
+    if (info.arc) {
+      if (!arcNumbersRunThrough(sid)) return null;
+      if (!show._ordered) {
+        show._ordered = Object.keys(show.eps).map((k) => k.split("x").map(Number)).filter(([a, b]) => a > 0 && b >= 0)
+          .sort((x, y) => x[0] - y[0] || x[1] - y[1]).map(([a, b]) => show.eps[`${a}x${b}`]);
+      }
+      return show._ordered[info.episode - 1] || null;
+    }
+    return show.eps[`${info.season}x${info.episode}`] || null;
   }
   // Asks TVmaze about a show if it hasn't been asked recently.
   function tvWant(showId, name) {
@@ -2397,7 +2458,7 @@ self.onmessage = async (e) => {
     box.hidden = !(ep && (ep.summary || ep.name));
     if (box.hidden) return;
     const info = parseName(f.name);
-    $("pDescName").textContent = `S${info.season} EP${info.episode}${ep.name ? `: ${ep.name}` : ""}`;
+    $("pDescName").textContent = `${info.arc ? `EP${info.episode}` : `S${info.season} EP${info.episode}`}${ep.name ? `: ${ep.name}` : ""}`;
     $("pDescText").textContent = ep.summary || "";
   }
 
@@ -2722,7 +2783,7 @@ self.onmessage = async (e) => {
     const meta = document.createElement("p"); meta.className = "meta";
     const seasons = show.seasons.map((s) => s.number);
     const seen = files.filter((f) => (getProg(f.key) || {}).done).length;
-    meta.textContent = [seasons.length > 1 ? `Seasons ${seasons[0]}–${seasons[seasons.length - 1]}` : `Season ${seasons[0]}`,
+    meta.textContent = [show.hasArcs ? partsLabel(show) : seasons.length > 1 ? `Seasons ${seasons[0]}–${seasons[seasons.length - 1]}` : `Season ${seasons[0]}`,
       seen ? `${seen}/${files.length} watched` : ""].filter(Boolean).join(" · ");
     el.append(box, name, meta);
     return el;
@@ -2875,7 +2936,7 @@ self.onmessage = async (e) => {
     const eps = show.seasons.flatMap((s) => s.episodes.map((e) => ({ ...e, season: s.number })));
     let last = null, at = -1;
     eps.forEach((e, i) => { const p = getProg(e.file.key); if (p && (!last || (p.at || 0) > (last.at || 0))) { last = p; at = i; } });
-    const tag = (e) => `S${e.season} E${e.episode}`;
+    const tag = (e) => epTag(e.season, e.episode);
     if (at < 0) return { ep: eps[0], label: `Play ${tag(eps[0])}` };
     if (!last.done) return { ep: eps[at], label: `Resume ${tag(eps[at])}` };
     if (at + 1 < eps.length) return { ep: eps[at + 1], label: `Play next: ${tag(eps[at + 1])}` };
@@ -2892,7 +2953,7 @@ self.onmessage = async (e) => {
     const files = showFiles(show);
     const seen = files.filter((f) => (getProg(f.key) || {}).done).length;
     meta.textContent = [`${show.count} ${show.count === 1 ? "episode" : "episodes"}`,
-      show.seasons.length > 1 ? `${show.seasons.length} seasons` : "", seen ? `${seen} watched` : ""].filter(Boolean).join(" · ");
+      show.hasArcs ? partsLabel(show) : show.seasons.length > 1 ? `${show.seasons.length} seasons` : "", seen ? `${seen} watched` : ""].filter(Boolean).join(" · ");
     const info = document.createElement("div");
     info.append(h, meta);
     const src = tvLine(show);
@@ -2934,14 +2995,14 @@ self.onmessage = async (e) => {
     if (show.seasons.length > 1) {
       const tabs = document.createElement("div"); tabs.className = "season-tabs"; tabs.setAttribute("role", "group"); tabs.setAttribute("aria-label", "Seasons");
       for (const s of show.seasons) {
-        const b = document.createElement("button"); b.className = "chip"; b.textContent = `Season ${s.number}`;
+        const b = document.createElement("button"); b.className = "chip"; b.textContent = s.label;
         b.setAttribute("aria-pressed", String(s.number === season));
         b.addEventListener("click", () => { pickedSeason.set(show.id, s.number); renderLibrary(); });
         tabs.append(b);
       }
       wrap.append(tabs);
     } else {
-      const sh = document.createElement("h3"); sh.className = "season"; sh.textContent = `Season ${season}`; wrap.append(sh);
+      const sh = document.createElement("h3"); sh.className = "season"; sh.textContent = show.seasons.find((s) => s.number === season).label; wrap.append(sh);
     }
     const eps = show.seasons.find((s) => s.number === season).episodes;
     wrap.append(gridOf(eps.map((ep) => {
@@ -2987,7 +3048,7 @@ self.onmessage = async (e) => {
     } else {
       parts.push(...shows.map((show) => section("show:" + show.id, show.name, show.count, [tvLine(show), ...
         show.seasons.flatMap((season) => {
-          const h = document.createElement("h3"); h.className = "season"; h.textContent = `Season ${season.number}`;
+          const h = document.createElement("h3"); h.className = "season"; h.textContent = season.label;
           return [h, gridOf(season.episodes.map((ep) => {
             const name = ep.name || (tvEpisode(ep.file) || {}).name || "";
             return tile(ep.file, `Episode ${ep.episode}${name ? ": " + name : ""}`);
@@ -3314,7 +3375,8 @@ self.onmessage = async (e) => {
     const rows = [
       ["File name", full.name],
       ["Show", parsed.season !== undefined && parsed.show ? parsed.show : ""],
-      ["Episode", parsed.season !== undefined ? `Season ${parsed.season}, episode ${parsed.episode}` : ""],
+      ["Arc", parsed.arc || ""],
+      ["Episode", parsed.arc ? `Episode ${parsed.episode}` : parsed.season !== undefined ? `Season ${parsed.season}, episode ${parsed.episode}` : ""],
       ["Episode name", parsed.episodeName || (tvEpisode(full) || {}).name || ""],
       ["About", (tvEpisode(full) || {}).summary || ""],
       ["Type", ext ? `${ext.toUpperCase()} ${video ? "video" : "photo"}` : ""],
@@ -3343,7 +3405,7 @@ self.onmessage = async (e) => {
     if (job && job.state === "waiting") return "Found, waiting for the daily download limit to reset";
     if (job && !SUBS_DONE.includes(job.state)) return subsFile(f.key) ? "English (checking the timing)" : "Looking for them now";
     if (subsFile(f.key)) return job && job.source === "file" ? "English (came with the file)" : job && job.kind === "retimed" ? "English (timing fixed)" : "English";
-    if (job && job.state === "none") return "None found online";
+    if (job && job.state === "none") return job.msg || "None found online";
     if (job && job.state === "failed") return job.msg || "Couldn't get them";
     return backend.id === "pi" && state.piSubs ? "None" : "";
   }
@@ -3660,13 +3722,13 @@ self.onmessage = async (e) => {
     const { shows, other } = groupFiles(videos);
     let shown = 0;
     for (const show of shows) {
-      const eps = show.seasons.flatMap((s) => s.episodes.map((e) => ({ ...e, season: s.number }))).filter((e) => pass(e.file));
+      const eps = show.seasons.flatMap((s) => s.episodes.map((e) => ({ ...e, season: s.number, arc: s.arc }))).filter((e) => pass(e.file));
       if (!eps.length) continue;
       const g = el("div", "set-card subs-group");
       g.append(el("h4", showFiles(show).every((f) => hasSubs(f.key)) ? "yes" : "", show.name));
       for (const e of eps) {
         const name = e.name || (tvEpisode(e.file) || {}).name || "";
-        g.append(row(e.file, `S${e.season} E${e.episode}${name ? " · " + name : ""}`));
+        g.append(row(e.file, `${epTag(e.season, e.episode)}${e.arc ? " · " + e.arc : ""}${name ? " · " + name : ""}`));
       }
       parts.push(g); shown += eps.length;
     }
@@ -4180,7 +4242,7 @@ self.onmessage = async (e) => {
       const held = q.status === "paused" || (state.offline && ["uploading", "converting", "finishing"].includes(q.status));
       if (q.status === "failed") li.className = "failed";
       else if (held) li.className = "paused";
-      const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.file.name;
+      const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.asName ? prettyTitle(q.asName) : q.file.name;
       const stat = document.createElement("span"); stat.className = "q-stat";
       const prepPct = Math.floor((q.prep || 0) * 100);
       if (q.status === "uploading" || q.status === "converting") { // upload speed, smoothed over the last few seconds
@@ -4333,7 +4395,7 @@ self.onmessage = async (e) => {
 
   function askRow(q) {
     const li = document.createElement("li"); li.className = "ask";
-    const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.file.name;
+    const name = document.createElement("span"); name.className = "q-name"; name.textContent = q.asName ? prettyTitle(q.asName) : q.file.name;
     const stat = document.createElement("span"); stat.className = "q-stat";
     const have = existingTitle(q.existing);
     stat.textContent = have ? `${have} is alr in MoCloud` : "This jawn is alr in MoCloud";
@@ -4375,7 +4437,8 @@ self.onmessage = async (e) => {
     }
   }
 
-  function addFiles(fileList) {
+  // asNames: what to store some of them as (anime arc episodes), by file.
+  function addFiles(fileList, asNames = new Map()) {
     if (!configured) { toast("Connect storage first: paste ur MoCloud server address into index.html.", true); return; }
     let blocked = false, skipped = 0, added = 0;
     const dupes = [];
@@ -4385,11 +4448,13 @@ self.onmessage = async (e) => {
       if (file.name.startsWith(".") || (!isVideo(file) && !isImage(file) && backend.id !== "flash")) { skipped++; continue; } // dot files are system leftovers
       // FAIL-SAFE (browser side): never queue past the limit.
       // The same file already waiting in line, or already in MoCloud: dropped straight away.
-      if (state.queue.some((q) => q.status !== "failed" && sameFile(q.file, file)) || state.files.some((f) => sameFile(f, file))) {
+      const asName = asNames.get(file) || "";
+      if (state.queue.some((q) => q.status !== "failed" && sameFile(q.file, file)) || state.files.some((f) => sameFile(f, file))
+          || (asName && state.files.some((f) => f.name.toLowerCase() === asName.toLowerCase() && f.size === file.size))) {
         dupes.push(prettyTitle(file.name)); continue;
       }
       if (state.used + pendingBytes() + file.size > state.limit) { blocked = true; continue; }
-      state.queue.push({ file, status: "waiting", sent: 0, xhrs: new Set(), cancelled: false, folder: state.view }); // lands in the open folder
+      state.queue.push({ file, asName, status: "waiting", sent: 0, xhrs: new Set(), cancelled: false, folder: state.view }); // lands in the open folder
       added++;
     }
     if (added && state.offline) toast("MoCloud is offline. These will upload by themselves once it's back. Keep this tab open.", true);
@@ -4560,7 +4625,7 @@ self.onmessage = async (e) => {
             started = api("/api/upload/start", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name: m.name, size: original.size, type: "video/mp4", ...dupeFields(q) }),
+              body: JSON.stringify({ name: q.asName ? q.asName.replace(/\.[a-z0-9]{2,4}$/i, ".mp4") : m.name, size: original.size, type: "video/mp4", ...dupeFields(q) }),
             }).then((s) => {
               if (settled) { // cancelled while the upload was being opened: close it again
                 api("/api/upload/abort", {
@@ -4609,7 +4674,7 @@ self.onmessage = async (e) => {
     const start = await api("/api/upload/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: file.name, size: file.size, type: file.type, ...dupeFields(q) }),
+      body: JSON.stringify({ name: q.asName || file.name, size: file.size, type: file.type, ...dupeFields(q) }),
     });
     q.key = start.key; q.uploadId = start.uploadId;
     const partSize = start.partSize;
@@ -4692,11 +4757,11 @@ self.onmessage = async (e) => {
         grabFrame(local).then((t) => { t.src = src; thumbs.set(key, t); thumbStore(key, t); return shareThumb(key, t); })
           .catch(() => {}).finally(() => { URL.revokeObjectURL(local); if (!$("player").open) renderLibrary(); });
       }
-      toast((q.replaced ? "Replaced. " : "") + (q.picture ? `Uploaded ${prettyTitle(q.file.name)}. This one won't play on Apple stuff as is, so the Pi's redoing the picture. Takes about as long as the video, it shows up when done.`
-        : q.quick ? `Uploaded ${prettyTitle(q.file.name)}. It's on ur iPhone and Apple TV in a minute, the website gets fixed sound right after.`
-        : q.fixing ? `Uploaded ${prettyTitle(q.file.name)}. The Pi is fixing the sound, it shows up in a minute.`
-        : q.soundLater ? `Uploaded ${prettyTitle(q.outName || q.file.name)}. Plays on ur iPhone and Apple TV now, the website gets fixed sound in a bit.`
-        : `Uploaded ${prettyTitle(q.outName || q.file.name)}.`)
+      toast((q.replaced ? "Replaced. " : "") + (q.picture ? `Uploaded ${prettyTitle(q.asName || q.file.name)}. This one won't play on Apple stuff as is, so the Pi's redoing the picture. Takes about as long as the video, it shows up when done.`
+        : q.quick ? `Uploaded ${prettyTitle(q.asName || q.file.name)}. It's on ur iPhone and Apple TV in a minute, the website gets fixed sound right after.`
+        : q.fixing ? `Uploaded ${prettyTitle(q.asName || q.file.name)}. The Pi is fixing the sound, it shows up in a minute.`
+        : q.soundLater ? `Uploaded ${prettyTitle(q.asName || q.outName || q.file.name)}. Plays on ur iPhone and Apple TV now, the website gets fixed sound in a bit.`
+        : `Uploaded ${prettyTitle(q.asName || q.outName || q.file.name)}.`)
         + (q.subs && !q.picture ? " Looking for subtitles, u can alr watch it." : ""));
       if (backend.id === "cloud") tellPhone("uploaded", q.file.name); // the Pi announces its own uploads by itself
       if (q.folder && state.meta.folders[q.folder]) changeMeta((m) => { m.place[q.key] = q.folder; }); // into the folder that was open
@@ -4767,12 +4832,62 @@ self.onmessage = async (e) => {
 
   // ---------- Drag and drop (whole page) + file picker ----------
   // Dropped files only. A dropped folder is left out (folders aren't uploaded as a whole).
-  function readDrop(dt) {
-    const loose = Array.from(dt.files || []);
-    const dirs = new Set(Array.from(dt.items || [])
-      .map((item) => (item.webkitGetAsEntry ? item.webkitGetAsEntry() : null))
-      .filter((en) => en && en.isDirectory).map((en) => en.name));
-    return { files: loose.filter((f) => !dirs.has(f.name)), folders: dirs.size };
+  // What was dropped: loose files, plus every file inside any folders (with the folders they sit in).
+  async function readDrop(dt) {
+    const entries = Array.from(dt.items || []).map((item) => (item.webkitGetAsEntry ? item.webkitGetAsEntry() : null));
+    const dirs = entries.filter((en) => en && en.isDirectory);
+    const dirNames = new Set(dirs.map((d) => d.name));
+    const loose = Array.from(dt.files || []).filter((f) => !dirNames.has(f.name));
+    const inFolders = [];
+    const readAll = (reader) => new Promise((resolve) => {
+      const out = [];
+      const more = () => reader.readEntries((batch) => { if (!batch.length) return resolve(out); out.push(...batch); more(); }, () => resolve(out));
+      more();
+    });
+    async function walk(entry, path) {
+      if (entry.isFile) {
+        const file = await new Promise((res) => entry.file(res, () => res(null)));
+        if (file) inFolders.push({ file, path });
+      } else if (entry.isDirectory) {
+        for (const child of await readAll(entry.createReader())) await walk(child, [...path, entry.name]);
+      }
+    }
+    for (const d of dirs) await walk(d, []);
+    return { files: loose, inFolders };
+  }
+
+  // ---------- Anime arcs: a folder of episodes is one arc ----------
+  // Nothing's asked: the Pi works out which anime and arc each folder is from the folder and file
+  // names, and what to store every episode as ("One Piece [Arc - Wano Country Arc] E1071"), so it
+  // lands on that anime's page under the arc's button. Not an anime: they go up as regular videos.
+  // inFolders: [{ file, path: ["One Piece", "Wano Arc"] }] (path = the folders it sits in).
+  async function uploadFolders(inFolders) {
+    const videos = inFolders.filter((x) => isVideo(x.file) && !x.file.name.startsWith("."));
+    const all = inFolders.map((x) => x.file);
+    if (!videos.length) { if (all.length) addFiles(all); else toast("No videos in that folder."); return; }
+    if (!onPi()) { addFiles(all); return; } // only the Pi works out anime arcs
+    const groups = new Map();
+    for (const v of videos) {
+      const key = v.path.join("/");
+      if (!groups.has(key)) groups.set(key, { folder: v.path[v.path.length - 1] || "", parents: v.path.slice(0, -1), files: [] });
+      groups.get(key).files.push(v.file);
+    }
+    const list = [...groups.values()];
+    toast("ii calm one sec, figuring out which anime this is...");
+    let answers = [];
+    try {
+      answers = (await api("/api/anime/identify", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groups: list.map((g) => ({ folder: g.folder, parents: g.parents, files: g.files.map((f) => f.name) })) }) })).groups || [];
+    } catch {}
+    const asNames = new Map(), told = [];
+    list.forEach((g, i) => {
+      const a = answers[i];
+      if (!a || !a.anime || !a.arc) return;
+      for (const f of g.files) if (a.names[f.name]) asNames.set(f, a.names[f.name]);
+      told.push(`${a.arc} of ${a.anime}`);
+    });
+    toast(told.length ? `Uploading ${told.join(", ")}.` : "Couldn't tell which anime that is, so it's going up as regular videos.");
+    addFiles(all, asNames);
   }
 
   let dragDepth = 0;
@@ -4783,12 +4898,23 @@ self.onmessage = async (e) => {
   window.addEventListener("drop", (e) => {
     if (!hasFiles(e)) return;
     e.preventDefault(); dragDepth = 0; $("veil").hidden = true;
-    const { files, folders } = readDrop(e.dataTransfer);
-    if (files.length) addFiles(files);
-    if (folders) toast("Folders can't be uploaded as a whole. Open the folder and drop the videos themselves.", true);
+    readDrop(e.dataTransfer).then(({ files, inFolders }) => {
+      if (files.length) addFiles(files);
+      if (inFolders.length) {
+        if (backend.id === "flash") addFiles(inFolders.map((x) => x.file)); // the flash drive just takes files
+        else uploadFolders(inFolders);
+      }
+    });
   });
   $("pick").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+  $("pickFolder").addEventListener("click", () => $("folderInput").click());
+  $("folderInput").addEventListener("change", (e) => {
+    const picked = Array.from(e.target.files).map((file) => ({ file, path: (file.webkitRelativePath || file.name).split("/").slice(0, -1) }));
+    e.target.value = "";
+    if (!picked.length) return;
+    if (backend.id === "flash") addFiles(picked.map((x) => x.file)); else uploadFolders(picked);
+  });
   window.addEventListener("beforeunload", (e) => {
     if (state.queue.some((q) => ["paused", "converting", "uploading", "finishing"].includes(q.status))) e.preventDefault();
   });
