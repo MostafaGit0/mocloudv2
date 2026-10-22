@@ -90,6 +90,11 @@
     background: rgba(var(--red-rgb),.35);
     border-left: 2px solid var(--red);
   }
+  /* the space set aside for karaoke songs */
+  .gauge-karaoke {
+    position: absolute; inset: 0 auto 0 auto; width: 0%;
+    background: rgba(250,204,21,.32); border-left: 2px solid #FACC15;
+  }
   .gauge-note { margin: 8px 0 0; font-size: 13px; color: var(--dim); }
   .gauge.is-full .gauge-line strong { color: var(--red); }
 
@@ -141,6 +146,159 @@
   .dl-acts .btn { padding: 6px 14px; font-size: 14px; }
   .dl-note { color: var(--dim); font-size: 13px; margin: 14px 0 0; }
   .p-src { color: var(--accent-2); font-size: 14px; }
+
+  /* ---------- YouTube downloader ---------- */
+  #ytDlg { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(500px, 92vw); }
+  #ytDlg h3 { margin: 0 0 10px; font-size: 19px; font-weight: 500; }
+  .yt-note { margin: 0 0 14px; color: var(--dim); font-size: 14px; }
+  #ytUrl { width: 100%; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); margin-bottom: 14px; }
+  .yt-err { margin: -4px 0 14px; color: var(--red); font-size: 14px; }
+  .yt-card { display: grid; grid-template-columns: 160px 1fr; gap: 14px; align-items: start; margin-bottom: 14px; }
+  .yt-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: var(--panel-2); }
+  .yt-card b { display: block; font-weight: 500; font-size: 16px; line-height: 1.3; overflow-wrap: anywhere; }
+  .yt-card span { display: block; color: var(--dim); font-size: 13px; margin-top: 4px; }
+  @media (max-width: 460px) { .yt-card { grid-template-columns: 1fr; } }
+  .yt-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .yt-facts span { padding: 5px 12px; border-radius: 999px; background: var(--panel-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .yt-where-h { margin: 0 0 8px; color: var(--dim); font-size: 13px; }
+  .yt-where { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--ink); border: 1px solid var(--line); margin-bottom: 18px; }
+  .yt-where button { border: 0; background: none; color: var(--dim); padding: 7px 16px; border-radius: 999px; font-size: 14px; }
+  .yt-where button[aria-checked="true"] { background: var(--accent); color: var(--on-accent, #111318); font-weight: 600; }
+  .queue li.yt .q-name::before { content: "▶ "; color: #FF3B30; }
+  .tile.swipeable { touch-action: pan-y; transition: transform .18s ease; }
+  .show-card .thumb { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .show-card .thumb.holding { transform: scale(.96); transition: transform .6s ease; }
+
+  /* ---------- File DNA ---------- */
+  #dnaPage { z-index: 44; }
+  .dna-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); font-size: 15px; letter-spacing: .04em; }
+  .dna-hero h3 { font-size: 22px; margin: 0 0 6px; overflow-wrap: anywhere; }
+  .dna-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    background: rgba(74,222,128,.12); color: var(--green); }
+  .dna-badge.bad { background: rgba(var(--red-rgb),.14); color: var(--red); }
+  .dna-badge.wait { background: var(--panel-2); color: var(--dim); }
+  .dna-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 10px; }
+  .dna-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px 18px; margin: 4px 0 0; }
+  .dna-grid div span { display: block; font-size: 12px; color: var(--dim); }
+  .dna-grid div b { font-weight: 500; font-size: 14px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .dna-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px !important; }
+  .dna-list { display: grid; gap: 8px; }
+  .dna-item { display: grid; grid-template-columns: 12px 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 12px; border-radius: 12px;
+    background: var(--panel-2); text-align: left; border: 0; color: var(--paper); width: 100%; }
+  button.dna-item:hover { box-shadow: inset 0 0 0 1px var(--line); }
+  .dna-item i { width: 12px; height: 12px; border-radius: 50%; grid-row: 1 / 3; }
+  .dna-item b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dna-item small { grid-column: 2; color: var(--dim); font-size: 12.5px; }
+  .dna-item em { font-style: normal; color: var(--dim); font-size: 12.5px; grid-row: 1 / 3; grid-column: 3; text-align: right; }
+  .dna-item.gone { opacity: .6; }
+  .dna-chips { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 2; margin-top: 2px; }
+  .dna-chips span { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; background: var(--panel); color: var(--dim); }
+  .dna-h { margin: 14px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--dim); font-weight: 600; }
+  .dna-time { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); display: grid; gap: 12px; }
+  .dna-time li { position: relative; font-size: 14px; }
+  .dna-time li::before { content: ""; position: absolute; left: -20px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .dna-time li.bad::before { background: var(--red); }
+  .dna-time small { display: block; color: var(--dim); font-size: 12.5px; }
+  .dna-graph { width: 100%; height: 440px; border-radius: 14px; background: radial-gradient(circle at 50% 45%, #1B2030, var(--ink) 75%);
+    touch-action: none; cursor: grab; display: block; }
+  .dna-graph text { font: 500 11.5px Inter, -apple-system, sans-serif; fill: var(--paper); pointer-events: none; }
+  .dna-graph .lbl { fill: var(--dim); font-size: 10px; }
+  .dna-graph circle { cursor: pointer; }
+  .dna-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 12.5px; color: var(--dim); }
+  .dna-legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; background: var(--c); }
+  .dna-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .dna-stats div { background: var(--panel-2); border-radius: 12px; padding: 12px 14px; }
+  .dna-stats b { display: block; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dna-stats span { color: var(--dim); font-size: 12.5px; }
+  .dna-group { border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+  .dna-group-h { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; margin-bottom: 8px; }
+  .dna-group-h span { color: var(--dim); }
+
+  /* ---------- Modes and karaoke ---------- */
+  .mode-page { position: fixed; inset: 0; z-index: 41; background: var(--ink); overflow-y: auto; overscroll-behavior: contain; }
+  .mode-page[hidden] { display: none; }
+  #karPage { z-index: 42; }
+  .mode-card { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; }
+  .mode-card .mode-ic { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--panel-2); }
+  .mode-card .mode-ic svg { width: 28px; height: 28px; }
+  .mode-card h3 { margin: 0 0 4px; }
+  .mode-card .sub { margin: 0; }
+  @media (max-width: 560px) { .mode-card { grid-template-columns: auto 1fr; } .mode-card .btn { grid-column: 1 / -1; } }
+  .kar-find { display: flex; gap: 10px; margin-bottom: 14px; }
+  .kar-find input { flex: 1; min-width: 0; padding: 12px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-size: 16px; }
+  .kar-list { display: grid; gap: 8px; margin: 0 0 22px; }
+  .kar-row { display: grid; grid-template-columns: 96px 1fr auto; gap: 14px; align-items: center; padding: 10px; border-radius: 14px;
+    background: var(--panel); border: 0; text-align: left; color: var(--paper); width: 100%; }
+  button.kar-row:hover { background: var(--panel-2); }
+  .kar-row img, .kar-row .kar-ph { width: 96px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 9px; background: var(--panel-2); }
+  .kar-row b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kar-row span { display: block; color: var(--dim); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kar-row .kar-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .kar-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); color: var(--dim); }
+  .kar-tag.gold { color: var(--accent); }
+  .kar-acts { display: flex; gap: 14px; align-items: center; }
+  .kar-lib-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 10px 0 10px; }
+  .kar-lib-head h3 { margin: 0; font-size: 20px; font-weight: 600; }
+  .kar-trans { margin: -4px 0 12px; color: var(--dim); font-size: 13px; }
+  .kar-lib-head span { color: var(--dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .kar-empty { color: var(--dim); font-size: 14px; margin: 4px 0 20px; }
+  .kar-job { padding: 12px 14px; border-radius: 14px; background: var(--panel); margin-bottom: 8px; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; }
+  .kar-job span { color: var(--dim); font-size: 13px; }
+  .kar-job .q-bar { grid-column: 1 / -1; height: 4px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+  .kar-job .q-bar i { display: block; height: 100%; background: var(--accent-2); }
+  .kar-job.failed span { color: var(--red); }
+  #karSure { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(460px, 92vw); }
+  .ks-card { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: center; margin-bottom: 14px; }
+  .ks-card img { width: 120px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: var(--panel-2); }
+  .ks-card b { display: block; font-size: 18px; font-weight: 600; }
+  .ks-card span { display: block; color: var(--dim); font-size: 14px; margin-top: 2px; }
+  .ks-lyr { margin: 0 0 18px; font-size: 14px; color: var(--dim); }
+  .ks-lyr.ok { color: var(--green); }
+  /* the player */
+  #karPlay { position: fixed; inset: 0; z-index: 43; background: radial-gradient(120% 80% at 50% 0%, #1B2030 0%, var(--ink) 60%);
+    display: grid; grid-template-rows: auto 1fr auto; }
+  #karPlay[hidden] { display: none; }
+  .kp-top { display: flex; align-items: center; gap: 14px; padding: 14px 18px; }
+  .kp-name { min-width: 0; }
+  .kp-name b { display: block; font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kp-name span { display: block; color: var(--dim); font-size: 13px; }
+  .kp-stage { display: grid; grid-template-columns: 1fr; gap: 0 28px; min-height: 0; padding: 0 18px; }
+  .kp-stage.two { grid-template-columns: 1fr 1fr; }
+  .kp-pane { overflow-y: auto; min-height: 0; padding: 30vh 6px 40vh; scrollbar-width: none; text-align: center;
+    -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 78%, transparent); mask-image: linear-gradient(transparent, #000 18%, #000 78%, transparent); }
+  .kp-pane::-webkit-scrollbar { display: none; }
+  .kp-head { position: sticky; top: 0; }
+  .kp-lang { text-align: center; color: var(--dim); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; padding: 6px 0 0; }
+  .kl { font-size: clamp(20px, 3.6vw, 34px); font-weight: 700; line-height: 1.3; margin: 0 0 .7em; cursor: pointer;
+    color: rgba(var(--paper-rgb, 244,245,247), .3); transition: transform .3s ease, opacity .3s ease; opacity: .55; }
+  .kp-stage.two .kl { font-size: clamp(18px, 2.6vw, 28px); }
+  .kl.gap { font-size: 22px; }
+  .kl.now { opacity: 1; transform: scale(1.04); }
+  .kl.done { opacity: .5; }
+  .kw { --p: 0; background: linear-gradient(90deg, var(--accent) calc(var(--p) * 100%), rgba(244,245,247,.32) calc(var(--p) * 100%));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .kl.done .kw { --p: 1; }
+  .kp-plain .kl { cursor: default; opacity: .85; color: var(--paper); }
+  .kp-note { text-align: center; color: var(--dim); font-size: 13px; margin: 0 0 18px; }
+  .kp-bar { display: grid; grid-template-columns: auto auto 1fr auto auto auto; gap: 12px; align-items: center; padding: 14px 18px 22px; }
+  .kp-voc { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--paper); font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .kp-voc svg { width: 18px; height: 18px; fill: var(--accent); }
+  .kp-voc[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .kp-voc[aria-pressed="true"] svg { fill: var(--on-accent); }
+  .kp-voc.none { opacity: .55; }
+  .kp-play { width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--accent); display: grid; place-items: center; }
+  .kp-play svg { width: 26px; height: 26px; fill: var(--on-accent); }
+  .kp-time { color: var(--dim); font-size: 13px; font-variant-numeric: tabular-nums; min-width: 38px; }
+  #kpSeek { width: 100%; accent-color: var(--accent); }
+  .kp-nudge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+  .kp-nudge button { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--paper); }
+  @media (max-width: 640px) {
+    .kp-bar { grid-template-columns: auto auto 1fr auto; }
+    .kp-nudge { grid-column: 1 / 4; justify-content: flex-start; }
+    .kp-voc { grid-column: 4; justify-self: end; }
+    .kp-stage.two { gap: 0 12px; padding: 0 10px; }
+  }
 
   /* ---------- Uploads going up from ur other devices ---------- */
   .live-strip {
@@ -304,6 +462,19 @@
   .speed-grid span { display: block; font-size: 12px; color: var(--dim); }
   .speed-grid b { font-variant-numeric: tabular-nums; font-weight: 600; }
   .speed-item .set-note { margin-top: 6px; }
+  .temp-line b { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--paper); }
+  .temp-line.high { color: var(--accent); }
+  .temp-line.danger { color: var(--red); }
+  .temp-line.danger b { color: var(--red); }
+  .codered-wrap { display: flex; align-items: center; gap: 16px; margin: 6px 0 14px; }
+  .codered-wrap .set-note { margin: 0; }
+  .codered {
+    flex: none; width: 96px; height: 96px; border-radius: 50%; border: 0; cursor: pointer;
+    background: #E5212F; color: #fff; font-weight: 800; font-size: 15px; letter-spacing: .06em;
+    box-shadow: 0 0 0 6px rgba(229,33,47,.25);
+  }
+  .codered:hover { box-shadow: 0 0 0 9px rgba(229,33,47,.32); }
+  .codered:active { transform: scale(.96); }
   .set-stat.bad { color: var(--red); }
   .dbx-banner { margin-bottom: 22px; }
   .thumb .doc-ext { position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; font-weight: 700;
@@ -607,6 +778,296 @@
     .drop { padding: 18px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  /* ---------- Games ---------- */
+  .gm-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin-bottom: 26px; }
+  .gm-tile { position: relative; overflow: hidden; border: 0; text-align: left; color: var(--paper); cursor: pointer;
+    border-radius: var(--r-lg); padding: 0; background: var(--panel); display: grid; grid-template-rows: 150px auto;
+    transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s; }
+  .gm-tile:hover { transform: translateY(-3px); box-shadow: 0 18px 50px rgba(0,0,0,.4); }
+  .gm-tile:active { transform: scale(.98); }
+  .gm-art { position: relative; display: grid; place-items: center; overflow: hidden; }
+  .gm-art.c4 { background: radial-gradient(120% 120% at 30% 0%, #2B3B63 0%, #182238 70%); }
+  .gm-art.uno { background: radial-gradient(120% 120% at 70% 0%, #2A2440 0%, #15151F 70%); }
+  .gm-tile .gm-text { padding: 16px 20px 20px; }
+  .gm-tile h3 { margin: 0 0 4px; font-size: 20px; }
+  .gm-tile p { margin: 0; color: var(--dim); font-size: 14.5px; line-height: 1.4; }
+  .gm-mini-c4 { display: grid; grid-template-columns: repeat(5, 22px); gap: 6px; padding: 12px; border-radius: 14px; background: #2A3E6E;
+    box-shadow: inset 0 -4px 0 rgba(0,0,0,.25); transform: rotate(-6deg); }
+  .gm-mini-c4 i { width: 22px; height: 22px; border-radius: 50%; background: #121A2C; box-shadow: inset 0 2px 3px rgba(0,0,0,.5); }
+  .gm-mini-c4 i.a { background: radial-gradient(circle at 35% 30%, #FFE3A8, #E8C07A 55%, #B88D45); }
+  .gm-mini-c4 i.b { background: radial-gradient(circle at 35% 30%, #FFB4B4, #F87171 55%, #B8434B); }
+  .gm-mini-uno { position: relative; width: 150px; height: 110px; }
+  .gm-mini-uno .uc { position: absolute; left: 50%; top: 50%; --cw: 58px; }
+  .gm-going h3 { margin: 0 0 12px; }
+  .gm-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; background: var(--panel-2); margin-bottom: 10px; }
+  .gm-row .gm-code { font: 700 17px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; color: var(--accent); }
+  .gm-row .gm-what { flex: 1; min-width: 0; }
+  .gm-row .gm-what b { display: block; }
+  .gm-row .gm-what span { color: var(--dim); font-size: 13.5px; }
+  .gm-join { display: flex; gap: 10px; margin-top: 6px; }
+  .gm-join input { flex: 1; min-width: 0; max-width: 180px; text-transform: uppercase; letter-spacing: .14em; font: 600 17px ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--ink); color: var(--paper); }
+
+  /* setup window */
+  #gameSetup, #gamePick, #gameRules { background: var(--panel); border-radius: var(--r-lg); padding: 24px; width: min(520px, 92vw); max-height: 88dvh; overflow-y: auto; }
+  #gameRules { width: min(640px, 94vw); }
+  .gs-h { margin: 0 0 6px; font-size: 22px; }
+  .gs-sub { margin: 0 0 18px; color: var(--dim); }
+  .gs-label { margin: 18px 0 8px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  .gs-seg { display: flex; gap: 8px; flex-wrap: wrap; }
+  .gs-seg button { flex: 1; min-width: 64px; padding: 12px 10px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--ink);
+    color: var(--paper); font-weight: 600; font-size: 16px; }
+  .gs-seg button[aria-pressed="true"] { border-color: var(--accent); background: rgba(var(--accent-rgb), .12); color: var(--accent); }
+  .gs-opt { display: flex; gap: 14px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background: var(--ink); margin-bottom: 8px; cursor: pointer; }
+  .gs-opt input { margin-top: 3px; width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+  .gs-opt b { display: block; margin-bottom: 2px; }
+  .gs-opt span { color: var(--dim); font-size: 14px; line-height: 1.4; }
+  .gs-modes .gs-opt input { border-radius: 50%; }
+  .gs-acts { margin-top: 22px; }
+
+  /* the play screen */
+  #gamePlay { position: fixed; inset: 0; z-index: 44; display: grid; grid-template-rows: auto 1fr; overflow: hidden;
+    background: radial-gradient(130% 90% at 50% 0%, #1B2030 0%, var(--ink) 65%); padding-bottom: env(safe-area-inset-bottom); }
+  #gamePlay[hidden] { display: none; }
+  .gp-top { display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; }
+  .gp-title { flex: 1; min-width: 0; }
+  .gp-title b { display: block; font-size: 17px; }
+  .gp-title span { display: block; color: var(--dim); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gp-round { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--panel-2); color: var(--paper); display: grid; place-items: center; flex: none; }
+  .gp-round svg { width: 20px; height: 20px; }
+  .gp-stage { position: relative; min-height: 0; overflow: auto; }
+  .gp-toasts { position: fixed; top: calc(64px + env(safe-area-inset-top)); right: 16px; z-index: 46; display: flex; flex-direction: column; gap: 8px;
+    align-items: flex-end; pointer-events: none; max-width: min(420px, 80vw); }
+  #gamePlay.as-board .gp-toasts { top: auto; bottom: calc(18px + env(safe-area-inset-bottom)); flex-direction: column-reverse; }
+  #gamePlay.as-player .gp-toasts { top: calc(124px + env(safe-area-inset-top)); right: 50%; transform: translateX(50%); align-items: center; width: max-content; max-width: 92vw; }
+  .gp-toast { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 999px; background: rgba(244,245,247,.96); color: var(--ink);
+    font-weight: 600; font-size: 15px; box-shadow: 0 10px 30px rgba(0,0,0,.45); animation: gpToastIn .35s cubic-bezier(.2,.9,.3,1.2) both; }
+  .gp-toast.out { animation: gpToastOut .3s ease-in forwards; }
+  .gp-toast i { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--dim); }
+  @keyframes gpToastIn { from { opacity: 0; transform: translateX(30px) scale(.9); } }
+  @keyframes gpToastOut { to { opacity: 0; transform: translateX(30px); } }
+  .seat-p1 { --seat: #E8C07A; } .seat-p2 { --seat: #F87171; } .seat-p3 { --seat: #5EC8D8; } .seat-p4 { --seat: #A78BFA; } .seat-board { --seat: #A4A7B1; }
+  .gp-toast[class*="seat-"] i, .gp-dot { background: var(--seat); }
+  .gp-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+  .gp-center { min-height: 100%; display: grid; place-items: center; padding: 20px 16px 40px; }
+
+  /* lobby */
+  .lb { width: min(560px, 100%); text-align: center; }
+  .lb-code { font: 700 clamp(44px, 12vw, 72px) ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .16em; color: var(--accent); margin: 4px 0 6px; padding-left: .16em; }
+  .lb-how { color: var(--dim); margin: 0 auto 24px; max-width: 440px; line-height: 1.45; }
+  .lb-seats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .lb-seat { position: relative; padding: 18px 14px; border-radius: 20px; border: 2px solid transparent; background: var(--panel); color: var(--paper);
+    font-size: 17px; font-weight: 700; display: grid; gap: 6px; justify-items: center; transition: transform .15s, border-color .2s, background .2s; }
+  .lb-seat:not(:disabled):hover { transform: translateY(-2px); border-color: var(--seat); }
+  .lb-seat .lb-av { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--seat) 22%, transparent); color: var(--seat); }
+  .lb-seat .lb-av svg { width: 24px; height: 24px; }
+  .lb-seat small { font-size: 13px; font-weight: 500; color: var(--dim); }
+  .lb-seat.mine { border-color: var(--seat); background: color-mix(in srgb, var(--seat) 12%, var(--panel)); }
+  .lb-seat.mine small { color: var(--seat); }
+  .lb-seat:disabled:not(.mine) { opacity: .5; }
+  .lb-seat.board { grid-column: 1 / -1; }
+  .lb-wait { margin-top: 22px; color: var(--dim); }
+  .lb-wait b { color: var(--paper); }
+
+  /* Connect Four */
+  .c4 { --cell: min(12.4vw, 110px, calc((100dvh - 290px) / 6.6)); display: grid; justify-items: center; gap: 16px; padding: 12px 12px 30px; }
+  .c4-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .c4-pl { display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border-radius: 999px; background: var(--panel); border: 2px solid transparent; transition: border-color .25s, box-shadow .25s; }
+  .c4-pl.on { border-color: var(--seat); box-shadow: 0 0 0 4px color-mix(in srgb, var(--seat) 18%, transparent); }
+  .c4-pl b { font-size: 15px; }
+  .c4-pl .c4-sc { font: 700 18px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--seat); margin-left: 4px; }
+  .c4-chip-ico { width: 26px; height: 26px; border-radius: 50%; }
+  .c4-say { font-size: 18px; font-weight: 600; min-height: 26px; text-align: center; }
+  .c4-say.win { color: var(--accent); font-size: 22px; }
+  .c4-shell { position: relative; padding: calc(var(--cell) * .16); padding-top: calc(var(--cell) * 1.05); }
+  .c4-body { position: absolute; inset: calc(var(--cell) * .89) 0 0; border-radius: calc(var(--cell) * .3);
+    background: linear-gradient(180deg, #2E4374 0%, #22335C 100%); box-shadow: 0 30px 60px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -6px 0 rgba(0,0,0,.25); }
+  .c4-grid { position: relative; width: calc(var(--cell) * 7); height: calc(var(--cell) * 6); }
+  .c4-chips { position: absolute; inset: 0; overflow: hidden; }
+  .c4-frame { position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, #2E4374 0%, #22335C 100%);
+    -webkit-mask: radial-gradient(circle at 50% 50%, transparent calc(var(--cell) * .37), #000 calc(var(--cell) * .37 + 1px)) 0 0 / var(--cell) var(--cell);
+    mask: radial-gradient(circle at 50% 50%, transparent calc(var(--cell) * .37), #000 calc(var(--cell) * .37 + 1px)) 0 0 / var(--cell) var(--cell); }
+  .c4-rim { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, transparent calc(var(--cell) * .37 - 1px), rgba(0,0,0,.45) calc(var(--cell) * .37), rgba(255,255,255,.07) calc(var(--cell) * .41), transparent calc(var(--cell) * .43)) 0 0 / var(--cell) var(--cell); }
+  .c4-hole { position: absolute; width: var(--cell); height: var(--cell); }
+  .c4-hole::before { content: ""; position: absolute; inset: 13%; border-radius: 50%; background: #0F1626; box-shadow: inset 0 4px 10px rgba(0,0,0,.6); }
+  .c4-chip { position: absolute; width: var(--cell); height: var(--cell); display: grid; place-items: center; }
+  .c4-chip::after { content: ""; width: 78%; height: 78%; border-radius: 50%; }
+  .c4-chip.p1::after, .c4-chip-ico.p1, .c4-ghost.p1::after { background: radial-gradient(circle at 34% 30%, #FFEBC0 0%, #E8C07A 45%, #B48A44 100%);
+    box-shadow: inset 0 0 0 calc(var(--cell) * .07) rgba(255,255,255,.14), inset 0 -4px 8px rgba(0,0,0,.25); }
+  .c4-chip.p2::after, .c4-chip-ico.p2, .c4-ghost.p2::after { background: radial-gradient(circle at 34% 30%, #FFC4C4 0%, #F87171 45%, #B43E47 100%);
+    box-shadow: inset 0 0 0 calc(var(--cell) * .07) rgba(255,255,255,.14), inset 0 -4px 8px rgba(0,0,0,.25); }
+  .c4-chip.drop { animation: c4drop calc(.34s + var(--fall) * .08s) linear; }
+  @keyframes c4drop {
+    0% { transform: translateY(calc(var(--fall) * var(--cell) * -1)); animation-timing-function: cubic-bezier(.55,0,1,.45); }
+    72% { transform: translateY(0); animation-timing-function: cubic-bezier(0,.55,.45,1); }
+    86% { transform: translateY(calc(var(--cell) * -.11)); animation-timing-function: cubic-bezier(.55,0,1,.45); }
+    100% { transform: translateY(0); }
+  }
+  .c4.done .c4-chip:not(.win) { filter: saturate(.5) brightness(.6); transition: filter .5s .3s; }
+  .c4-chip.win::after { animation: c4win 1.1s ease-in-out .35s infinite; }
+  @keyframes c4win { 50% { box-shadow: 0 0 0 calc(var(--cell) * .06) #fff, 0 0 calc(var(--cell) * .5) rgba(255,255,255,.7); } }
+  .c4-cols { position: absolute; left: calc(var(--cell) * .16); right: calc(var(--cell) * .16); top: 0; bottom: calc(var(--cell) * .16); display: grid; grid-template-columns: repeat(7, 1fr); z-index: 2; }
+  .c4-cols button { border: 0; background: transparent; padding: 0; cursor: pointer; border-radius: 10px; }
+  .c4-cols button:disabled { cursor: default; }
+  .c4-cols button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .c4-ghost { position: absolute; top: 0; width: var(--cell); height: var(--cell); display: grid; place-items: center; opacity: 0; transition: left .12s ease-out, opacity .15s; pointer-events: none; }
+  .c4-ghost::after { content: ""; width: 72%; height: 72%; border-radius: 50%; }
+  .c4-ghost.show { opacity: .9; }
+  .c4-acts { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .c4-think { display: inline-flex; gap: 5px; vertical-align: middle; margin-left: 6px; }
+  .c4-think i { width: 6px; height: 6px; border-radius: 50%; background: var(--seat, var(--dim)); animation: thinkDot 1s ease-in-out infinite; }
+  .c4-think i:nth-child(2) { animation-delay: .15s; } .c4-think i:nth-child(3) { animation-delay: .3s; }
+  @keyframes thinkDot { 50% { transform: translateY(-5px); opacity: .5; } }
+
+  /* Uno cards (MoCloud's own design) */
+  .uc { --cw: 74px; position: relative; width: var(--cw); height: calc(var(--cw) * 1.5); border-radius: calc(var(--cw) * .14); flex: none;
+    color: #fff; font-weight: 800; user-select: none; -webkit-user-select: none; overflow: hidden;
+    box-shadow: 0 calc(var(--cw) * .05) calc(var(--cw) * .16) rgba(0,0,0,.4), 0 0 0 1px rgba(0,0,0,.25); }
+  .uc::before { content: ""; position: absolute; inset: calc(var(--cw) * .07); border-radius: calc(var(--cw) * .09); border: 1.5px solid rgba(255,255,255,.4); }
+  .uc::after { content: ""; position: absolute; inset: 0; background: linear-gradient(155deg, rgba(255,255,255,.22) 0%, transparent 38%, transparent 70%, rgba(0,0,0,.18) 100%); pointer-events: none; }
+  .uc.r { background: linear-gradient(160deg, #F0646A 0%, #D63B43 100%); }
+  .uc.y { background: linear-gradient(160deg, #F7D25A 0%, #E2A91E 100%); color: #3A2A00; }
+  .uc.y::before { border-color: rgba(58,42,0,.35); }
+  .uc.g { background: linear-gradient(160deg, #46C487 0%, #1F8F58 100%); }
+  .uc.b { background: linear-gradient(160deg, #5B9BFF 0%, #2C64D8 100%); }
+  .uc.w { background: radial-gradient(130% 100% at 30% 0%, #2B2F3C 0%, #111318 75%); }
+  .uc .uc-mid { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(var(--cw) * .62); line-height: 1; letter-spacing: -.04em;
+    text-shadow: 0 calc(var(--cw) * .03) 0 rgba(0,0,0,.2); }
+  .uc .uc-mid svg { width: calc(var(--cw) * .56); height: calc(var(--cw) * .56); }
+  .uc .uc-cn { position: absolute; font-size: calc(var(--cw) * .2); line-height: 1; display: grid; place-items: center; min-width: calc(var(--cw) * .2); }
+  .uc .uc-cn svg { width: calc(var(--cw) * .2); height: calc(var(--cw) * .2); }
+  .uc .uc-cn.tl { top: calc(var(--cw) * .13); left: calc(var(--cw) * .13); }
+  .uc .uc-cn.br { bottom: calc(var(--cw) * .13); right: calc(var(--cw) * .13); transform: rotate(180deg); }
+  .uc.uc-ul .uc-mid, .uc.uc-ul .uc-cn { text-decoration: underline; text-decoration-thickness: .07em; text-underline-offset: .1em; }
+  .uc .uc-plus { font-size: calc(var(--cw) * .5); }
+  .uc-quad { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--cw) * .04); width: calc(var(--cw) * .5); height: calc(var(--cw) * .5); transform: rotate(45deg); }
+  .uc-quad i { border-radius: calc(var(--cw) * .06); }
+  .uc-quad i:nth-child(1) { background: #E5484D; } .uc-quad i:nth-child(2) { background: #F2C230; }
+  .uc-quad i:nth-child(3) { background: #3B82F6; } .uc-quad i:nth-child(4) { background: #30A46C; }
+  .uc.w .uc-mid.four { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--cw) * .1); }
+  .uc.w .uc-mid.four .uc-quad { width: calc(var(--cw) * .26); height: calc(var(--cw) * .26); }
+  .uc.w .uc-mid.four b { font-size: calc(var(--cw) * .4); line-height: 1; }
+  .uc.back { background: radial-gradient(120% 90% at 50% 0%, #262B36 0%, #111318 80%); }
+  .uc.back::before { border-color: rgba(232,192,122,.55); }
+  .uc.back .uc-mid { font: 700 calc(var(--cw) * .22) "DynaPuff", -apple-system, sans-serif; color: var(--accent); letter-spacing: 0; transform: rotate(-30deg); text-shadow: none; }
+  .uc.wild-picked { box-shadow: 0 0 0 calc(var(--cw) * .05) var(--pick), 0 calc(var(--cw) * .05) calc(var(--cw) * .16) rgba(0,0,0,.4); }
+
+  /* Uno: ur phone */
+  .uh { height: 100%; display: grid; grid-template-rows: auto 1fr auto auto; gap: 8px; }
+  .uh-opps { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; padding: 6px 14px 0; }
+  .uh-opp { min-width: 0; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 16px; background: var(--panel); border: 2px solid transparent; }
+  .uh-opp.on { border-color: var(--seat); }
+  .uh-opp b { display: block; font-size: 14px; white-space: nowrap; }
+  .uh-opp > div { min-width: 0; }
+  .uh-opp span { font-size: 13px; color: var(--dim); }
+  .uh-opp .uh-n { font: 700 20px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--seat); margin-left: auto; }
+  .uno-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; background: var(--accent); color: var(--ink); font-size: 11px; font-weight: 800; letter-spacing: .04em; margin-left: 4px; }
+  .uh-mid { display: grid; place-items: center; align-content: center; gap: 14px; padding: 6px 16px; text-align: center; min-height: 0; }
+  .uh-pile { display: flex; align-items: center; gap: 18px; }
+  .uh-pile .uc { --cw: min(32vw, 132px, calc((100dvh - 420px) / 1.6)); }
+  .uh-ring { padding: 6px; border-radius: 22px; background: var(--cur, var(--panel-2)); box-shadow: 0 0 40px color-mix(in srgb, var(--cur, transparent) 45%, transparent); transition: background .3s; }
+  .uh-turn { font-size: 22px; font-weight: 700; }
+  .uh-turn.me { color: var(--accent); }
+  .uh-note { color: var(--dim); font-size: 14.5px; min-height: 20px; }
+  .uh-warn { padding: 8px 16px; border-radius: 999px; background: rgba(var(--red-rgb), .16); color: var(--red); font-weight: 700; }
+  .uh-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 0 14px; }
+  .uh-btns .btn { padding: 12px 22px; font-size: 16px; }
+  .uh-uno { width: 74px; height: 74px; border-radius: 50%; border: 0; font: 800 19px var(--font); letter-spacing: .02em; color: var(--ink);
+    background: radial-gradient(circle at 35% 30%, #FFE7B5, #E8C07A 55%, #B88D45); box-shadow: 0 8px 26px rgba(var(--accent-rgb), .45); animation: unoPulse 1.4s ease-in-out infinite; }
+  @keyframes unoPulse { 50% { transform: scale(1.07); } }
+  .uh-catch { border-radius: 999px; border: 0; padding: 12px 20px; font-weight: 800; font-size: 16px; color: #fff; background: var(--red); animation: unoPulse 1s ease-in-out infinite; }
+  .uh-hand { display: flex; align-items: flex-end; gap: 0; overflow-x: auto; overflow-y: visible; padding: 26px 18px calc(14px + env(safe-area-inset-bottom)); scroll-snap-type: x proximity; }
+  .uh-hand .uc { --cw: min(21vw, 92px); margin-left: calc(var(--cw) * var(--lap, -.18)); transition: transform .2s cubic-bezier(.2,.8,.2,1), filter .2s; scroll-snap-align: center; }
+  .uh-hand .uc:first-child { margin-left: auto; }
+  .uh-hand .uc:last-child { margin-right: auto; }
+  .uh-hand button.uc { border: 0; padding: 0; cursor: pointer; }
+  .uh-hand .uc.ok { transform: translateY(-14px); box-shadow: 0 0 0 3px rgba(255,255,255,.85), 0 14px 30px rgba(0,0,0,.45); }
+  .uh-hand .uc.no { filter: brightness(.55) saturate(.7); }
+  .uh-hand .uc.new { animation: cardIn .45s cubic-bezier(.2,.9,.3,1.2) both; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(-60px) scale(.7); } }
+  .uh-hand .uc.ok:active { transform: translateY(-22px) scale(1.04); }
+  .uh-count { text-align: center; color: var(--dim); font-size: 13px; margin-bottom: -6px; }
+
+  /* Uno: the board */
+  .ub { position: relative; height: 100%; min-height: 520px; display: grid; grid-template: "tl top tr" auto "left mid right" 1fr "bl bot br" auto / minmax(0,1fr) auto minmax(0,1fr); gap: 10px; padding: 10px 20px 24px; }
+  .ub-felt { position: absolute; inset: 4% 6%; border-radius: 50% / 42%; background: radial-gradient(70% 70% at 50% 45%, #22304F 0%, #182036 60%, #141A2A 100%);
+    box-shadow: inset 0 0 0 2px rgba(var(--accent-rgb), .22), inset 0 0 80px rgba(0,0,0,.5), 0 30px 80px rgba(0,0,0,.35); }
+  .ub-mid { grid-area: mid; position: relative; display: grid; place-items: center; align-self: center; }
+  .ub-piles { position: relative; display: flex; align-items: center; gap: clamp(24px, 5vw, 70px); }
+  .ub-piles .uc { --cw: clamp(78px, 15vmin, 150px); }
+  .ub-deck { position: relative; }
+  .ub-deck .uc:nth-child(2) { position: absolute; left: 4px; top: -4px; }
+  .ub-deck .uc:nth-child(3) { position: absolute; left: 8px; top: -8px; }
+  .ub-deck b { position: absolute; left: 50%; bottom: calc(clamp(78px, 15vmin, 150px) * -.36); transform: translateX(-50%); color: var(--dim); font-size: 14px; white-space: nowrap; font-weight: 600; }
+  .ub-disc { position: relative; width: clamp(78px, 15vmin, 150px); height: calc(clamp(78px, 15vmin, 150px) * 1.5); }
+  .ub-disc .uc { position: absolute; left: 0; top: 0; }
+  .ub-disc .uc.fresh { animation: cardLand .55s cubic-bezier(.2,.85,.25,1.05) both; }
+  @keyframes cardLand { from { transform: translate(var(--fx, 0), var(--fy, 260px)) rotate(var(--fr, -25deg)) scale(.8); opacity: .2; } }
+  .ub-glow { position: absolute; inset: -38%; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--cur, transparent) 38%, transparent) 0%, transparent 65%); transition: background .4s; pointer-events: none; }
+  .ub-dir { position: absolute; width: clamp(300px, 46vw, 620px); aspect-ratio: 1.6; pointer-events: none; opacity: .5; }
+  .ub-dir svg { width: 100%; height: 100%; animation: spinDir 14s linear infinite; }
+  .ub-dir.ccw svg { animation-direction: reverse; }
+  @keyframes spinDir { to { transform: rotate(360deg); } }
+  .ub-color { position: absolute; left: 50%; bottom: calc(clamp(78px, 15vmin, 150px) * -.36); transform: translateX(-50%); white-space: nowrap; font-weight: 700; color: var(--cur); }
+  .ub-pend { position: absolute; left: 50%; top: calc(clamp(78px, 15vmin, 150px) * -.62); transform: translateX(-50%); white-space: nowrap; padding: 6px 16px; border-radius: 999px; background: var(--red); color: #fff; font-weight: 800; animation: unoPulse 1.2s ease-in-out infinite; }
+  .ub-seat { position: relative; z-index: 1; justify-self: center; align-self: center; display: grid; justify-items: center; gap: 8px; padding: 12px 18px; border-radius: 22px;
+    background: rgba(28,32,41,.86); border: 2px solid transparent; transition: border-color .3s, box-shadow .3s, transform .3s; min-width: 150px; }
+  .ub-seat.on { border-color: var(--seat); box-shadow: 0 0 0 6px color-mix(in srgb, var(--seat) 18%, transparent), 0 0 50px color-mix(in srgb, var(--seat) 35%, transparent); transform: scale(1.04); }
+  .ub-seat.bot { grid-area: bot; } .ub-seat.top { grid-area: top; } .ub-seat.left { grid-area: left; } .ub-seat.right { grid-area: right; }
+  .ub-seat .ub-name { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; }
+  .ub-seat .ub-pts { color: var(--dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .ub-fan { position: relative; height: 62px; width: 150px; }
+  .ub-fan .uc { --cw: 40px; position: absolute; left: 50%; bottom: 0; transform-origin: 50% 120%; }
+  .ub-fan b { position: absolute; right: -6px; top: -6px; z-index: 5; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 999px; background: var(--seat); color: var(--ink); display: grid; place-items: center; font-size: 15px; }
+  .ub-code { position: absolute; left: 20px; bottom: 16px; color: var(--dim); font-size: 13px; z-index: 1; }
+  .ub-code b { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); letter-spacing: .1em; }
+  .ub-wait { grid-area: tl; z-index: 1; align-self: start; color: var(--dim); }
+
+  /* end of a round / game */
+  .ux { width: min(720px, 100%); text-align: center; display: grid; gap: 16px; padding: 10px 0 30px; }
+  .ux h2 { margin: 0; font-size: clamp(26px, 5vw, 40px); }
+  .ux h2 em { font-style: normal; color: var(--seat); }
+  .ux .ux-pts { color: var(--dim); margin: -6px 0 6px; }
+  .ux-table { display: grid; gap: 8px; text-align: left; }
+  .ux-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; border-radius: 14px; background: var(--panel); }
+  .ux-row.won { box-shadow: inset 0 0 0 2px var(--seat); }
+  .ux-row b { font-variant-numeric: tabular-nums; font-size: 18px; }
+  .ux-bar { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+  .ux-bar i { display: block; height: 100%; background: var(--seat); border-radius: 99px; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+  .ux-left { grid-column: 1 / -1; display: flex; gap: 4px; flex-wrap: wrap; }
+  .ux-left .uc { --cw: 30px; box-shadow: none; }
+  .ux-left .uc::before { inset: 2px; border-width: 1px; }
+
+  /* picking a colour / who to swap with */
+  .pick-colors { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+  .pick-colors button { height: 92px; border-radius: 20px; border: 0; color: #fff; font-size: 18px; font-weight: 800; transition: transform .12s; }
+  .pick-colors button:active { transform: scale(.96); }
+  .pick-colors .r { background: linear-gradient(160deg, #F0646A, #D63B43); } .pick-colors .y { background: linear-gradient(160deg, #F7D25A, #E2A91E); color: #3A2A00; }
+  .pick-colors .g { background: linear-gradient(160deg, #46C487, #1F8F58); } .pick-colors .b { background: linear-gradient(160deg, #5B9BFF, #2C64D8); }
+  .pick-list { display: grid; gap: 10px; margin-top: 8px; }
+  .pick-list button { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; border: 2px solid var(--line); background: var(--ink); color: var(--paper); font-size: 17px; font-weight: 600; }
+  .pick-list button span { margin-left: auto; color: var(--dim); font-weight: 500; }
+
+  /* rules */
+  .rules h3 { margin: 20px 0 6px; font-size: 17px; color: var(--accent); }
+  .rules h3:first-of-type { margin-top: 4px; }
+  .rules p, .rules li { color: var(--paper); line-height: 1.5; font-size: 15px; }
+  .rules ul { margin: 6px 0; padding-left: 20px; }
+  .rules li { margin-bottom: 4px; }
+  .rules .rule-on { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: rgba(var(--accent-rgb), .16); color: var(--accent); margin-left: 6px; vertical-align: 2px; }
+  .rules .rule-off { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--panel-2); color: var(--dim); margin-left: 6px; vertical-align: 2px; }
+
+  @media (max-width: 640px) {
+    .ub { grid-template: "top top top" auto "left mid right" 1fr "bot bot bot" auto / auto 1fr auto; padding: 6px 8px 18px; }
+    .ub-seat { min-width: 0; padding: 8px 10px; }
+    .ub-fan { width: 96px; height: 48px; } .ub-fan .uc { --cw: 30px; }
+    .ub-felt { inset: 2% 1%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .c4-chip.drop, .ub-disc .uc.fresh, .uh-hand .uc.new, .gp-toast, .ub-dir svg, .uh-uno, .uh-catch, .ub-pend { animation: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -630,6 +1091,7 @@
       <div class="gauge-bar" role="img" aria-label="Storage used">
         <div class="gauge-pending" id="gaugePending"></div>
         <div class="gauge-fill" id="gaugeFill"></div>
+        <div class="gauge-karaoke" id="gaugeKaraoke" hidden></div>
         <div class="gauge-reserve" id="gaugeReserve"></div>
       </div>
       <p class="gauge-note" id="gaugeNote"></p>
@@ -727,7 +1189,7 @@
 <dialog id="info">
   <h3 id="infoTitle"></h3>
   <dl id="infoList"></dl>
-  <div class="info-acts"><button class="btn ghost" id="infoClose">Close</button><button class="link" id="infoFindSubs" hidden>Find subtitles</button></div>
+  <div class="info-acts"><button class="btn ghost" id="infoClose">Close</button><button class="link" id="infoFindSubs" hidden>Find subtitles</button><button class="link" id="infoDna" hidden>File DNA</button></div>
 </dialog>
 
 <section id="settingsPage" hidden aria-labelledby="setTitle">
@@ -739,6 +1201,96 @@
     <div id="setBody"></div>
   </div>
 </section>
+
+<section id="dnaPage" class="mode-page" hidden aria-labelledby="dnaTitle">
+  <div class="set-wrap">
+    <div class="set-top">
+      <button type="button" class="btn ghost small set-back" id="dnaBack">&larr; Back</button>
+      <h2 id="dnaTitle">File DNA</h2>
+    </div>
+    <div id="dnaBody"></div>
+  </div>
+</section>
+
+<section id="modesPage" class="mode-page" hidden aria-labelledby="modesTitle">
+  <div class="set-wrap">
+    <div class="set-top">
+      <button type="button" class="btn ghost small set-back" id="modesBack">&larr; Back</button>
+      <h2 id="modesTitle">Modes</h2>
+    </div>
+    <div id="modesBody"></div>
+  </div>
+</section>
+
+<section id="karPage" class="mode-page" hidden aria-labelledby="karTitle">
+  <div class="set-wrap">
+    <div class="set-top">
+      <button type="button" class="btn ghost small set-back" id="karBack">&larr; Back</button>
+      <h2 id="karTitle">Karaoke</h2>
+    </div>
+    <form class="kar-find" id="karFind">
+      <input type="search" id="karQuery" placeholder="Search for a song" aria-label="Search for a song" autocomplete="off" enterkeyhint="search">
+      <button class="btn" id="karGo">Search</button>
+    </form>
+    <div id="karResults"></div>
+    <div id="karJobs"></div>
+    <div class="kar-lib-head"><h3>Ur songs</h3><span id="karSpace"></span></div>
+    <p class="kar-trans" id="karTrans" hidden></p>
+    <div id="karLib"></div>
+  </div>
+</section>
+
+<section id="karPlay" hidden aria-labelledby="kpTitle">
+  <div class="kp-top">
+    <button type="button" class="btn ghost small" id="kpBack">&larr; Back</button>
+    <div class="kp-name"><b id="kpTitle"></b><span id="kpArtist"></span></div>
+  </div>
+  <div class="kp-stage" id="kpStage"></div>
+  <div class="kp-bar">
+    <button type="button" class="kp-play" id="kpPlay" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="kpIcon" d="M8 5v14l11-7z"/></svg></button>
+    <span class="kp-time" id="kpNow">0:00</span>
+    <input type="range" id="kpSeek" min="0" max="100" step="0.1" value="0" aria-label="Skip around the song">
+    <span class="kp-time" id="kpEnd">0:00</span>
+    <div class="kp-nudge" title="If the words are early or late"><button type="button" id="kpEarly" aria-label="Lyrics earlier">&minus;</button><span id="kpOff">Timing 0.0s</span><button type="button" id="kpLate" aria-label="Lyrics later">+</button></div>
+    <button type="button" class="kp-voc" id="kpVoc" aria-pressed="false" title="Switch between the song with the singer's vocals and the instrumental"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg><span id="kpVocText">Vocals</span></button>
+  </div>
+  <audio id="kpAudio" preload="auto"></audio>
+</section>
+
+<dialog id="karSure" aria-labelledby="ksTitle">
+  <div class="ks-card"><img id="ksCover" alt="" referrerpolicy="no-referrer"><div><b id="ksTitle"></b><span id="ksBy"></span></div></div>
+  <p class="ks-lyr" id="ksLyr"></p>
+  <p class="yt-err" id="ksErr" hidden></p>
+  <div class="dlg-acts"><button class="btn ghost" id="ksNah">Nah</button><button class="btn" id="ksGo">Karaoke it</button></div>
+</dialog>
+
+<section id="gamesPage" class="mode-page" hidden aria-labelledby="gamesTitle">
+  <div class="set-wrap">
+    <div class="set-top">
+      <button type="button" class="btn ghost small set-back" id="gamesBack">&larr; Back</button>
+      <h2 id="gamesTitle">Games</h2>
+    </div>
+    <div id="gamesBody"></div>
+  </div>
+</section>
+
+<section id="gamePlay" hidden aria-labelledby="gpTitle">
+  <div class="gp-top">
+    <button type="button" class="btn ghost small" id="gpBack">&larr; Back</button>
+    <div class="gp-title"><b id="gpTitle"></b><span id="gpSub"></span></div>
+    <button type="button" class="gp-round" id="gpInfo" aria-label="Rules"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 10h2v7h-2zm0-3h2v2h-2zm1-5a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg></button>
+    <button type="button" class="gp-round" id="gpEnd" aria-label="End the game"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg></button>
+  </div>
+  <div class="gp-stage" id="gpStage"></div>
+  <div class="gp-toasts" id="gpToasts" aria-live="polite"></div>
+</section>
+
+<dialog id="gameSetup" aria-labelledby="gsTitle"><div id="gsBody"></div></dialog>
+<dialog id="gamePick" aria-labelledby="gpkTitle"><div id="gpkBody"></div></dialog>
+<dialog id="gameRules" aria-labelledby="grTitle">
+  <div class="rules" id="grBody"></div>
+  <div class="dlg-acts" style="margin-top:20px"><button type="button" class="btn" id="grOk">Got it</button></div>
+</dialog>
 
 <section id="devPage" hidden aria-labelledby="devTitle">
   <div class="set-wrap">
@@ -785,6 +1337,30 @@
   <h3 id="dlStopTitle">Stop this download?</h3>
   <p id="dlStopText"></p>
   <div class="dlg-acts"><button class="btn ghost" id="dlStopKeep">Keep downloading</button><button class="btn stop" id="dlStopGo">Stop download</button></div>
+</dialog>
+
+<dialog id="ytDlg" aria-labelledby="ytTitle">
+  <h3 id="ytTitle">Download from YouTube</h3>
+  <div id="ytAsk">
+    <p class="yt-note">Paste the video's link (Share, then Copy link). The Pi downloads it in the best quality up to 1080p.</p>
+    <input type="url" id="ytUrl" placeholder="https://youtu.be/..." aria-label="YouTube link" autocomplete="off" inputmode="url">
+    <p class="yt-err" id="ytErr" hidden></p>
+    <div class="dlg-acts"><button class="btn ghost" id="ytCancel">Cancel</button><button class="btn" id="ytLook">Look it up</button></div>
+  </div>
+  <div id="ytSure" hidden>
+    <div class="yt-card">
+      <img id="ytThumb" alt="" referrerpolicy="no-referrer">
+      <div><b id="ytName"></b><span id="ytBy"></span></div>
+    </div>
+    <div class="yt-facts" id="ytFacts"></div>
+    <p class="yt-where-h">Save it to</p>
+    <div class="yt-where" role="radiogroup" aria-label="Where to save it">
+      <button type="button" role="radio" data-to="pi" aria-checked="true">The Pi</button>
+      <button type="button" role="radio" data-to="flash" aria-checked="false">Flash drive</button>
+    </div>
+    <p class="yt-err" id="ytErr2" hidden></p>
+    <div class="dlg-acts"><button class="btn ghost push" id="ytBack">Different link</button><button class="btn ghost" id="ytNah">Nah</button><button class="btn" id="ytGo">Download it</button></div>
+  </div>
 </dialog>
 
 <dialog id="liveDlg" aria-labelledby="liveTitle">
@@ -1400,7 +1976,11 @@ self.onmessage = async (e) => {
     const pct = (n) => Math.min(100, (n / free) * 100) + "%";
     $("gaugeFill").style.width = pct(Math.min(state.used, limit));
     $("gaugePending").style.width = pct(Math.min(state.used + pendingBytes(), limit));
-    $("gaugeReserve").style.width = ((free - limit) / free) * 100 + "%";
+    const kar = backend.id === "pi" && state.karaoke ? state.karaoke.space || 0 : 0;
+    const red = Math.max(0, free - limit - kar);
+    $("gaugeReserve").style.width = (red / free) * 100 + "%";
+    $("gaugeKaraoke").hidden = !kar;
+    if (kar) { $("gaugeKaraoke").style.right = (red / free) * 100 + "%"; $("gaugeKaraoke").style.width = (kar / free) * 100 + "%"; }
     const left = Math.max(0, limit - state.used);
     const full = left <= 0;
     $("gauge").classList.toggle("is-full", full);
@@ -1410,7 +1990,7 @@ self.onmessage = async (e) => {
       ? (state.fromCache ? "Last known numbers. MoCloud is offline right now." : "MoCloud is offline right now.")
       : backend.id === "cloud"
         ? `Uploads stop at ${fmtSize(limit)}. I dont got money like dat unfort.`
-        : `Uploads stop at ${fmtSize(limit)}, so the Pi doesn't eventually explode.`;
+        : `Uploads stop at ${fmtSize(limit)}, so the Pi doesn't eventually explode.` + (kar ? ` The yellow is ${fmtSize(kar)} saved for karaoke.` : "");
     $("fullBanner").hidden = !full || state.offline;
     $("pick").disabled = full;
   }
@@ -2643,10 +3223,19 @@ self.onmessage = async (e) => {
     del.addEventListener("click", async () => {
       if (!del.classList.contains("armed")) {
         del.classList.add("armed"); del.textContent = "Tap again to delete";
-        armed = setTimeout(() => { del.classList.remove("armed"); del.textContent = "Delete"; }, 3500);
+        armed = setTimeout(() => { del.classList.remove("armed"); del.textContent = "Delete"; }, 4500);
+        del._impact = onPi() ? dnaImpact(f.key) : null; // File DNA: wat goes with it, wat depends on it
+        if (del._impact) del._impact.then((im) => { if (im && del.classList.contains("armed")) { const t = dnaImpactText(im); if (t) toast(t); } });
         return;
       }
       clearTimeout(armed);
+      const im = del._impact ? await del._impact : null;
+      if (im && im.dependents && im.dependents.length) {
+        const names = im.dependents.map((d) => d.file.name).slice(0, 4).join(", ");
+        if (!(await askSure(`Other files came from ${titleOf(f)}`, `${names} ${im.dependents.length === 1 ? "was" : "were"} made from it. They stay, but they won't be traced back to it anymore.`, "Delete it anyway", "Keep it"))) {
+          del.classList.remove("armed"); del.textContent = "Delete"; return;
+        }
+      }
       del.disabled = true; del.textContent = "Deleting";
       try {
         await api(`/api/files/${encodeURIComponent(f.key)}`, { method: "DELETE" });
@@ -2664,6 +3253,7 @@ self.onmessage = async (e) => {
     if (video) left.append(dlButton(f));
     left.append(info);
     acts.append(left, del);
+    if (video && parseName(f.name).show && !del.disabled) swipeToDelete(el, del); // episodes: slide left to delete
     el.append(thumb, name, meta);
     const ep = tvEpisode(f);
     if (ep && ep.summary) {
@@ -2870,7 +3460,8 @@ self.onmessage = async (e) => {
     const tag = document.createElement("span"); tag.className = "box-tag";
     tag.textContent = `${show.count} ${show.count === 1 ? "episode" : "episodes"}`;
     box.append(tag);
-    box.addEventListener("click", () => openShow(show));
+    box.addEventListener("click", (e) => { if (box._held) { box._held = false; e.preventDefault(); return; } openShow(show); });
+    holdToDelete(box, show); // hold the poster down to delete the whole show
     const name = document.createElement("h3"); name.textContent = show.name; name.title = show.name;
     const dot = subsDot(files);
     if (dot) name.prepend(dot);
@@ -2881,6 +3472,69 @@ self.onmessage = async (e) => {
       seen ? `${seen}/${files.length} watched` : ""].filter(Boolean).join(" · ");
     el.append(box, name, meta);
     return el;
+  }
+
+  // Slide an episode left (on a touchscreen) and its Delete button arms: tap it to delete.
+  function swipeToDelete(tile, del) {
+    let x0 = 0, y0 = 0, dx = 0, on = false, side = false;
+    tile.classList.add("swipeable");
+    tile.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "touch") return;
+      x0 = e.clientX; y0 = e.clientY; dx = 0; on = true; side = false;
+    });
+    tile.addEventListener("pointermove", (e) => {
+      if (!on) return;
+      const mx = e.clientX - x0, my = e.clientY - y0;
+      if (!side && Math.abs(mx) > 12 && Math.abs(mx) > Math.abs(my) * 1.5) side = true;
+      if (!side) { if (Math.abs(my) > 12) on = false; return; }
+      dx = Math.min(0, mx);
+      tile.style.transform = `translateX(${Math.max(-120, dx)}px)`;
+    });
+    const end = () => {
+      if (!on) return;
+      on = false;
+      tile.style.transform = "";
+      if (side && dx < -70 && !del.classList.contains("armed")) { del.click(); del.focus({ preventScroll: true }); }
+    };
+    tile.addEventListener("pointerup", end);
+    tile.addEventListener("pointercancel", end);
+  }
+
+  // Hold a show's poster down for a sec: asks, then deletes every episode of it.
+  function holdToDelete(box, show) {
+    let timer = null, x0 = 0, y0 = 0;
+    const stop = () => { clearTimeout(timer); timer = null; box.classList.remove("holding"); };
+    box.addEventListener("pointerdown", (e) => {
+      if (e.button > 0 || state.offline) return;
+      x0 = e.clientX; y0 = e.clientY;
+      box.classList.add("holding");
+      timer = setTimeout(() => { stop(); box._held = true; deleteShow(show); }, 650);
+    });
+    box.addEventListener("pointermove", (e) => { if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
+    box.addEventListener("pointerup", stop);
+    box.addEventListener("pointerleave", stop);
+    box.addEventListener("pointercancel", stop);
+    box.addEventListener("contextmenu", (e) => { if (e.pointerType === "touch" || box._held || timer) e.preventDefault(); });
+  }
+  async function deleteShow(show) {
+    const files = showFiles(show);
+    const n = files.length;
+    if (!(await askSure(`Delete all of ${show.name}?`, `All ${n} ${n === 1 ? "episode gets" : "episodes get"} deleted for every device. This can't be undone.`,
+      "Delete the show", "Nah"))) return;
+    toast(`Deleting ${show.name}...`);
+    let gone = 0, err = null;
+    for (const f of files) {
+      try {
+        await api(`/api/files/${encodeURIComponent(f.key)}`, { method: "DELETE" });
+        dropSharedThumb(f.key);
+        const local = dl.items.get(dlId(backend.id, f.key));
+        if (local) await removeDownload(local.id, true);
+        gone++;
+      } catch (e) { err = e; }
+    }
+    toast(err ? `Deleted ${gone} of ${n}. ${err.message}` : `I'm done. ${show.name} is deleted (${n} ${n === 1 ? "episode" : "episodes"}).`, !!err);
+    if (state.show === show.id) state.show = "";
+    await refresh().catch(() => {});
   }
 
   // The home screen, split up: Shows, Movies, Videos and Photos, each with its own boxes.
@@ -3175,7 +3829,10 @@ self.onmessage = async (e) => {
     clearTimeout(fixPoll);
     const waitingPics = piMakesThumbs() && state.thumbsPending > 0; // the Pi is still making pictures
     const subsBusy = (state.subs || []).some((x) => !SUBS_DONE.includes(x.state) && x.state !== "waiting");
-    if (((state.processing && state.processing.length) || waitingPics) && !state.offline) {
+    const ytBusy = (state.youtube || []).some((j) => j.state !== "failed");
+    if (ytBusy && !state.offline) {
+      fixPoll = setTimeout(() => refresh().catch(() => {}), 2500);
+    } else if (((state.processing && state.processing.length) || waitingPics) && !state.offline) {
       fixPoll = setTimeout(() => refresh().catch(() => {}), 4000);
     } else if (subsBusy && !state.offline) {
       fixPoll = setTimeout(() => refresh().catch(() => {}), 6000);
@@ -3196,6 +3853,8 @@ self.onmessage = async (e) => {
     if (data.live) liveTake(data.live);
     state.animeIds = data.anime && typeof data.anime === "object" ? data.anime : {};
     state.arcOrder = data.arcOrder && typeof data.arcOrder === "object" ? data.arcOrder : {};
+    state.youtube = Array.isArray(data.youtube) ? data.youtube : [];
+    state.karaoke = data.karaoke && typeof data.karaoke === "object" ? data.karaoke : null;
     await loadMeta();
     storageHeadsUp();
     if (isSettingsOpen()) renderSettings();
@@ -3496,6 +4155,8 @@ self.onmessage = async (e) => {
     $("infoFindSubs").hidden = !canAsk;
     $("infoFindSubs").textContent = subsFile(full.key) ? "Look for subtitles again" : job ? "Try subtitles again" : "Find subtitles";
     $("infoFindSubs").onclick = () => { $("info").close(); findSubs(full); };
+    $("infoDna").hidden = !onPi() || !state.files.some((x) => x.key === full.key);
+    $("infoDna").onclick = () => { $("info").close(); openDna(full.key); };
     if (!$("info").open) $("info").showModal();
   }
   function subsLine(f) {
@@ -3615,7 +4276,7 @@ self.onmessage = async (e) => {
   }
   $("setOpen").addEventListener("click", () => openSettings());
   $("setBack").addEventListener("click", () => closeSettings());
-  window.addEventListener("popstate", () => { if (!["#settings", "#dev", "#subs"].includes(location.hash)) closeSettings(true); });
+  window.addEventListener("popstate", () => { if (!["#settings", "#dev", "#subs", "#games", "#game"].includes(location.hash)) closeSettings(true); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isSettingsOpen() && !document.querySelector("dialog[open]")) closeSettings(); });
 
   async function loadSettings() {
@@ -3695,6 +4356,9 @@ self.onmessage = async (e) => {
       parts.push(lightCard(setUI.data.light));
     }
     parts.push(subsCard());
+    parts.push(dnaCard());
+    parts.push(modesCard());
+    parts.push(gamesCard());
     parts.push(devCard());
     body.replaceChildren(...parts);
   }
@@ -3934,7 +4598,7 @@ self.onmessage = async (e) => {
   function piPasscode() { try { return localStorage.getItem("mocloud-passcode-pi") || ""; } catch { return ""; } }
 
   // ---------- Developer settings page ----------
-  const devUI = { token: "", clean: null, goal: 0, picked: new Set(), timer: null, err: "", hist: null, link: "", speed: null };
+  const devUI = { token: "", clean: null, goal: 0, picked: new Set(), timer: null, err: "", hist: null, link: "", speed: null, temp: null };
   function isDevOpen() { return !$("devPage").hidden; }
   async function unlockDev() {
     const pin = await askPin({
@@ -3982,9 +4646,11 @@ self.onmessage = async (e) => {
   async function loadDev(withHistory) {
     clearTimeout(devUI.timer);
     try {
-      const [cl, h] = await Promise.all([devApi("/api/cleanup"), withHistory || !devUI.hist ? devApi("/api/dev/speed/history") : Promise.resolve(null)]);
+      const [cl, h, t] = await Promise.all([devApi("/api/cleanup"), withHistory || !devUI.hist ? devApi("/api/dev/speed/history") : Promise.resolve(null),
+        devApi("/api/dev/temp").catch((e) => { if (e.message === "locked") throw e; return null; })]);
       devUI.clean = cl; devUI.err = "";
       if (h) { devUI.hist = h.history; devUI.link = h.link; }
+      if (t) { devUI.temp = t.temp; devUI.heat = t.heat || null; }
       devUI.picked = new Set([...devUI.picked].filter((k) => cl.items.some((i) => i.key === k)));
     } catch (e) { if (e.message === "locked") return; devUI.err = e.message; }
     if (!isDevOpen()) return;
@@ -4021,6 +4687,23 @@ self.onmessage = async (e) => {
   function speedCard() {
     const c = card("Speed test", "How fast the Pi's drives read and write, and how fast this device sends to and gets from the Pi. Run it before and after plugging the Pi into the router to see the difference.");
     c.append(el("p", "set-stat", devUI.link ? `The Pi is on ${devUI.link} rn.` : ""));
+    const T = devUI.temp;
+    if (T) {
+      const line = el("p", "set-stat temp-line " + T.level);
+      line.append("Pi temp: ", el("b", "", `${Math.round(T.c)}°C`), ` (${TEMP_WORDS[T.level]})`);
+      c.append(line);
+      const H = devUI.heat;
+      if (H) c.append(el("p", "set-note", (H.fansMax ? "Fans are on max rn to cool it down. " : "")
+        + `At ${H.fansAt}°C the fans go to max, and at ${H.offAt}°C the Pi shuts itself off. U get an email both times.`));
+      if (T.level === "danger") {
+        const wrap = el("div", "codered-wrap");
+        const red = el("button", "codered", "CODE RED"); red.type = "button";
+        red.setAttribute("aria-label", "Code red: shut the Pi off");
+        red.addEventListener("click", codeRed);
+        wrap.append(red, el("p", "set-note", "The Pi's dangerously hot. This shuts it off completely to protect it."));
+        c.append(wrap);
+      }
+    }
     const S = devUI.speed;
     const row = el("div", "set-row");
     const run = el("button", "btn small", S && S.running ? "ii calm one sec" : "Run speed test"); run.type = "button";
@@ -4044,6 +4727,14 @@ self.onmessage = async (e) => {
     } else c.append(el("p", "set-note", "No tests yet. Run one now, then again once the Pi is on Ethernet."));
     return c;
   }
+  const TEMP_WORDS = { low: "low", normal: "normal", high: "high", danger: "dangerously high" };
+  async function codeRed() {
+    if (!(await askSure("Shut the Pi off?", "MoCloud goes offline everywhere till u unplug the Pi and plug it back in. Do that once it's cooled down.", "Shut it off", "Nah"))) return;
+    try {
+      await devApi("/api/dev/codered", jsonPost({ sure: true }));
+      toast("Code red: the Pi's shutting off. Unplug it and plug it back in once it's cooled down.", true);
+    } catch (e) { if (e.message !== "locked") toast(e.message, true); }
+  }
   function speedResult(r, fresh) {
     const li = el(fresh ? "div" : "li", "speed-item" + (fresh ? " fresh" : ""));
     const when = new Date(r.at);
@@ -4053,6 +4744,7 @@ self.onmessage = async (e) => {
     const grid = el("div", "speed-grid");
     const cell = (k, v) => { const d = el("div", ""); d.append(el("span", "", k), el("b", "", v)); return d; };
     grid.append(cell("Download", fmtMbps(r.down)), cell("Upload", fmtMbps(r.up)));
+    if (typeof r.tempC === "number") grid.append(cell("Pi temp", `${Math.round(r.tempC)}°C`));
     for (const [name, d] of Object.entries(r.disk || {})) {
       if (d.error) grid.append(cell(name, "Couldn't test"));
       else grid.append(cell(`${name} write`, fmtMBs(d.write)), cell(`${name} read`, fmtMBs(d.read)));
@@ -4386,9 +5078,1601 @@ self.onmessage = async (e) => {
       bar.append(fill);
       li.append(name, stat, document.createElement("span"), bar);
       return li;
-    }), ...subsRows());
+    }), ...ytRows(), ...subsRows());
     renderGauge();
     liveSoon();
+  }
+
+  // ---------- YouTube downloader ----------
+  // A link in, the Pi does the rest: it checks wat the video is (title, size, resolution), then
+  // downloads it to the Pi or the flash drive (pass needed), and it lands in the library like an upload.
+  const yt = { info: null, to: "pi", busy: false };
+  const fmtLen = (secs) => { secs = Math.round(secs || 0); const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s2 = secs % 60;
+    return h ? `${h}:${String(m).padStart(2, "0")}:${String(s2).padStart(2, "0")}` : `${m}:${String(s2).padStart(2, "0")}`; };
+  async function ytCall(to, path, body, timeout = 150000) {
+    const base = to === "flash" ? BACKENDS.flash.url : BACKENDS.pi.url;
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeout);
+    let res;
+    try {
+      res = await fetch(base + path, { method: body ? "POST" : "GET", signal: ctrl.signal,
+        headers: { "X-Passcode": to === "flash" ? flashPin : piPasscode(), ...(body ? { "Content-Type": "application/json" } : {}) },
+        body: body ? JSON.stringify(body) : undefined });
+    } catch { throw new Error(ctrl.signal.aborted ? "YouTube's taking too long. Try again in a bit." : "Can't reach the Pi rn."); }
+    finally { clearTimeout(t); }
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 404 && !data.error) throw new Error("The Pi needs the newest MoCloud installer for this.");
+    if (!res.ok) throw new Error(data.error || `The Pi said no (${res.status}).`);
+    return data;
+  }
+  function ytStage(sure) {
+    $("ytAsk").hidden = sure; $("ytSure").hidden = !sure;
+    $("ytErr").hidden = $("ytErr2").hidden = true;
+  }
+  function openYT() {
+    yt.info = null; yt.to = "pi";
+    $("ytUrl").value = ""; ytStage(false); ytWhere();
+    $("ytLook").disabled = false; $("ytLook").textContent = "Look it up";
+    $("ytDlg").showModal();
+    setTimeout(() => $("ytUrl").focus(), 50);
+  }
+  function ytWhere() {
+    document.querySelectorAll(".yt-where button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.to === yt.to)));
+  }
+  async function ytLook() {
+    const url = $("ytUrl").value.trim();
+    if (!url) return;
+    $("ytLook").disabled = true; $("ytLook").textContent = "ii calm one sec";
+    try {
+      const i = yt.info = await ytCall("pi", "/api/yt/info", { url });
+      $("ytThumb").src = i.thumb || ""; $("ytThumb").hidden = !i.thumb;
+      $("ytName").textContent = i.title;
+      $("ytBy").textContent = [i.channel, i.duration ? fmtLen(i.duration) : ""].filter(Boolean).join(" · ");
+      const facts = [i.height ? `${i.height}p${i.fps > 30 ? Math.round(i.fps) : ""}` : "", i.codec || "",
+        i.size ? `${i.exact ? "" : "about "}${fmtSize(i.size)}` : "size unknown"].filter(Boolean);
+      $("ytFacts").replaceChildren(...facts.map((t) => el("span", "", t)));
+      ytStage(true);
+    } catch (e) {
+      $("ytErr").textContent = e.message; $("ytErr").hidden = false;
+    }
+    $("ytLook").disabled = false; $("ytLook").textContent = "Look it up";
+  }
+  async function ytGo() {
+    if (!yt.info || yt.busy) return;
+    if (yt.to === "flash" && !flashPin) {
+      const pin = await askPin({ text: "The flash drive needs the pass.", forgotUrl: BACKENDS.flash.url, verify: (p) => checkFlashPin(p) });
+      if (!pin) return;
+      flashPin = pin;
+    }
+    yt.busy = true; $("ytGo").disabled = true; $("ytGo").textContent = "Starting...";
+    try {
+      await ytCall(yt.to, "/api/yt/get", { url: yt.info.url });
+      $("ytDlg").close();
+      toast(`Downloading to ${yt.to === "flash" ? "the flash drive" : "the Pi"}. It shows up in ur library when it's done.`);
+      if ((yt.to === "flash") === (backend.id === "flash")) refresh().catch(() => {});
+    } catch (e) {
+      $("ytErr2").textContent = e.message; $("ytErr2").hidden = false;
+    }
+    yt.busy = false; $("ytGo").disabled = false; $("ytGo").textContent = "Download it";
+  }
+  $("ytLook").addEventListener("click", ytLook);
+  $("ytUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") ytLook(); });
+  $("ytCancel").addEventListener("click", () => $("ytDlg").close());
+  $("ytNah").addEventListener("click", () => $("ytDlg").close());
+  $("ytBack").addEventListener("click", () => { ytStage(false); $("ytUrl").focus(); });
+  $("ytGo").addEventListener("click", ytGo);
+  document.querySelectorAll(".yt-where button").forEach((b) => b.addEventListener("click", () => { yt.to = b.dataset.to; ytWhere(); }));
+
+  // ---------- File DNA ----------
+  // Every file's identity on the Pi: its fingerprint, wat's inside, where it came from, wat was made
+  // from it, its versions and history, and how it's linked to other files (shown as a graph).
+  const DNA_COLORS = { video: "#E8C07A", audio: "#38BDF8", image: "#4ADE80", subtitle: "#F472B6", thumbnail: "#94A3B8",
+    lyrics: "#FB923C", document: "#A3A3A3", source: "#FF3B30" };
+  const DNA_KIND_NAME = { video: "Video", audio: "Audio", image: "Photo", subtitle: "Subtitles", thumbnail: "Thumbnail", lyrics: "Lyrics",
+    document: "File", source: "YouTube" };
+  const DNA_OPS = { remux: "Put in an MP4 box, picture and sound copied", sound_fix: "Sound fixed so browsers play it",
+    picture_redo: "Picture redone so it plays everywhere", subtitles_added: "Subtitles added inside the video",
+    subtitles_download: "Subtitles downloaded", subtitles_from_file: "Subtitles taken out of the file", thumbnail: "Thumbnail made",
+    transcode: "Lighter download copy made", audio_extract: "Audio pulled out as an MP3", instrumental_match: "Instrumental found and lined up",
+    lyrics_lookup: "Lyrics found", replace: "Replaced it" };
+  const DNA_EVENTS = { upload: "Uploaded", youtube: "Downloaded from YouTube", converted: "Converted into the copy in MoCloud",
+    processed: "Changed by MoCloud", new_version: "New version saved", fingerprinted: "Fingerprinted", found: "Found on the drive",
+    integrity_changed: "Changed without MoCloud doing it", integrity_accepted: "Marked as fine", deleted: "Deleted", missing: "Went missing from the drive",
+    made: "Made", added: "Added" };
+  const dnaUI = { stack: [], graphStop: null };
+  const fmtWhen = (secs) => secs ? new Date(secs * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "";
+  async function dnaApi(path, opts) { return api(path, opts); }
+  function dnaCard() {
+    const c = card("File DNA", "Every file's fingerprint, where it came from, wat was made from it, its copies, and whether it's still intact.");
+    const b = el("button", "btn ghost small", "File DNA"); b.type = "button";
+    b.disabled = !onPi() || state.offline;
+    b.addEventListener("click", () => openDna(""));
+    c.append(b);
+    if (!onPi()) c.append(el("p", "set-note", "File DNA lives on the Pi and the flash drive."));
+    return c;
+  }
+  function openDna(key) {
+    dnaUI.stack = [key];
+    $("dnaPage").hidden = false;
+    document.body.classList.add("no-scroll");
+    if (location.hash !== "#dna") history.pushState({ mocloudDna: 1 }, "", "#dna");
+    dnaShow();
+  }
+  function closeDna(fromHistory) {
+    if ($("dnaPage").hidden) return;
+    $("dnaPage").hidden = true;
+    if (dnaUI.graphStop) dnaUI.graphStop();
+    if ($("settingsPage").hidden) document.body.classList.remove("no-scroll");
+    if (!fromHistory && location.hash === "#dna") history.back();
+  }
+  $("dnaBack").addEventListener("click", () => {
+    if (dnaUI.stack.length > 1) { dnaUI.stack.pop(); dnaShow(); } else closeDna();
+  });
+  window.addEventListener("popstate", () => { if (location.hash !== "#dna") closeDna(true); });
+  function dnaGo(key) { dnaUI.stack.push(key); dnaShow(); $("dnaPage").scrollTop = 0; }
+  async function dnaShow() {
+    const key = dnaUI.stack[dnaUI.stack.length - 1];
+    if (dnaUI.graphStop) dnaUI.graphStop();
+    const body = $("dnaBody");
+    body.replaceChildren(card("Loading", "ii calm one sec"));
+    try {
+      if (key) renderDnaFile(await dnaApi(`/api/dna/file/${encodeURIComponent(key)}`));
+      else renderDnaHome(await dnaApi("/api/dna"));
+    } catch (e) {
+      body.replaceChildren(card("Couldn't load File DNA", e.code === "OFFLINE" ? "MoCloud's offline rn." : e.message === "Unknown request." ? "The Pi needs the newest MoCloud installer for File DNA." : e.message));
+    }
+  }
+  function dnaDot(kind, present) { const i = el("i", ""); i.style.background = DNA_COLORS[kind] || "#888"; if (!present) i.style.opacity = ".45"; return i; }
+  function dnaItem(f, line, chips, right) {
+    const clickable = !!f.key && !f.key.startsWith("yt:");
+    const b = el(clickable ? "button" : "div", "dna-item" + (f.present ? "" : " gone"));
+    if (clickable) { b.type = "button"; b.addEventListener("click", () => dnaGo(f.key)); }
+    b.append(dnaDot(f.kind, f.present), el("b", "", f.name || f.file || f.key));
+    b.append(el("em", "", right !== undefined ? right : (f.size ? fmtSize(f.size) : "")));
+    if (line) b.append(el("small", "", line));
+    if (chips && chips.length) { const c = el("div", "dna-chips"); chips.forEach((t) => c.append(el("span", "", t))); b.append(c); }
+    return b;
+  }
+  const dnaChips = (settings) => Object.entries(settings || {}).filter(([, v]) => v !== null && v !== "" && v !== undefined)
+    .map(([k, v]) => `${k}: ${typeof v === "boolean" ? (v ? "yes" : "no") : v}`);
+  function dnaBadge(f) {
+    if (!f.present) return el("span", "dna-badge wait", f.integrity === "missing" ? "Missing from the drive" : "Not in MoCloud anymore");
+    if (f.integrity === "changed") return el("span", "dna-badge bad", "Changed without MoCloud doing it");
+    if (f.integrity === "external") return el("span", "dna-badge wait", "On YouTube");
+    if (f.status !== "ready") return el("span", "dna-badge wait", "Fingerprinting it...");
+    return el("span", "dna-badge", f.verified ? `Intact, checked ${fmtWhen(f.verified)}` : "Intact");
+  }
+  function dnaCopy(text, label) {
+    const b = el("button", "link", label || "Copy"); b.type = "button";
+    b.addEventListener("click", () => { try { navigator.clipboard.writeText(text); toast("Copied."); } catch {} });
+    return b;
+  }
+  function renderDnaFile(d) {
+    const f = d.file, m = f.meta || {}, v = m.video || {}, a = m.audio || {};
+    $("dnaTitle").textContent = "File DNA";
+    const hero = card("", "");
+    hero.classList.add("dna-hero"); hero.replaceChildren();
+    hero.append(el("h3", "", f.name));
+    const idRow = el("div", "dna-row");
+    idRow.append(el("span", "dna-id", f.dna), dnaCopy(f.dna, "Copy DNA id"), dnaBadge(f));
+    hero.append(idRow);
+    if (f.present && f.integrity === "changed") {
+      const r = el("div", "dna-row");
+      r.append(el("p", "set-note", "Its content isn't wat MoCloud saved. If u didn't change it, the drive might be acting up."));
+      const again = el("button", "btn ghost small", "Check again"); again.type = "button";
+      again.addEventListener("click", async () => { await dnaApi(`/api/dna/check/${encodeURIComponent(f.key)}`, { method: "POST" }).catch(() => {}); toast("Checking it again."); setTimeout(dnaShow, 4000); });
+      const fine = el("button", "btn ghost small", "That's fine, it was me"); fine.type = "button";
+      fine.addEventListener("click", async () => { await dnaApi(`/api/dna/accept/${encodeURIComponent(f.key)}`, { method: "POST" }).catch(() => {}); dnaShow(); });
+      r.append(again, fine); hero.append(r);
+    }
+    const o = f.origin || {};
+    const originText = o.how === "youtube" ? `Downloaded from YouTube${o.title ? ": " + o.title : ""}` : o.how === "upload" ? `Uploaded as ${o.name || f.file}${o.size ? " (" + fmtSize(o.size) + ")" : ""}` : "";
+    if (originText) hero.append(el("p", "set-note", originText + (o.replaces ? ". It replaced an older copy." : "")));
+    if (d.lineage && d.lineage.length) {
+      const back = d.lineage.map((l) => `${l.file.file || l.file.name} (${DNA_OPS[l.op] || l.label})`).join(" ← ");
+      hero.append(el("p", "set-note", "Traced back: " + back));
+    }
+    const facts = el("div", "dna-grid");
+    const fact = (k, val, mono) => { if (val === undefined || val === null || val === "") return; const x = el("div", ""); x.append(el("span", "", k), el("b", mono ? "dna-mono" : "", String(val))); facts.append(x); };
+    fact("Kind", DNA_KIND_NAME[f.kind] || f.kind);
+    fact("Type", f.type);
+    fact("Size", f.size ? fmtSize(f.size) : "");
+    fact("Resolution", m.width ? `${m.width} × ${m.height}${v.hdr ? " HDR" : ""}` : "");
+    fact("Length", m.duration ? fmtLen(m.duration) : "");
+    fact("Picture", v.codec ? `${v.codec.toUpperCase()}${v.fps ? ", " + v.fps + " fps" : ""}${v.profile ? ", " + v.profile : ""}` : "");
+    fact("Sound", a.codec ? `${a.codec.toUpperCase()}${a.channels ? ", " + (a.channels === 1 ? "mono" : a.channels === 2 ? "stereo" : a.channels + " channels") : ""}${a.lang && a.lang !== "und" ? ", " + a.lang : ""}` : "");
+    fact("Subtitle tracks", m.subtitles ? m.subtitles.join(", ") : "");
+    fact("Bitrate", m.bitrate ? `${(m.bitrate / 1e6).toFixed(1)} Mbps` : "");
+    fact("Added", fmtWhen(f.added));
+    fact("Look-alike fingerprint", f.fingerprint ? "Yes" : f.status === "ready" ? "No" : "");
+    if (f.sha256) { const x = el("div", ""); x.style.gridColumn = "1 / -1"; const cp = dnaCopy(f.sha256); cp.style.marginLeft = "10px"; x.append(el("span", "", "SHA-256"), el("b", "dna-mono", f.sha256), cp); facts.append(x); }
+    hero.append(facts);
+    const parts = [hero];
+
+    // the graph
+    if (d.graph && d.graph.nodes.length > 1) {
+      const g = card("How it's connected", "Drag the circles around. Tap one to open it.");
+      g.append(dnaGraph(d.graph, f.key));
+      const kinds = [...new Set(d.graph.nodes.map((n) => n.kind))];
+      const lg = el("div", "dna-legend");
+      kinds.forEach((k) => { const sp = el("span", "", DNA_KIND_NAME[k] || k); sp.style.setProperty("--c", DNA_COLORS[k] || "#888"); lg.append(sp); });
+      lg.append(el("span", "", "— made from   - - looks the same   ··· same episode"));
+      g.append(lg);
+      parts.push(g);
+    }
+
+    // related, grouped by how
+    const groups = {};
+    for (const r of d.related) {
+      const label = r.kind === "derived" && r.dir === "from" ? "Its original" : r.kind === "replaced" && r.dir === "from" ? "It replaced"
+        : r.dir === "from" && ["audio", "instrumental", "lyrics"].includes(r.kind) ? "Made from" : r.label;
+      (groups[label] = groups[label] || []).push(r);
+    }
+    if (Object.keys(groups).length) {
+      const rc = card("Related files", "Linked by wat they are, not their names.");
+      for (const [label, list] of Object.entries(groups)) {
+        rc.append(el("h4", "dna-h", label));
+        const L = el("div", "dna-list");
+        list.forEach((r) => L.append(dnaItem(r.file, [DNA_OPS[r.op] || "", r.score && r.kind === "similar" ? `${Math.round(r.score * 100)}% alike` : "", r.file.present ? "" : "not in MoCloud anymore"].filter(Boolean).join(" · "), dnaChips(r.settings))));
+        rc.append(L);
+      }
+      parts.push(rc);
+    }
+
+    if (d.versions && d.versions.length) {
+      const vc = card("Versions", "Each time its content changed, and wat changed it.");
+      const L = el("div", "dna-list");
+      d.versions.slice().reverse().forEach((ver, i) => L.append(dnaItem({ kind: f.kind, present: i === 0, name: DNA_OPS[ver.op] || DNA_EVENTS[ver.op] || ver.op || "Version" },
+        `${fmtWhen(ver.at)} · ${ver.sha256.slice(0, 16)}…`, dnaChips(ver.settings), ver.size ? fmtSize(ver.size) : "")));
+      vc.append(L); parts.push(vc);
+    }
+    if (d.history && d.history.length) {
+      const hc = card("History", "");
+      const ul = el("ul", "dna-time");
+      d.history.forEach((h) => {
+        const li = el("li", h.event === "integrity_changed" || h.event === "missing" ? "bad" : "");
+        li.append(`${DNA_EVENTS[h.event] || h.event}${h.detail && h.detail.op ? ": " + (DNA_OPS[h.detail.op] || h.detail.op) : ""}`, el("small", "", fmtWhen(h.at)));
+        ul.append(li);
+      });
+      hc.append(ul); parts.push(hc);
+    }
+    $("dnaBody").replaceChildren(...parts);
+  }
+
+  // A little physics: files push each other away, links pull them together.
+  function dnaGraph(graph, center) {
+    const NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(NS, "svg"); svg.setAttribute("class", "dna-graph");
+    const W = 800, H = 440; svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const nodes = graph.nodes.map((n, i) => {
+      const ang = (i / graph.nodes.length) * Math.PI * 2;
+      const r = n.key === center ? 0 : 90 + n.level * 70;
+      return { ...n, x: W / 2 + Math.cos(ang) * r, y: H / 2 + Math.sin(ang) * r, vx: 0, vy: 0, r: n.key === center ? 20 : n.kind === "thumbnail" || n.kind === "lyrics" ? 9 : 13 };
+    });
+    const byKey = new Map(nodes.map((n) => [n.key, n]));
+    const edges = graph.edges.map((e) => ({ ...e, s: byKey.get(e.a), t: byKey.get(e.b) })).filter((e) => e.s && e.t);
+    const gEdges = document.createElementNS(NS, "g"), gNodes = document.createElementNS(NS, "g");
+    svg.append(gEdges, gNodes);
+    for (const e of edges) {
+      e.line = document.createElementNS(NS, "line");
+      e.line.setAttribute("stroke", e.kind === "duplicate" ? "#E8C07A" : e.kind === "similar" ? "#38BDF8" : "rgba(244,245,247,.35)");
+      e.line.setAttribute("stroke-width", e.kind === "duplicate" ? 3 : 1.6);
+      if (e.kind === "similar") e.line.setAttribute("stroke-dasharray", "6 5");
+      if (e.kind === "same_title") e.line.setAttribute("stroke-dasharray", "2 5");
+      gEdges.append(e.line);
+      e.lbl = document.createElementNS(NS, "text"); e.lbl.setAttribute("class", "lbl"); e.lbl.setAttribute("text-anchor", "middle");
+      e.lbl.textContent = graph.nodes.length <= 10 && e.kind !== "thumbnail" ? (DNA_OPS[e.op] || e.label || "").split(",")[0].slice(0, 26) : "";
+      gEdges.append(e.lbl);
+    }
+    let drag = null, moved = false;
+    for (const n of nodes) {
+      n.g = document.createElementNS(NS, "g");
+      const c = document.createElementNS(NS, "circle");
+      c.setAttribute("r", n.r); c.setAttribute("fill", DNA_COLORS[n.kind] || "#888");
+      c.setAttribute("fill-opacity", n.present ? 1 : 0.35);
+      if (!n.present) { c.setAttribute("stroke", DNA_COLORS[n.kind] || "#888"); c.setAttribute("stroke-dasharray", "3 3"); c.setAttribute("stroke-width", 2); }
+      if (n.key === center) { c.setAttribute("stroke", "#fff"); c.setAttribute("stroke-width", 3); }
+      const t = document.createElementNS(NS, "text"); t.setAttribute("text-anchor", "middle"); t.setAttribute("dy", n.r + 15);
+      const name = n.name || n.key; t.textContent = name.length > 22 ? name.slice(0, 21) + "…" : name;
+      n.g.append(c, t); gNodes.append(n.g);
+      c.addEventListener("pointerdown", (ev) => { drag = n; moved = false; n.fixed = true; c.setPointerCapture(ev.pointerId); heat = 1; if (!raf) raf = requestAnimationFrame(tick); });
+      c.addEventListener("click", () => { if (!moved && n.key !== center && !n.key.startsWith("yt:")) dnaGo(n.key); });
+    }
+    const toSvg = (ev) => { const r = svg.getBoundingClientRect(); return { x: ((ev.clientX - r.left) / r.width) * W, y: ((ev.clientY - r.top) / r.height) * H }; };
+    svg.addEventListener("pointermove", (ev) => { if (!drag) return; const p = toSvg(ev); drag.x = p.x; drag.y = p.y; moved = true; });
+    const up = () => { if (drag) { drag.fixed = false; drag = null; } };
+    svg.addEventListener("pointerup", up); svg.addEventListener("pointercancel", up);
+    let heat = 1, raf = 0;
+    function tick() {
+      for (let i = 0; i < nodes.length; i++) {
+        const a = nodes[i];
+        for (let j = i + 1; j < nodes.length; j++) {
+          const b = nodes[j]; let dx = a.x - b.x, dy = a.y - b.y; let d2 = dx * dx + dy * dy || 1;
+          const f = 5200 / d2; const d = Math.sqrt(d2); dx /= d; dy /= d;
+          a.vx += dx * f; a.vy += dy * f; b.vx -= dx * f; b.vy -= dy * f;
+        }
+        a.vx += (W / 2 - a.x) * 0.004; a.vy += (H / 2 - a.y) * 0.006;
+      }
+      for (const e of edges) {
+        const dx = e.t.x - e.s.x, dy = e.t.y - e.s.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+        const f = (d - 160) * 0.02; const fx = (dx / d) * f, fy = (dy / d) * f;
+        e.s.vx += fx; e.s.vy += fy; e.t.vx -= fx; e.t.vy -= fy;
+      }
+      for (const n of nodes) {
+        if (n.fixed || (n.key === center && !drag)) { n.vx = n.vy = 0; if (n.key === center && !n.fixed) { n.x += (W / 2 - n.x) * 0.1; n.y += (H / 2 - n.y) * 0.1; } }
+        n.x = Math.max(n.r + 4, Math.min(W - n.r - 4, n.x + n.vx * heat)); n.y = Math.max(n.r + 4, Math.min(H - n.r - 22, n.y + n.vy * heat));
+        n.vx *= 0.6; n.vy *= 0.6;
+        n.g.setAttribute("transform", `translate(${n.x.toFixed(1)},${n.y.toFixed(1)})`);
+      }
+      for (const e of edges) {
+        e.line.setAttribute("x1", e.s.x); e.line.setAttribute("y1", e.s.y); e.line.setAttribute("x2", e.t.x); e.line.setAttribute("y2", e.t.y);
+        e.lbl.setAttribute("x", (e.s.x + e.t.x) / 2); e.lbl.setAttribute("y", (e.s.y + e.t.y) / 2 - 4);
+      }
+      heat = drag ? 1 : heat * 0.985;
+      raf = heat > 0.02 ? requestAnimationFrame(tick) : 0;
+    }
+    raf = requestAnimationFrame(tick);
+    dnaUI.graphStop = () => { cancelAnimationFrame(raf); raf = 0; };
+    return svg;
+  }
+
+  function renderDnaHome(d) {
+    $("dnaTitle").textContent = "File DNA";
+    const parts = [];
+    const top = card(d.storage === "flash" ? "On the flash drive" : "On the Pi", "Every file gets an identity of its own. Fingerprints and checks run in the background and pause while u're watching or uploading.");
+    const stats = el("div", "dna-stats");
+    const stat = (n, label) => { const x = el("div", ""); x.append(el("b", "", String(n)), el("span", "", label)); stats.append(x); };
+    stat(d.files, "files with an identity");
+    for (const [k, v] of Object.entries(d.kinds || {})) stat(v.count, `${(DNA_KIND_NAME[k] || k).toLowerCase()}${v.count === 1 ? "" : "s"}`.replace("subtitless", "subtitles").replace("lyricss", "lyrics"));
+    if (d.pending) stat(d.pending, "still being fingerprinted");
+    top.append(stats);
+    if (d.oldestCheck) top.append(el("p", "set-note", `Every file is re-checked about once a month. Oldest check: ${fmtWhen(d.oldestCheck)}.`));
+    parts.push(top);
+
+    const integ = card("Integrity", d.changed.length || d.missing.length ? "Files that aren't the way MoCloud left them." : "Every file is just how MoCloud saved it. ur good.");
+    if (d.changed.length) { integ.append(el("h4", "dna-h", "Changed without MoCloud doing it")); const L = el("div", "dna-list"); d.changed.forEach((f) => L.append(dnaItem(f, "Tap to see it"))); integ.append(L); }
+    if (d.missing.length) { integ.append(el("h4", "dna-h", "Went missing from the drive (last 30 days)")); const L = el("div", "dna-list"); d.missing.forEach((f) => L.append(dnaItem(f, "It wasn't deleted through MoCloud"))); integ.append(L); }
+    parts.push(integ);
+
+    const cp = card("Copies", d.groups.length ? `The same thing stored more than once. Clearing the extra copies would save ${fmtSize(d.save)}.` : "No copies of anything. Nothing to clear.");
+    for (const g of d.groups) {
+      const box = el("div", "dna-group");
+      const h = el("div", "dna-group-h"); h.append(el("b", "", g.exact ? "Exact copies" : "Look the same (renamed, re-encoded or resized)"), el("span", "", `could save ${fmtSize(g.save)}`));
+      box.append(h);
+      const L = el("div", "dna-list");
+      g.files.forEach((f, i) => L.append(dnaItem(f, [i === 0 ? "Best one (highest quality), keep this" : "Extra copy", f.height ? f.height + "p" : ""].filter(Boolean).join(" · "))));
+      box.append(L); cp.append(box);
+    }
+    parts.push(cp);
+
+    if (d.recent.length) {
+      const rc = card("Recent activity", "");
+      const ul = el("ul", "dna-time");
+      d.recent.forEach((e) => {
+        const li = el("li", e.event === "integrity_changed" || e.event === "missing" ? "bad" : "");
+        li.append(`${DNA_EVENTS[e.event] || e.event}${e.detail && e.detail.op ? " (" + (DNA_OPS[e.detail.op] || e.detail.op) + ")" : ""}: ${e.name}`, el("small", "", fmtWhen(e.at)));
+        if (!e.key.includes(":")) { li.style.cursor = "pointer"; li.addEventListener("click", () => dnaGo(e.key)); }
+        ul.append(li);
+      });
+      rc.append(ul); parts.push(rc);
+    }
+    $("dnaBody").replaceChildren(...parts);
+  }
+
+  // Before a delete: wat goes with it, wat came from it, and other copies.
+  async function dnaImpact(key) {
+    try { return await dnaApi(`/api/dna/impact/${encodeURIComponent(key)}`); } catch { return null; }
+  }
+  function dnaImpactText(im) {
+    const bits = [];
+    const goes = [...new Set((im.goesWith || []).map((g) => g.kind === "subtitle" ? "subtitles" : g.kind === "download_copy" ? "download copy" : "thumbnail"))];
+    if (goes.length) bits.push(`Its ${goes.join(", ").replace(/, ([^,]*)$/, " and $1")} ${goes.length === 1 ? "goes" : "go"} with it.`);
+    if ((im.copies || []).length) bits.push(`Another copy stays: ${im.copies[0].file.name}.`);
+    return bits.join(" ");
+  }
+
+  // ---------- Modes (Settings) ----------
+  // Extra things MoCloud can do: download a YouTube video, and karaoke.
+  function modesCard() {
+    const c = card("Modes", "YouTube to MP4, and karaoke.");
+    const b = el("button", "btn ghost small", "Modes"); b.type = "button";
+    b.disabled = !isUrl(BACKENDS.pi.url);
+    b.addEventListener("click", openModes);
+    c.append(b);
+    return c;
+  }
+  const YT_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FF3B30" d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8c1.6.4 7.8.4 7.8.4s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z"/></svg>';
+  const MIC_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E8C07A" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg>';
+  function modeCard(icon, title, text, label, go) {
+    const c = el("div", "set-card mode-card");
+    const ic = el("div", "mode-ic"); ic.innerHTML = icon;
+    const mid = el("div", ""); mid.append(el("h3", "", title), el("p", "sub", text));
+    const b = el("button", "btn small", label); b.type = "button"; b.addEventListener("click", go);
+    c.append(ic, mid, b);
+    return c;
+  }
+  function openModes() {
+    $("modesBody").replaceChildren(
+      modeCard(YT_ICON, "YouTube to MP4", "Paste a link and the Pi downloads the video in the best quality up to 1080p, to the Pi or the flash drive.", "Download a video", openYT),
+      modeCard(MIC_ICON, "Karaoke", "Search for a song, and sing along with lyrics that light up as it plays. Works without Wi-Fi once a song's saved.", "Open karaoke", openKaraoke));
+    $("modesPage").hidden = false;
+    if (location.hash !== "#modes") history.pushState({ mocloudModes: 1 }, "", "#modes");
+  }
+  function closeModes(fromHistory) {
+    if ($("modesPage").hidden) return;
+    $("modesPage").hidden = true;
+    if (!fromHistory && location.hash === "#modes") history.back();
+  }
+  $("modesBack").addEventListener("click", () => closeModes());
+
+  // ---------- Games (Settings) ----------
+  // Connect Four and Uno. The Pi runs every game: the deck, everyone's hand, whose turn it is and
+  // the rules. This page is a controller or a screen. Each device picks a spot, a player or the Board
+  // (an iPad or the Apple TV showing the table), and waits on the Pi for news, so moves show up on
+  // every device the moment they happen. A device only ever gets told its own cards.
+  const GM = { code: "", view: null, gen: 0, seen: -1, handIds: null, c4Last: "", topLast: null, busy: false, wake: null,
+    list: null, listErr: "", listTimer: 0, offline: false };
+  const GAME_NAMES = { c4: "Connect Four", uno: "Uno" };
+  const COLOR_NAMES = { r: "Red", y: "Yellow", g: "Green", b: "Blue" };
+  const COLOR_HEX = { r: "#E5484D", y: "#F2C230", g: "#30A46C", b: "#3B82F6" };
+  const UNO_HOUSE = [
+    ["stack", "Stacking", "Got hit with a Draw Two? Put down ur own Draw Two to pass it on, and it adds up. Same with Draw Fours."],
+    ["drawTill", "Draw till u can play", "When u draw, keep going till u get a card that works."],
+    ["jumpIn", "Jump in", "Got the exact same card that's on top (same colour and number)? Slap it down even when it's not ur turn."],
+    ["sevenO", "7-0", "Play a 7 to swap hands with someone. Play a 0 and everyone passes their hand along."],
+  ];
+  const ICON_PERSON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"/></svg>';
+  const ICON_BOARD = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 4h18a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-7v2h3v2H7v-2h3v-2H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm1 2v9h16V6z"/></svg>';
+  const ICON_SKIP = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M6.6 17.4 17.4 6.6" stroke="currentColor" stroke-width="2.8"/></svg>';
+  const ICON_REV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h14l-4-4"/><path d="M20 15H6l4 4"/></svg>';
+  const seatName = (s) => s === "board" ? "The board" : "Player " + String(s).slice(1);
+
+  const gameDevice = () => liveId; // the same ID this device uses for showing its uploads elsewhere
+  async function gameApi(path, body, wait) {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), wait ? 40000 : 12000);
+    let res;
+    try {
+      res = await fetch(BACKENDS.pi.url + path, { method: body ? "POST" : "GET", signal: ctrl.signal, cache: "no-store",
+        headers: { "X-Passcode": piPasscode(), ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    } catch { throw Object.assign(new Error("Can't reach the Pi rn."), { offline: true }); }
+    finally { clearTimeout(t); }
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 404 && !data.error) throw new Error("The Pi needs the newest MoCloud installer for games.");
+    if (!res.ok) throw Object.assign(new Error(data.error || `The Pi said no (${res.status}).`), { code: data.code, status: res.status });
+    return data;
+  }
+
+  function gamesCard() {
+    const c = card("Games", "Connect Four and Uno. Phones are the controllers, and an iPad or the Apple TV can be the table.");
+    const b = el("button", "btn ghost small", "Games"); b.type = "button";
+    b.disabled = !isUrl(BACKENDS.pi.url);
+    b.addEventListener("click", () => openGames());
+    c.append(b);
+    return c;
+  }
+
+  // ----- the Games page -----
+  function c4Art() {
+    const g = el("div", "gm-mini-c4");
+    const pat = "....." + "..a.." + ".abb." + "abba.";
+    for (const ch of pat) g.append(el("i", ch === "a" ? "a" : ch === "b" ? "b" : ""));
+    return g;
+  }
+  function unoArt() {
+    const w = el("div", "gm-mini-uno");
+    [[{ c: "b", v: "7" }, -18, -34], [{ c: "w", v: "wild" }, 0, 0], [{ c: "r", v: "rev" }, 18, 34]].forEach(([cd, rot, x]) => {
+      const u = unoCard(cd);
+      u.style.transform = `translate(calc(-50% + ${x}px), -50%) rotate(${rot}deg)`;
+      w.append(u);
+    });
+    return w;
+  }
+  function gameTile(kind, art, title, text) {
+    const b = el("button", "gm-tile"); b.type = "button";
+    const a = el("div", "gm-art " + kind); a.append(art);
+    const t = el("div", "gm-text"); t.append(el("h3", "", title), el("p", "", text));
+    b.append(a, t);
+    b.addEventListener("click", () => gameSetup(kind));
+    return b;
+  }
+  function openGames(push = true) {
+    $("gamesPage").hidden = false;
+    document.body.classList.add("no-scroll");
+    if (push && location.hash !== "#games") history.pushState({ mocloudGames: 1 }, "", "#games");
+    renderGames();
+    gamesLoad();
+  }
+  function closeGames(fromHistory) {
+    if ($("gamesPage").hidden) return;
+    $("gamesPage").hidden = true;
+    clearTimeout(GM.listTimer);
+    if ($("settingsPage").hidden) document.body.classList.remove("no-scroll");
+    if (!fromHistory && location.hash === "#games") history.back();
+  }
+  $("gamesBack").addEventListener("click", () => closeGames());
+  async function gamesLoad() {
+    clearTimeout(GM.listTimer);
+    try {
+      GM.list = (await gameApi(`/api/games?device=${encodeURIComponent(gameDevice())}`)).games || [];
+      GM.listErr = "";
+    } catch (e) { GM.listErr = e.message; }
+    if ($("gamesPage").hidden) return;
+    renderGames();
+    GM.listTimer = setTimeout(gamesLoad, 4000);
+  }
+  function renderGames() {
+    const tiles = el("div", "gm-tiles");
+    tiles.append(
+      gameTile("c4", c4Art(), "Connect Four", "Drop chips, get four in a row. Pass one device around, play against MoCloud, or use two phones."),
+      gameTile("uno", unoArt(), "Uno", "2 to 4 players. Everyone's phone holds their cards, and the board (iPad or Apple TV) shows the table."));
+    const going = el("div", "set-card gm-going");
+    going.append(el("h3", "", "Games going on"));
+    if (GM.listErr && !GM.list) going.append(el("p", "sub", GM.listErr));
+    else if (!GM.list) going.append(el("p", "sub", "Checking the Pi..."));
+    else if (!GM.list.length) going.append(el("p", "sub", "Nothing yet. Start one above, then join it from ur other devices here."));
+    for (const g of GM.list || []) {
+      const row = el("div", "gm-row");
+      const what = el("div", "gm-what");
+      const open = g.open.filter((s) => g.game === "uno" || s !== "board");
+      const status = g.phase === "lobby" ? (open.length ? "Waiting for " + open.map(seatName).join(", ") : "Starting")
+        : g.phase === "over" ? "Finished" : "Playing";
+      what.append(el("b", "", GAME_NAMES[g.game] + (g.game === "uno" ? ` · ${g.players} players` : g.mode === "pi" ? " · vs MoCloud" : g.mode === "here" ? " · one device" : "")),
+        el("span", "", status + (g.mine && g.mine.length ? ` · u're ${g.mine.filter((s) => s !== "board").length ? seatName(g.mine[0]) : "the board"}` : "")));
+      const b = el("button", "btn small", g.mine && g.mine.length ? "Rejoin" : g.phase === "lobby" ? "Join" : "Watch"); b.type = "button";
+      b.addEventListener("click", () => gameJoin(g.code));
+      row.append(el("span", "gm-code", g.code), what, b);
+      going.append(row);
+    }
+    const join = el("form", "gm-join");
+    const inp = document.createElement("input");
+    inp.maxLength = 4; inp.placeholder = "CODE"; inp.autocomplete = "off"; inp.setAttribute("aria-label", "Game code"); inp.autocapitalize = "characters";
+    const go = el("button", "btn ghost small", "Join with a code");
+    join.append(inp, go);
+    join.addEventListener("submit", (e) => { e.preventDefault(); const c = inp.value.trim().toUpperCase(); if (c.length === 4) gameJoin(c); });
+    going.append(join);
+    $("gamesBody").replaceChildren(tiles, going);
+  }
+  async function gameJoin(code) {
+    try { openGame(code, await gameApi(`/api/games/${code}?device=${encodeURIComponent(gameDevice())}`)); }
+    catch (e) { toast(e.message, true); }
+  }
+
+  // ----- setting a game up -----
+  function seg(options, cur, pick) {
+    const s = el("div", "gs-seg");
+    for (const [val, label] of options) {
+      const b = el("button", "", label); b.type = "button";
+      b.setAttribute("aria-pressed", String(val === cur));
+      b.addEventListener("click", () => pick(val));
+      s.append(b);
+    }
+    return s;
+  }
+  function gsOpt(type, name, checked, title, text, onChange) {
+    const l = el("label", "gs-opt");
+    const i = document.createElement("input"); i.type = type; i.name = name; i.checked = checked;
+    i.addEventListener("change", () => onChange(i.checked));
+    const t = el("div", ""); t.append(el("b", "", title), el("span", "", text));
+    l.append(i, t);
+    return l;
+  }
+  function gameSetup(kind) {
+    const o = { players: 2, rules: { stack: false, drawTill: false, jumpIn: false, sevenO: false }, mode: "here", level: "medium" };
+    try { Object.assign(o.rules, JSON.parse(localStorage.getItem("mocloud-uno-rules")) || {}); } catch {}
+    const dlg = $("gameSetup"), B = $("gsBody");
+    const draw = () => {
+      const parts = [el("h3", "gs-h", GAME_NAMES[kind])];
+      parts[0].id = "gsTitle";
+      if (kind === "uno") {
+        parts.push(el("p", "gs-sub", "Standard Uno rules, first to 500 points wins. Each player uses their own phone, and one more device is the board."));
+        parts.push(el("p", "gs-label", "How many players?"));
+        parts.push(seg([[2, "2"], [3, "3"], [4, "4"]], o.players, (v) => { o.players = v; draw(); }));
+        parts.push(el("p", "gs-label", "House rules (optional)"));
+        for (const [k, t, d] of UNO_HOUSE) parts.push(gsOpt("checkbox", k, o.rules[k], t, d, (on) => { o.rules[k] = on; }));
+      } else {
+        parts.push(el("p", "gs-sub", "Four in a row wins. Players take turns going first."));
+        parts.push(el("p", "gs-label", "How u playing?"));
+        const m = el("div", "gs-modes");
+        m.append(
+          gsOpt("radio", "c4mode", o.mode === "here", "On this device", "Pass it back and forth.", () => { o.mode = "here"; draw(); }),
+          gsOpt("radio", "c4mode", o.mode === "pi", "Against MoCloud", "The Pi plays u.", () => { o.mode = "pi"; draw(); }),
+          gsOpt("radio", "c4mode", o.mode === "devices", "Two devices", "Each phone is a player. An iPad or the Apple TV can show the board too.", () => { o.mode = "devices"; draw(); }));
+        parts.push(m);
+        if (o.mode === "pi") {
+          parts.push(el("p", "gs-label", "How good should MoCloud be?"));
+          parts.push(seg([["easy", "Easy"], ["medium", "Medium"], ["hard", "Hard"]], o.level, (v) => { o.level = v; draw(); }));
+        }
+      }
+      const acts = el("div", "dlg-acts gs-acts");
+      const nah = el("button", "btn ghost", "Nah"); nah.type = "button"; nah.addEventListener("click", () => dlg.close());
+      const go = el("button", "btn", kind === "uno" ? "Start the game" : "Play"); go.type = "button";
+      go.addEventListener("click", async () => {
+        go.disabled = true;
+        try {
+          if (kind === "uno") try { localStorage.setItem("mocloud-uno-rules", JSON.stringify(o.rules)); } catch {}
+          const v = await gameApi("/api/games", { game: kind, players: o.players, rules: o.rules, mode: o.mode, level: o.level, device: gameDevice() });
+          dlg.close();
+          openGame(v.code, v);
+        } catch (e) { toast(e.message, true); go.disabled = false; }
+      });
+      acts.append(nah, go);
+      parts.push(acts);
+      B.replaceChildren(...parts);
+    };
+    draw();
+    if (!dlg.open) dlg.showModal();
+  }
+
+  // ----- the play screen -----
+  function openGame(code, view) {
+    GM.code = code; GM.view = view || null; GM.handIds = null; GM.c4Last = ""; GM.topLast = null;
+    GM.seen = view ? Math.max(0, ...view.events.map((e) => e.id)) : -1;
+    $("gpToasts").replaceChildren();
+    $("gamePlay").hidden = false;
+    document.body.classList.add("no-scroll");
+    if (location.hash !== "#game") history.pushState({ mocloudGame: 1 }, "", "#game");
+    keepAwake(true);
+    renderGame();
+    gamePoll();
+  }
+  function closeGame(fromHistory) {
+    if ($("gamePlay").hidden) return;
+    $("gamePlay").hidden = true;
+    GM.gen++; GM.code = ""; GM.view = null;
+    keepAwake(false);
+    $("gpToasts").replaceChildren();
+    if ($("settingsPage").hidden && $("gamesPage").hidden) document.body.classList.remove("no-scroll");
+    if (!fromHistory && location.hash === "#game") history.back();
+    if (!$("gamesPage").hidden) gamesLoad();
+  }
+  $("gpBack").addEventListener("click", () => closeGame());
+  window.addEventListener("popstate", () => {
+    if (location.hash !== "#game") closeGame(true);
+    if (location.hash !== "#games" && location.hash !== "#game") closeGames(true);
+  });
+  async function keepAwake(on) {
+    try {
+      if (on && "wakeLock" in navigator && !GM.wake) GM.wake = await navigator.wakeLock.request("screen");
+      if (!on && GM.wake) { GM.wake.release(); GM.wake = null; }
+    } catch { GM.wake = null; }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !GM.code) return;
+    GM.wake = null; keepAwake(true);
+    gamePoll(); // straight back in after the phone was locked
+  });
+  function gameGone(byMe) {
+    if (!GM.code) return;
+    toast(byMe ? "Game ended." : "The game ended.");
+    closeGame();
+  }
+  async function gamePoll() {
+    const gen = ++GM.gen, code = GM.code;
+    let fails = 0;
+    while (gen === GM.gen && code) {
+      try {
+        const v = await gameApi(`/api/games/${code}?device=${encodeURIComponent(gameDevice())}&v=${GM.view ? GM.view.ver : 0}&wait=1`, null, true);
+        if (gen !== GM.gen) return;
+        fails = 0;
+        if (GM.offline) { GM.offline = false; renderGameSub(); }
+        gameUpdate(v);
+      } catch (e) {
+        if (gen !== GM.gen) return;
+        if (e.code === "NO_GAME") return gameGone();
+        GM.offline = true; renderGameSub();
+        await sleep(Math.min(5000, 800 * ++fails));
+      }
+    }
+  }
+  function gameUpdate(v) {
+    if (GM.view && v.ver <= GM.view.ver) return; // an older answer than wat's already showing
+    const role = gameRole(v);
+    for (const e of v.events || []) {
+      if (e.id <= GM.seen) continue;
+      if (GM.seen >= 0) {
+        // The board shows everything that happens. Phones only pop up the big moments from others.
+        const big = ["catch", "challenge", "swap", "uno", "win", "join", "leave"].includes(e.kind) && e.seat !== role;
+        if (role === "board" || role === "watch" || (v.game === "uno" && big)) gpToast(e);
+      }
+    }
+    GM.seen = Math.max(GM.seen, ...(v.events || []).map((e) => e.id), 0);
+    GM.view = v;
+    renderGame();
+  }
+  function gameRole(v) {
+    const mine = v.mine || [];
+    if (mine.some((s) => s !== "board")) return mine.find((s) => s !== "board");
+    return mine.includes("board") ? "board" : "watch";
+  }
+  function gpToast(e) {
+    const box = $("gpToasts");
+    const t = el("div", "gp-toast seat-" + (e.seat || "board"));
+    t.append(el("i"), document.createTextNode(e.text));
+    box.append(t);
+    while (box.children.length > 4) box.firstChild.remove();
+    setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 320); }, 3800);
+  }
+  async function gameAct(action, extra = {}) {
+    if (GM.busy) return;
+    GM.busy = true;
+    try {
+      const v = await gameApi(`/api/games/${GM.code}`, { device: gameDevice(), action, ...extra });
+      if (v.ended) return gameGone(true);
+      gameUpdate(v);
+    } catch (e) {
+      if (e.code === "NO_GAME") return gameGone();
+      toast(e.message, true);
+    } finally { GM.busy = false; }
+  }
+  function renderGameSub() {
+    const v = GM.view;
+    if (!v) return;
+    const role = gameRole(v);
+    const who = role === "board" ? "u're the board" : role === "watch" ? "watching" : v.game === "c4" && v.mode === "here" ? "one device" : "u're " + seatName(role);
+    $("gpSub").textContent = GM.offline ? "Can't reach the Pi, reconnecting..." : `Code ${v.code} · ${who}`;
+  }
+  function renderGame() {
+    const v = GM.view, S = $("gpStage");
+    if (!v) { S.replaceChildren(gpCenter(el("p", "sub", "Loading..."))); return; }
+    $("gpTitle").textContent = GAME_NAMES[v.game] || "Game";
+    renderGameSub();
+    const role = gameRole(v);
+    $("gamePlay").classList.toggle("as-board", role === "board" || role === "watch");
+    $("gamePlay").classList.toggle("as-player", role !== "board" && role !== "watch" && v.game === "uno");
+    if (v.phase === "lobby") return S.replaceChildren(gpCenter(renderLobby(v)));
+    if (v.game === "c4") return S.replaceChildren(renderC4(v));
+    if (v.phase === "roundover" || v.phase === "over") return S.replaceChildren(gpCenter(renderUnoEnd(v, role)));
+    if (role !== "board" && role !== "watch") return S.replaceChildren(renderUnoHand(v));
+    S.replaceChildren(renderUnoBoard(v, role));
+  }
+  function gpCenter(child) { const c = el("div", "gp-center"); c.append(child); return c; }
+
+  // ----- the lobby: everyone picks a spot -----
+  function renderLobby(v) {
+    const w = el("div", "lb");
+    w.append(el("p", "sub", "Game code"), el("div", "lb-code", v.code));
+    w.append(el("p", "lb-how", v.game === "uno"
+      ? "On each device, open MoCloud, go to Settings, then Games, and tap this game (or type the code). Every phone picks a player, and the iPad or the Apple TV picks the board."
+      : "On the other device, open MoCloud, go to Settings, then Games, and tap this game (or type the code). An iPad or the Apple TV can be the board if u want a big screen."));
+    const grid = el("div", "lb-seats");
+    for (const s of v.seats) {
+      const b = el("button", `lb-seat seat-${s.seat}` + (s.mine ? " mine" : "") + (s.seat === "board" ? " board" : "")); b.type = "button";
+      const av = el("div", "lb-av"); av.innerHTML = s.seat === "board" ? ICON_BOARD : ICON_PERSON;
+      const label = s.seat === "board" ? (v.game === "uno" ? "Board" : "Board (optional)") : s.name;
+      b.append(av, el("span", "", label), el("small", "", s.mine ? "This device · tap to switch" : s.pi ? "MoCloud" : s.taken ? "Taken" : "Tap to pick"));
+      b.disabled = s.taken && !s.mine;
+      b.addEventListener("click", () => gameAct(s.mine ? "leave" : "seat", { seat: s.seat }));
+      grid.append(b);
+    }
+    w.append(grid);
+    const need = v.seats.filter((s) => !s.taken && (v.game === "uno" || s.seat !== "board")).map((s) => s.name === "The board" ? "the board" : s.name);
+    const wait = el("p", "lb-wait");
+    wait.innerHTML = need.length ? "Waiting for <b></b>" : "Starting...";
+    if (need.length) wait.querySelector("b").textContent = need.join(", ");
+    w.append(wait);
+    return w;
+  }
+
+  // ----- Connect Four -----
+  function renderC4(v) {
+    const st = v.state, mine = v.mine || [], over = v.phase === "over";
+    const myTurn = !over && mine.includes(st.turn);
+    const wrap = el("div", "c4" + (over ? " done" : ""));
+    const label = (s) => {
+      if (v.mode === "pi" && s === "p2") return "MoCloud · " + v.level[0].toUpperCase() + v.level.slice(1);
+      if (v.mode === "devices" && mine.includes(s) && !mine.includes(s === "p1" ? "p2" : "p1")) return "U";
+      return seatName(s);
+    };
+    const head = el("div", "c4-head");
+    for (const s of ["p1", "p2"]) {
+      const p = el("div", `c4-pl seat-${s}` + (!over && st.turn === s ? " on" : ""));
+      p.append(el("div", "c4-chip-ico " + s), el("b", "", label(s)), el("span", "c4-sc", String(st.score[s])));
+      head.append(p);
+    }
+    const say = el("div", "c4-say" + (over ? " win" : ""));
+    if (over) say.textContent = st.winner === "draw" ? "Board's full. It's a draw." :
+      v.mode === "pi" ? (st.winner === "p1" ? "U beat MoCloud!" : "MoCloud got u this time.") :
+      label(st.winner) === "U" ? "U won!" : `${label(st.winner)} wins!`;
+    else if (st.thinking) { say.textContent = "MoCloud's thinking"; const d = el("span", "c4-think seat-p2"); d.append(el("i"), el("i"), el("i")); say.append(d); }
+    else say.textContent = myTurn ? (v.mode === "here" ? `${seatName(st.turn)}, ur turn` : "Ur turn") : `${label(st.turn)}'s turn`;
+    const shell = el("div", "c4-shell");
+    const body = el("div", "c4-body");
+    const grid = el("div", "c4-grid");
+    const holes = el("div", "c4-chips"), chips = el("div", "c4-chips");
+    const key = st.last ? st.last.join(",") + ":" + st.grid.flat().filter(Boolean).length : "";
+    const fresh = key && key !== GM.c4Last;
+    GM.c4Last = key;
+    const win = new Set((st.line || []).map((p) => p.join(",")));
+    for (let c = 0; c < 7; c++) for (let r = 0; r < 6; r++) {
+      const pos = `left:calc(var(--cell) * ${c});top:calc(var(--cell) * ${5 - r})`;
+      const h = el("div", "c4-hole"); h.style.cssText = pos; holes.append(h);
+      const who = st.grid[c][r];
+      if (!who) continue;
+      const chip = el("div", `c4-chip ${who}` + (win.has(c + "," + r) ? " win" : ""));
+      chip.style.cssText = pos;
+      if (fresh && st.last[0] === c && st.last[1] === r) {
+        chip.classList.add("drop"); chip.style.setProperty("--fall", String(6 - r));
+        chip.addEventListener("animationend", () => chip.classList.remove("drop"), { once: true });
+      }
+      chips.append(chip);
+    }
+    grid.append(holes, chips, el("div", "c4-frame"), el("div", "c4-rim"));
+    const ghost = el("div", "c4-ghost " + st.turn);
+    const cols = el("div", "c4-cols");
+    for (let c = 0; c < 7; c++) {
+      const b = el("button"); b.type = "button";
+      b.setAttribute("aria-label", `Drop in column ${c + 1}`);
+      const full = st.grid[c].every(Boolean);
+      b.disabled = !myTurn || full;
+      const show = () => { if (b.disabled) return; ghost.style.left = `calc(var(--cell) * ${c} + var(--cell) * .16)`; ghost.classList.add("show"); };
+      b.addEventListener("pointerenter", show); b.addEventListener("focus", show);
+      b.addEventListener("pointerleave", () => ghost.classList.remove("show"));
+      b.addEventListener("click", () => { ghost.classList.remove("show"); gameAct("drop", { col: c }); });
+      cols.append(b);
+    }
+    shell.append(body, ghost, grid, cols);
+    grid.style.position = "relative";
+    wrap.append(head, say, shell);
+    const acts = el("div", "c4-acts");
+    if (over && mine.length) { const a = el("button", "btn", "Play again"); a.type = "button"; a.addEventListener("click", () => gameAct("again")); acts.append(a); }
+    if (acts.children.length) wrap.append(acts);
+    return wrap;
+  }
+
+  // ----- Uno cards: MoCloud's own design -----
+  function unoCard(cd, tag) {
+    const u = el(tag || "div", "uc " + (cd ? cd.c : "back"));
+    if (!cd) { u.classList.add("back"); const m = el("div", "uc-mid", "MoCloud"); u.append(m); return u; }
+    const mid = el("div", "uc-mid");
+    const corner = (cls) => { const k = el("div", "uc-cn " + cls); k.innerHTML = cornerFace(cd); return k; };
+    if (cd.v === "skip") mid.innerHTML = ICON_SKIP;
+    else if (cd.v === "rev") mid.innerHTML = ICON_REV;
+    else if (cd.v === "d2") mid.append(el("span", "uc-plus", "+2"));
+    else if (cd.v === "wild") mid.append(quad());
+    else if (cd.v === "wd4") { mid.classList.add("four"); mid.append(quad(), el("b", "", "+4")); }
+    else mid.textContent = cd.v;
+    u.append(mid, corner("tl"), corner("br"));
+    if (cd.v === "6" || cd.v === "9") u.classList.add("uc-ul"); // so a 6 and a 9 can't be mixed up upside down
+    u.setAttribute("aria-label", unoName(cd));
+    return u;
+  }
+  function quad() { const q = el("div", "uc-quad"); q.append(el("i"), el("i"), el("i"), el("i")); return q; }
+  function cornerFace(cd) {
+    if (cd.v === "skip") return ICON_SKIP;
+    if (cd.v === "rev") return ICON_REV;
+    if (cd.v === "d2") return "+2";
+    if (cd.v === "wd4") return "+4";
+    if (cd.v === "wild") return "W";
+    return cd.v;
+  }
+  function unoName(cd, color) {
+    const v = { skip: "Skip", rev: "Reverse", d2: "Draw Two", wild: "Wild", wd4: "Wild Draw Four" }[cd.v] || cd.v;
+    return cd.c === "w" ? v + (color ? ` (${COLOR_NAMES[color]})` : "") : `${COLOR_NAMES[cd.c]} ${v}`;
+  }
+  const UNO_SORT = { r: 0, y: 1, g: 2, b: 3, w: 4 };
+  const UNO_VSORT = (v) => ({ skip: 10, rev: 11, d2: 12, wild: 13, wd4: 14 }[v] ?? Number(v));
+
+  // ----- Uno: ur phone -----
+  function renderUnoHand(v) {
+    const st = v.state, me = st.seat, myTurn = st.turn === me;
+    const root = el("div", "uh");
+    // the others, in the order they play after u
+    const opps = el("div", "uh-opps");
+    const i0 = st.order.indexOf(me);
+    for (let k = 1; k < st.order.length; k++) {
+      const s = st.order[(i0 + k * (st.dir === 1 ? 1 : -1) + st.order.length * 4) % st.order.length];
+      const o = el("div", `uh-opp seat-${s}` + (st.turn === s ? " on" : ""));
+      const t = el("div", "");
+      const nm = el("b", "", seatName(s));
+      if (st.counts[s] === 1 && st.uno[s]) nm.append(el("span", "uno-badge", "UNO"));
+      t.append(nm, el("span", "", `${st.counts[s]} card${st.counts[s] === 1 ? "" : "s"}`));
+      o.append(el("span", "gp-dot"), t);
+      opps.append(o);
+    }
+    // the pile and whose turn it is
+    const mid = el("div", "uh-mid");
+    const pile = el("div", "uh-pile");
+    const ring = el("div", "uh-ring");
+    if (st.color) ring.style.setProperty("--cur", COLOR_HEX[st.color]);
+    ring.append(unoCard(st.top));
+    pile.append(ring);
+    const turn = el("div", "uh-turn" + (myTurn ? " me" : ""), st.pickColor ? "Pick the first colour" : myTurn ? "Ur turn" : `${seatName(st.turn)}'s turn`);
+    mid.append(pile, turn);
+    if (st.color) mid.append(el("div", "uh-note", `Colour: ${COLOR_NAMES[st.color]}` + (st.dir === -1 && st.order.length > 2 ? " · going the other way" : "")));
+    if (myTurn && st.pending) mid.append(el("div", "uh-warn", `+${st.pending} coming at u` + (v.rules.stack ? ". Stack one or take it" : "")));
+    const ev = (v.events || []).filter((e) => e.kind !== "join").slice(-1)[0];
+    if (ev) mid.append(el("div", "uh-note", ev.text));
+    // buttons
+    const btns = el("div", "uh-btns");
+    const button = (label, cls, fn) => { const b = el("button", cls, label); b.type = "button"; b.addEventListener("click", fn); btns.append(b); return b; };
+    if (st.pickColor) button("Pick a colour", "btn", async () => { const c = await pickColor(); if (c) gameAct("color", { color: c }); });
+    else if (myTurn) {
+      if (st.pending) {
+        if (st.challenge) button("Challenge the +4", "btn ghost", () => gameAct("challenge"));
+        button(`Take +${st.pending}`, "btn", () => gameAct("draw"));
+      } else if (st.drawn !== null && st.drawn !== undefined) button("Keep it and pass", "btn ghost", () => gameAct("pass"));
+      else button("Draw a card", "btn", () => gameAct("draw"));
+    }
+    if (st.canUno) button("UNO", "uh-uno", () => gameAct("uno"));
+    for (const s of st.catchable || []) button(`Catch ${seatName(s)}! No UNO`, "uh-catch", () => gameAct("catch", { target: s }));
+    // ur hand
+    const hand = el("div", "uh-hand");
+    const cards = [...st.hand].sort((a, b) => UNO_SORT[a.c] - UNO_SORT[b.c] || UNO_VSORT(a.v) - UNO_VSORT(b.v));
+    // Fan the hand so it all fits on screen (it only scrolls when there are loads of cards).
+    const cw = Math.min(window.innerWidth * .21, 92), room = Math.min(window.innerWidth, 1100) - 36;
+    const lap = cards.length < 2 ? 0 : Math.max(-.64, Math.min(.06, (room - cw) / (cards.length - 1) / cw - 1));
+    hand.style.setProperty("--lap", lap.toFixed(3));
+    const playable = new Set(st.playable || []);
+    const before = GM.handIds;
+    for (const cd of cards) {
+      const u = unoCard(cd, "button"); u.type = "button";
+      u.classList.add(playable.has(cd.id) ? "ok" : "no");
+      if (before && !before.has(cd.id)) u.classList.add("new");
+      u.addEventListener("click", () => unoTap(v, cd, playable.has(cd.id)));
+      hand.append(u);
+    }
+    GM.handIds = new Set(cards.map((c) => c.id));
+    root.append(opps, mid, btns);
+    const foot = el("div", "");
+    foot.append(el("div", "uh-count", `${cards.length} card${cards.length === 1 ? "" : "s"}` + (st.drawn !== null && st.drawn !== undefined && myTurn ? " · u can play the one u drew" : "")), hand);
+    root.append(foot);
+    return root;
+  }
+  async function unoTap(v, cd, ok) {
+    const st = v.state;
+    if (!ok) {
+      if (st.turn === st.seat) toast(st.pending ? "Take the cards, or stack if that's on." : st.drawn != null ? "U can only play the card u just drew." : "That one doesn't match.", true);
+      return;
+    }
+    const body = { card: cd.id };
+    if (cd.c === "w") { const c = await pickColor(); if (!c) return; body.color = c; }
+    if (cd.v === "7" && v.rules.sevenO && st.order.length > 2) {
+      const t = await pickTarget(st); if (!t) return; body.target = t;
+    }
+    gameAct("play", body);
+  }
+  function pickColor() {
+    return new Promise((resolve) => {
+      const dlg = $("gamePick"), B = $("gpkBody");
+      let picked = null;
+      const h = el("h3", "gs-h", "Pick a colour"); h.id = "gpkTitle";
+      const g = el("div", "pick-colors");
+      for (const c of ["r", "y", "g", "b"]) {
+        const b = el("button", c, COLOR_NAMES[c]); b.type = "button";
+        b.addEventListener("click", () => { picked = c; dlg.close(); });
+        g.append(b);
+      }
+      const acts = el("div", "dlg-acts gs-acts"); const n = el("button", "btn ghost", "Nvm"); n.type = "button"; n.addEventListener("click", () => dlg.close()); acts.append(n);
+      B.replaceChildren(h, g, acts);
+      dlg.onclose = () => resolve(picked);
+      dlg.showModal();
+    });
+  }
+  function pickTarget(st) {
+    return new Promise((resolve) => {
+      const dlg = $("gamePick"), B = $("gpkBody");
+      let picked = null;
+      const h = el("h3", "gs-h", "Swap hands with who?"); h.id = "gpkTitle";
+      const list = el("div", "pick-list");
+      for (const s of st.order) {
+        if (s === st.seat) continue;
+        const b = el("button", `seat-${s}`); b.type = "button";
+        b.append(el("span", "gp-dot"), document.createTextNode(seatName(s)), el("span", "", `${st.counts[s]} cards`));
+        b.addEventListener("click", () => { picked = s; dlg.close(); });
+        list.append(b);
+      }
+      const acts = el("div", "dlg-acts gs-acts"); const n = el("button", "btn ghost", "Nvm"); n.type = "button"; n.addEventListener("click", () => dlg.close()); acts.append(n);
+      B.replaceChildren(h, list, acts);
+      dlg.onclose = () => resolve(picked);
+      dlg.showModal();
+    });
+  }
+  function confirmEnd() {
+    return new Promise((resolve) => {
+      const dlg = $("gamePick"), B = $("gpkBody");
+      let yes = false;
+      const h = el("h3", "gs-h", "End the game?"); h.id = "gpkTitle";
+      const acts = el("div", "dlg-acts gs-acts");
+      const n = el("button", "btn ghost", "Nah keep playing"); n.type = "button"; n.addEventListener("click", () => dlg.close());
+      const y = el("button", "btn", "End it for everyone"); y.type = "button"; y.addEventListener("click", () => { yes = true; dlg.close(); });
+      acts.append(n, y);
+      B.replaceChildren(h, el("p", "gs-sub", "It ends on every device. To step away without ending it, use Back instead. Ur spot stays saved."), acts);
+      dlg.onclose = () => resolve(yes);
+      dlg.showModal();
+    });
+  }
+  $("gpEnd").addEventListener("click", async () => {
+    const v = GM.view;
+    if (!v || !(v.mine || []).length) return closeGame();
+    if (await confirmEnd()) gameAct("end");
+  });
+
+  // ----- Uno: the board -----
+  const UNO_POS = { 2: ["bot", "top"], 3: ["bot", "left", "right"], 4: ["bot", "left", "top", "right"] };
+  const UNO_FLY = { bot: ["0px", "320px", "-20deg"], top: ["0px", "-320px", "20deg"], left: ["-380px", "0px", "-35deg"], right: ["380px", "0px", "35deg"] };
+  const tilt = (id) => ((id * 47) % 31) - 15;
+  function renderUnoBoard(v, role) {
+    const st = v.state, n = st.order.length, pos = UNO_POS[n];
+    const ub = el("div", "ub");
+    ub.append(el("div", "ub-felt"));
+    st.order.forEach((s, i) => {
+      const seat = el("div", `ub-seat ${pos[i]} seat-${s}` + (st.turn === s ? " on" : ""));
+      const nm = el("div", "ub-name"); nm.append(el("span", "gp-dot"), document.createTextNode(seatName(s)));
+      if (st.counts[s] === 1 && st.uno[s]) nm.append(el("span", "uno-badge", "UNO"));
+      const fan = el("div", "ub-fan");
+      const k = Math.min(st.counts[s], 9);
+      for (let j = 0; j < k; j++) {
+        const c = unoCard(null);
+        const a = k === 1 ? 0 : -28 + (56 * j) / (k - 1);
+        c.style.transform = `translateX(-50%) rotate(${a}deg)`;
+        fan.append(c);
+      }
+      fan.append(el("b", "", String(st.counts[s])));
+      seat.append(nm, fan, el("div", "ub-pts", `${st.scores[s]} pts`));
+      ub.append(seat);
+    });
+    const mid = el("div", "ub-mid");
+    const dir = el("div", "ub-dir" + (st.dir === -1 ? " ccw" : ""));
+    dir.innerHTML = '<svg viewBox="0 0 160 100" aria-hidden="true"><defs><marker id="ubArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="rgba(232,192,122,.8)"/></marker></defs>' +
+      '<ellipse cx="80" cy="50" rx="74" ry="44" fill="none" stroke="rgba(232,192,122,.35)" stroke-width="1.2" stroke-dasharray="3 6"/>' +
+      '<path d="M80 6 A74 44 0 0 1 154 50" fill="none" stroke="rgba(232,192,122,.75)" stroke-width="1.6" marker-end="url(#ubArrow)"/>' +
+      '<path d="M80 94 A74 44 0 0 1 6 50" fill="none" stroke="rgba(232,192,122,.75)" stroke-width="1.6" marker-end="url(#ubArrow)"/></svg>';
+    if (st.dir === -1) dir.querySelector("svg").style.transform = "scaleX(-1)";
+    const piles = el("div", "ub-piles");
+    if (st.color) piles.style.setProperty("--cur", COLOR_HEX[st.color]);
+    const deck = el("div", "ub-deck");
+    for (let j = 0; j < Math.min(3, Math.ceil(st.deckCount / 12) || 1); j++) deck.append(unoCard(null));
+    deck.append(el("b", "", `${st.deckCount} left`));
+    const disc = el("div", "ub-disc");
+    disc.append(el("div", "ub-glow"));
+    const recent = st.recent || [st.top];
+    recent.forEach((cd, j) => {
+      const u = unoCard(cd);
+      const last = j === recent.length - 1;
+      u.style.transform = `rotate(${last ? tilt(cd.id) / 3 : tilt(cd.id)}deg)`;
+      if (last && GM.topLast !== null && GM.topLast !== cd.id) {
+        u.classList.add("fresh");
+        const from = UNO_FLY[pos[Math.max(0, st.order.indexOf(st.lastBy))]] || UNO_FLY.bot;
+        u.style.setProperty("--fx", from[0]); u.style.setProperty("--fy", from[1]); u.style.setProperty("--fr", from[2]);
+      }
+      disc.append(u);
+    });
+    GM.topLast = st.top.id;
+    if (st.pending) disc.append(el("div", "ub-pend", `+${st.pending} for ${seatName(st.turn)}`));
+    if (st.color) { const c = el("div", "ub-color", COLOR_NAMES[st.color]); c.style.setProperty("--cur", COLOR_HEX[st.color]); disc.append(c); }
+    else disc.append(el("div", "ub-color", `${seatName(st.turn)} is picking a colour`));
+    piles.append(deck, disc);
+    mid.append(dir, piles);
+    ub.append(mid);
+    const info = el("div", "ub-wait", `Round ${st.round} · first to ${v.target}`);
+    ub.append(info);
+    const code = el("div", "ub-code"); code.append(document.createTextNode("Code "), el("b", "", v.code));
+    ub.append(code);
+    if (role === "watch" && v.seats.some((s) => s.seat === "board" && !s.taken)) {
+      const be = el("button", "btn small", "Be the board"); be.type = "button"; be.style.cssText = "position:absolute;right:20px;bottom:14px;z-index:2";
+      be.addEventListener("click", () => gameAct("seat", { seat: "board" }));
+      ub.append(be);
+    }
+    return ub;
+  }
+
+  // ----- Uno: end of a round / the game -----
+  function renderUnoEnd(v, role) {
+    const st = v.state, w = st.roundWinner || st.winner, over = v.phase === "over";
+    const x = el("div", `ux seat-${w}`);
+    const h = el("h2"); h.append(el("em", "", seatName(w)), document.createTextNode(over ? " won the game!" : " won the round"));
+    x.append(h, el("p", "ux-pts", over ? `${st.scores[w]} points. GG.` : `+${st.roundPoints} points from wat everyone was left holding. First to ${v.target} wins.`));
+    const table = el("div", "ux-table");
+    for (const s of [...st.order].sort((a, b) => st.scores[b] - st.scores[a])) {
+      const row = el("div", `ux-row seat-${s}` + (s === w ? " won" : ""));
+      row.append(el("span", "gp-dot"), el("span", "", seatName(s) + (s === role ? " (u)" : "")), el("b", "", `${st.scores[s]}`));
+      const bar = el("div", "ux-bar"); const fill = el("i"); fill.style.width = Math.min(100, (st.scores[s] / v.target) * 100) + "%"; bar.append(fill); row.append(bar);
+      const left = (st.reveal || {})[s] || [];
+      if (left.length) { const l = el("div", "ux-left"); left.forEach((cd) => l.append(unoCard(cd))); row.append(l); }
+      table.append(row);
+    }
+    x.append(table);
+    if (role !== "watch") {
+      const b = el("button", "btn", over ? "Play again" : "Next round"); b.type = "button";
+      b.addEventListener("click", () => gameAct(over ? "again" : "next"));
+      const acts = el("div", ""); acts.append(b); x.append(acts);
+    }
+    return x;
+  }
+
+  // ----- the rules (the i button) -----
+  function rulesFor(v) {
+    const B = $("grBody");
+    const h = (t) => el("h3", "", t), p = (t) => el("p", "", t);
+    const ul = (items) => { const u = el("ul"); items.forEach((t) => u.append(el("li", "", t))); return u; };
+    const title = el("h2", "gs-h", (GAME_NAMES[v.game] || "Game") + " rules"); title.id = "grTitle";
+    if (v.game === "c4") {
+      B.replaceChildren(title,
+        h("How it works"), p("Take turns dropping a chip into one of the 7 columns. It falls to the lowest open spot."),
+        h("Winning"), p("First to line up four of their chips in a row wins: across, up and down, or diagonal. If the board fills up with no four in a row, it's a draw."),
+        h("Going first"), p("Player 1 goes first in the first round. After that, whoever went second goes first next round."),
+        h("Ways to play"), ul(["On this device: pass it back and forth.", "Against MoCloud: the Pi plays u, on Easy, Medium or Hard.", "Two devices: each phone is a player, and an iPad or the Apple TV can show the board."]));
+      return;
+    }
+    const tag = (on) => el("span", on ? "rule-on" : "rule-off", on ? "On" : "Off");
+    const house = el("div");
+    for (const [k, t, d] of UNO_HOUSE) {
+      const item = el("p"); const b = el("b", "", t); item.append(b, tag(v.rules[k]), el("br"), document.createTextNode(d));
+      house.append(item);
+    }
+    B.replaceChildren(title,
+      h("The goal"), p("Be the first to get rid of all ur cards. The round's winner scores points for the cards everyone else is still holding. First to 500 points wins the game."),
+      h("The deck"), p("108 cards. Four colours (red, yellow, green, blue), each with one 0, two of every number 1 to 9, two Skips, two Reverses and two Draw Twos. Plus 4 Wilds and 4 Wild Draw Fours."),
+      h("Starting a round"), ul(["Everyone gets 7 cards. The rest is the draw pile, and its top card is flipped to start the discard pile.",
+        "Whoever's left of the dealer goes first, and the deal moves one seat each round.",
+        "If the first card is a Wild Draw Four, it goes back in the deck and another card is flipped.",
+        "A Wild: the first player picks the colour. A Draw Two: the first player draws 2 and loses their turn. A Skip: the first player is skipped. A Reverse: the dealer goes first and play goes the other way."]),
+      h("Ur turn"), ul(["Play a card that matches the top card's colour, number or symbol, or play a Wild.",
+        "Or draw one card from the pile, on ur phone. If it can be played, u can play it right away or keep it. If it can't, ur turn's over.",
+        "U can draw even if u have a card that would work."]),
+      h("Action cards"), ul(["Skip: the next player loses their turn.", "Reverse: play switches direction. With 2 players it works like a Skip, so u go again.",
+        "Draw Two: the next player draws 2 and loses their turn.", "Wild: u pick the colour that's in play.",
+        "Wild Draw Four: u pick the colour, and the next player draws 4 and loses their turn. U're only allowed to play it when u have no card matching the colour in play."]),
+      h("Challenging a Wild Draw Four"), p("Got hit with a Wild Draw Four? U can challenge it instead of drawing. If they were bluffing (they had a card of the colour in play), they draw the 4 and u play as normal. If they played it fair, u draw 6 and lose ur turn."),
+      h("Saying UNO"), p("When u're about to have one card left, tap UNO (before or right after u play ur second-to-last card). If someone catches u before the next player goes, u draw 2."),
+      h("Ending a round"), ul(["The round ends when someone plays their last card. If it was a Draw Two or Wild Draw Four, the next player still draws.",
+        "Scoring: number cards are worth their number, Skip, Reverse and Draw Two are worth 20, and Wilds and Wild Draw Fours are worth 50.",
+        "If the draw pile runs out, the discard pile (except the top card) is shuffled into a new one."]),
+      h("House rules in this game"), house);
+  }
+  $("gpInfo").addEventListener("click", () => { if (!GM.view) return; rulesFor(GM.view); $("gameRules").showModal(); });
+  $("grOk").addEventListener("click", () => $("gameRules").close());
+
+  // ---------- Karaoke ----------
+  // Songs come from YouTube Music's song search (the album versions, no music-video intros). The Pi
+  // saves each as an MP3 with its timed lyrics (and an English translation when it isn't in
+  // English). Every song is also kept on this device, so karaoke works with no Wi-Fi.
+  const KAR_CACHE = "mocloud-karaoke-v1";
+  const KAR_FILES = ["song.json", "audio.mp3", "cover.jpg", "instrumental.mp3"];
+  const KAR_NEEDED = ["song.json", "audio.mp3"]; // the cover and the instrumental are extras
+  const kar = { songs: [], jobs: [], used: 0, space: 0, timer: 0, results: null, searching: false, saved: new Set(), song: null, raf: 0, lines: [], panes: [], cur: -1, hold: 0 };
+  const karUrl = (id, f) => `${BACKENDS.pi.url}/karaoke/${id}/${f}`;
+  async function karApi(path, body, method) {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 150000);
+    let res;
+    try {
+      res = await fetch(BACKENDS.pi.url + path, { method: method || (body ? "POST" : "GET"), signal: ctrl.signal,
+        headers: { "X-Passcode": piPasscode(), ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    } catch { throw Object.assign(new Error(ctrl.signal.aborted ? "YouTube's taking too long. Try again in a bit." : "Can't reach the Pi rn."), { offline: !ctrl.signal.aborted }); }
+    finally { clearTimeout(t); }
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 404 && !data.error) throw new Error("The Pi needs the newest MoCloud installer for karaoke.");
+    if (!res.ok) throw new Error(data.error || `The Pi said no (${res.status}).`);
+    return data;
+  }
+  function karRemember() { try { localStorage.setItem("mocloud-karaoke", JSON.stringify(kar.songs)); } catch {} }
+  // Which version of each song's files this device has (the Pi adds instrumentals and better translations later).
+  const karRevs = (() => { try { return JSON.parse(localStorage.getItem("mocloud-karaoke-revs")) || {}; } catch { return {}; } })();
+  function karRevSave() { try { localStorage.setItem("mocloud-karaoke-revs", JSON.stringify(karRevs)); } catch {} }
+  function karRecall() { try { return JSON.parse(localStorage.getItem("mocloud-karaoke")) || []; } catch { return []; } }
+  async function karCache() { return "caches" in window ? caches.open(KAR_CACHE) : null; }
+  // Every song in the library gets kept on this device (they're small), quietly in the background.
+  async function karSaveAll() {
+    const c = await karCache();
+    if (!c) return;
+    for (const sg of kar.songs) {
+      const stale = sg.rev && karRevs[sg.id] && karRevs[sg.id] !== sg.rev;
+      if (kar.saved.has(sg.id) && !stale) continue;
+      try {
+        if (stale) await c.delete(karUrl(sg.id, "song.json")); // updated on the Pi: the new lyrics file
+        for (const f of KAR_FILES) {
+          if (f === "instrumental.mp3" && !sg.inst) continue;
+          if (await c.match(karUrl(sg.id, f))) continue;
+          const r = await fetch(karUrl(sg.id, f), { cache: "no-store" });
+          if (r.ok) await c.put(karUrl(sg.id, f), r);
+          else if (KAR_NEEDED.includes(f)) throw new Error("missing");
+        }
+        kar.saved.add(sg.id);
+        if (sg.rev) { karRevs[sg.id] = sg.rev; karRevSave(); }
+      } catch { break; } // offline: next time
+    }
+    if (!$("karPage").hidden) renderKar();
+  }
+  async function karCheckSaved() {
+    const c = await karCache();
+    if (!c) return;
+    for (const sg of kar.songs) if (await c.match(karUrl(sg.id, "audio.mp3")) && await c.match(karUrl(sg.id, "song.json"))) kar.saved.add(sg.id);
+  }
+  async function karLoad() {
+    clearTimeout(kar.timer);
+    try {
+      const d = await karApi("/api/karaoke");
+      const had = new Set(kar.songs.map((x) => x.id));
+      const fresh = (d.songs || []).filter((x) => !had.has(x.id) && kar.songs.length);
+      Object.assign(kar, { songs: d.songs || [], jobs: d.jobs || [], used: d.used || 0, space: d.space || 0, offline: false, translator: d.translator || null });
+      karRemember();
+      fresh.forEach((x) => toast(`${x.title} is ready to sing.`));
+      karSaveAll();
+    } catch (e) {
+      kar.offline = true;
+      if (!kar.songs.length) kar.songs = karRecall();
+    }
+    if ($("karPage").hidden) return;
+    renderKar();
+    if (kar.jobs.some((j) => j.state !== "failed")) kar.timer = setTimeout(karLoad, 1500);
+  }
+  async function openKaraoke() {
+    kar.songs = kar.songs.length ? kar.songs : karRecall();
+    await karCheckSaved();
+    $("karPage").hidden = false;
+    document.body.classList.add("no-scroll");
+    if (location.hash !== "#karaoke") history.pushState({ mocloudKaraoke: 1 }, "", "#karaoke");
+    renderKar();
+    karLoad();
+  }
+  function closeKaraoke(fromHistory) {
+    if ($("karPage").hidden) return;
+    $("karPage").hidden = true;
+    clearTimeout(kar.timer);
+    if ($("settingsPage").hidden) document.body.classList.remove("no-scroll");
+    if (!fromHistory && location.hash === "#karaoke") history.back();
+  }
+  $("karBack").addEventListener("click", () => closeKaraoke());
+  window.addEventListener("popstate", () => {
+    if (location.hash !== "#sing") closeSing(true);
+    if (location.hash !== "#karaoke" && location.hash !== "#sing") closeKaraoke(true);
+    if (location.hash !== "#modes" && location.hash !== "#karaoke" && location.hash !== "#sing") closeModes(true);
+  });
+
+  function karRowArt(src) {
+    if (!src) return el("div", "kar-ph");
+    const img = document.createElement("img"); img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer"; img.src = src;
+    img.onerror = () => img.replaceWith(el("div", "kar-ph"));
+    return img;
+  }
+  function renderKar() {
+    // search results
+    const R = $("karResults");
+    if (kar.searching) R.replaceChildren(el("p", "kar-empty", "Looking on YouTube Music..."));
+    else if (kar.results === null) R.replaceChildren();
+    else if (!kar.results.length) R.replaceChildren(el("p", "kar-empty", "No songs found. Try the artist's name too."));
+    else {
+      const list = el("div", "kar-list");
+      for (const r of kar.results) {
+        const b = el("button", "kar-row"); b.type = "button";
+        const mid = el("div", "");
+        mid.append(el("b", "", r.title), el("span", "", [r.artist, r.duration ? fmtLen(r.duration) : ""].filter(Boolean).join(" · ")));
+        const have = kar.songs.some((x) => x.vid === r.id);
+        b.append(karRowArt(r.thumb), mid, el("span", "kar-tag" + (have ? " gold" : ""), have ? "In ur songs" : "Sing it"));
+        b.addEventListener("click", () => have ? karPlay(kar.songs.find((x) => x.vid === r.id)) : karAsk(r));
+        list.append(b);
+      }
+      R.replaceChildren(el("p", "kar-empty", "Songs only, no music videos."), list);
+    }
+    // downloading
+    $("karJobs").replaceChildren(...kar.jobs.map((j) => {
+      const row = el("div", "kar-job" + (j.state === "failed" ? " failed" : ""));
+      const what = { queued: "In line", downloading: `Downloading, ${Math.floor((j.progress || 0) * 100)}%`, converting: "Making the MP3",
+        lyrics: "Getting the lyrics", failed: j.error || "Couldn't get it" }[j.state] || "Working on it";
+      const left = el("div", ""); left.append(el("b", "", `${j.title}${j.artist ? " · " + j.artist : ""}`), el("span", "", what));
+      const x = el("button", "link", j.state === "failed" ? "Dismiss" : "Cancel"); x.type = "button";
+      x.addEventListener("click", async () => { try { await karApi(`/api/karaoke/${j.id}`, null, "DELETE"); } catch (e) { toast(e.message, true); } karLoad(); });
+      const bar = el("div", "q-bar"); const fill = el("i", ""); fill.style.width = Math.floor((j.progress || 0) * 100) + "%"; bar.append(fill);
+      row.append(left, x, bar);
+      return row;
+    }));
+    // library
+    // Who translates non-English songs (each song once, when it's saved), and DeepL's credits left.
+    const tr = kar.offline ? null : kar.translator;
+    $("karTrans").hidden = !tr;
+    if (tr) $("karTrans").textContent = "Translations: " + (tr.out ? "Google Translate (DeepL's credits ran out)"
+      : tr.name === "DeepL" && tr.left != null ? `DeepL · ${tr.left >= 1000 ? Math.floor(tr.left / 1000) + "K" : tr.left} characters left` : tr.name);
+    $("karSpace").textContent = kar.space ? `${fmtSize(kar.used)} of ${fmtSize(kar.space)} used` : (kar.offline ? "Offline: ur saved songs" : "");
+    const L = $("karLib");
+    const songs = kar.offline ? kar.songs.filter((x) => kar.saved.has(x.id)) : kar.songs;
+    if (!songs.length) { L.replaceChildren(el("p", "kar-empty", kar.offline ? "No songs saved on this device yet." : "No songs yet. Search for one up top.")); return; }
+    const list = el("div", "kar-list");
+    for (const sg of songs) {
+      const row = el("div", "kar-row");
+      const open = el("button", "link", "Sing"); open.type = "button";
+      const mid = el("div", ""); mid.style.cursor = "pointer";
+      mid.append(el("b", "", sg.title), el("span", "", [sg.artist, sg.duration ? fmtLen(sg.duration) : ""].filter(Boolean).join(" · ")));
+      const tags = el("div", "kar-tags");
+      tags.append(el("span", "kar-tag" + (sg.synced ? " gold" : ""), sg.synced ? "Follows along" : "Lyrics not timed"));
+      if (sg.langName) tags.append(el("span", "kar-tag", `${sg.langName} + English`));
+      if (sg.inst) tags.append(el("span", "kar-tag", "Instrumental too"));
+      if (kar.saved.has(sg.id)) tags.append(el("span", "kar-tag", "On this device"));
+      mid.append(tags);
+      const acts = el("div", "kar-acts");
+      const del = el("button", "link", "Delete"); del.type = "button"; del.disabled = kar.offline;
+      del.addEventListener("click", async () => {
+        if (!(await askSure(`Delete ${sg.title}?`, "It's gone from karaoke on every device.", "Delete it", "Nah"))) return;
+        try {
+          await karApi(`/api/karaoke/${sg.id}`, null, "DELETE");
+          const c = await karCache(); if (c) for (const f of KAR_FILES) await c.delete(karUrl(sg.id, f));
+          kar.saved.delete(sg.id);
+        } catch (e) { toast(e.message, true); }
+        karLoad();
+      });
+      acts.append(open, del);
+      const art = karRowArt(kar.saved.has(sg.id) || !kar.offline ? karUrl(sg.id, "cover.jpg") : "");
+      art.style.cursor = "pointer";
+      [art, mid, open].forEach((n) => n.addEventListener("click", () => karPlay(sg)));
+      row.append(art, mid, acts);
+      list.append(row);
+    }
+    L.replaceChildren(list);
+  }
+  $("karFind").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const q = $("karQuery").value.trim();
+    if (!q || kar.searching) return;
+    $("karQuery").blur();
+    kar.searching = true; renderKar();
+    try { kar.results = (await karApi(`/api/karaoke/search?q=${encodeURIComponent(q)}`)).results || []; }
+    catch (err) { kar.results = null; toast(err.message, true); }
+    kar.searching = false; renderKar();
+  });
+
+  // "Karaoke it?": wat the song is and whether its lyrics follow along, before anything's saved.
+  let karAsking = null;
+  async function karAsk(r) {
+    karAsking = r;
+    $("ksCover").src = r.thumb || ""; $("ksTitle").textContent = r.title; $("ksBy").textContent = r.artist || "";
+    $("ksLyr").className = "ks-lyr"; $("ksLyr").textContent = "Checking the song and its lyrics...";
+    $("ksErr").hidden = true; $("ksGo").disabled = true;
+    $("karSure").showModal();
+    try {
+      const i = await karApi("/api/karaoke/check", { id: r.id });
+      if (karAsking !== r) return;
+      $("ksTitle").textContent = i.title; $("ksBy").textContent = [i.artist, i.duration ? fmtLen(i.duration) : ""].filter(Boolean).join(" · ");
+      $("ksLyr").textContent = i.lyrics === "synced" ? "Got the lyrics, they follow along with the song."
+        : i.lyrics === "plain" ? "Got the lyrics, but they aren't timed, so they won't light up as it plays."
+        : "No lyrics found for this one. It'll just play the song.";
+      $("ksLyr").classList.toggle("ok", i.lyrics === "synced");
+      $("ksGo").disabled = false;
+    } catch (e) {
+      $("ksLyr").textContent = ""; $("ksErr").textContent = e.message; $("ksErr").hidden = false;
+    }
+  }
+  $("ksNah").addEventListener("click", () => { karAsking = null; $("karSure").close(); });
+  $("ksGo").addEventListener("click", async () => {
+    if (!karAsking) return;
+    $("ksGo").disabled = true;
+    try {
+      await karApi("/api/karaoke/get", { id: karAsking.id });
+      $("karSure").close();
+      toast(`Getting ${karAsking.title} ready. It'll be in ur songs in a minute.`);
+      kar.results = null; $("karQuery").value = "";
+      karLoad();
+    } catch (e) { $("ksErr").textContent = e.message; $("ksErr").hidden = false; $("ksGo").disabled = false; }
+  });
+
+  // ----- The player: lyrics that light up as the song plays -----
+  // LRCLIB times each line. Inside a line, the words fill in across the time it's sung (by their
+  // length), the way karaoke screens do. Two panes when the song isn't in English: English on the
+  // left, the original on the right, both following along.
+  async function karFile(id, f) {
+    const c = await karCache();
+    if (c) {
+      let r = await c.match(karUrl(id, f));
+      if (!r) {
+        try { const n = await fetch(karUrl(id, f), { cache: "no-store" }); if (n.ok) { await c.put(karUrl(id, f), n.clone()); r = n; } } catch {}
+      }
+      if (r) return r;
+    }
+    const n = await fetch(karUrl(id, f), { cache: "no-store" });
+    if (!n.ok) throw new Error("missing");
+    return n;
+  }
+  const karOffKey = (id) => "mocloud-kar-offset-" + id;
+  async function karPlay(sg) {
+    let song, audio;
+    try {
+      song = await (await karFile(sg.id, "song.json")).json();
+      audio = URL.createObjectURL(await (await karFile(sg.id, "audio.mp3")).blob());
+    } catch { return toast("That song isn't saved on this device yet, and the Pi can't be reached rn.", true); }
+    kar.saved.add(sg.id);
+    kar.song = song;
+    let off = 0; try { off = parseFloat(localStorage.getItem(karOffKey(song.id))) || 0; } catch {}
+    kar.offset = off;
+    $("kpTitle").textContent = song.title; $("kpArtist").textContent = song.artist || "";
+    const a = $("kpAudio");
+    if (a._url) URL.revokeObjectURL(a._url);
+    if (kar.instUrl) { URL.revokeObjectURL(kar.instUrl); kar.instUrl = ""; }
+    kar.vocUrl = audio; kar.inst = false;
+    a._url = audio; a.src = audio; a.currentTime = 0;
+    karShowVoc();
+    let wantInst = false; try { wantInst = localStorage.getItem("mocloud-kar-inst") === "1"; } catch {}
+    if (wantInst && song.inst) karSwitch(true, true); // the way u had it last time
+    karBuild(song);
+    karShowOffset();
+    $("karPlay").hidden = false;
+    if (location.hash !== "#sing") history.pushState({ mocloudSing: 1 }, "", "#sing");
+    if ("mediaSession" in navigator && typeof MediaMetadata !== "undefined") {
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: song.title, artist: song.artist || "", album: "MoCloud karaoke" }); } catch {}
+    }
+    a.play().catch(() => {});
+    cancelAnimationFrame(kar.raf);
+    kar.raf = requestAnimationFrame(karTick);
+  }
+  // Vocals or instrumental. The instrumental can start a little earlier or later than the song, so
+  // the spot u're at carries over and the lyrics shift with it.
+  function karShowVoc() {
+    const b = $("kpVoc");
+    b.setAttribute("aria-pressed", String(!!kar.inst));
+    b.classList.toggle("none", !(kar.song && kar.song.inst));
+    $("kpVocText").textContent = kar.inst ? "Instrumental" : "Vocals";
+  }
+  async function karSwitch(toInst, quiet) {
+    const song = kar.song, a = $("kpAudio");
+    if (!song) return;
+    if (toInst && !song.inst) { toast("No instrumental version for this one, so it's the version with the vocals."); return; }
+    if (toInst === kar.inst) return;
+    let url = kar.vocUrl;
+    if (toInst) {
+      if (!kar.instUrl) {
+        try { kar.instUrl = URL.createObjectURL(await (await karFile(song.id, "instrumental.mp3")).blob()); }
+        catch { toast("Couldn't load the instrumental rn. Try again once the Pi's reachable.", true); return; }
+      }
+      url = kar.instUrl;
+    }
+    const off = song.inst ? song.inst.offset || 0 : 0;
+    const at = a.currentTime + (toInst ? off : -off), playing = !a.paused;
+    kar.inst = toInst;
+    a.src = url;
+    const go = () => { a.currentTime = Math.max(0, at); if (playing || quiet) a.play().catch(() => {}); };
+    if (a.readyState >= 1) go(); else a.addEventListener("loadedmetadata", go, { once: true });
+    karShowVoc();
+    kar.cur = -2;
+    if (!quiet) try { localStorage.setItem("mocloud-kar-inst", toInst ? "1" : "0"); } catch {}
+  }
+  $("kpVoc").addEventListener("click", () => karSwitch(!kar.inst));
+
+  function closeSing(fromHistory) {
+    if ($("karPlay").hidden) return;
+    $("karPlay").hidden = true;
+    $("kpAudio").pause();
+    cancelAnimationFrame(kar.raf);
+    if (!fromHistory && location.hash === "#sing") history.back();
+  }
+  $("kpBack").addEventListener("click", () => closeSing());
+
+  // When each line ends: a bit before the next one, or about as long as it takes to sing it.
+  function karTimes(lines, length) {
+    return lines.map((l, i) => {
+      const next = i + 1 < lines.length ? lines[i + 1].t : length || l.t + 6;
+      const chars = (l.text || "").replace(/\s+/g, "").length;
+      return { start: l.t, end: Math.max(l.t + 0.4, Math.min(next - 0.1, l.t + Math.max(1.6, chars * 0.09))) };
+    });
+  }
+  function karLineEl(text, words) {
+    const div = el("div", "kl");
+    div._spans = []; div._total = 0; div._words = null;
+    if (!text) { div.classList.add("gap"); div.textContent = "♪"; return div; }
+    const parts = text.split(/(\s+)/);
+    let at = 0;
+    const spans = [];
+    for (const p of parts) {
+      if (!p) continue;
+      if (/^\s+$/.test(p)) { div.append(p); continue; }
+      const w = el("span", "kw", p);
+      w._from = at; w._len = p.length; at += p.length;
+      div.append(w); spans.push(w);
+    }
+    div._total = at; div._spans = spans; div._words = words || null;
+    return div;
+  }
+  function karBuild(song) {
+    const stage = $("kpStage");
+    kar.cur = -1;
+    const two = !!song.langName && (song.lines || []).some((l) => l.en) || (song.plain || []).some((l) => l && l.en);
+    stage.className = "kp-stage" + (two ? " two" : "");
+    const panes = [];
+    const mkPane = (label, pick) => {
+      const pane = el("div", "kp-pane" + (song.synced ? "" : " kp-plain"));
+      if (label) pane.append(el("div", "kp-lang", label));
+      if (!song.synced) {
+        const plain = (song.plain || []);
+        pane.append(el("p", "kp-note", plain.length ? "These lyrics aren't timed, so they won't light up. Scroll along." : "No lyrics for this one. Just vibe."));
+        for (const l of plain) pane.append(karLineEl(pick(typeof l === "string" ? { text: l } : l), null));
+      } else {
+        pane._lines = song.lines.map((l, i) => {
+          const d = karLineEl(pick(l), pick === origOf ? l.w : null);
+          d.addEventListener("click", () => {
+            const shift = kar.inst && song.inst ? song.inst.offset || 0 : 0;
+            $("kpAudio").currentTime = Math.max(0, l.t - kar.offset + shift - 0.05); kar.hold = 0;
+          });
+          pane.append(d);
+          return d;
+        });
+      }
+      pane.addEventListener("wheel", () => { kar.hold = Date.now() + 3000; }, { passive: true });
+      pane.addEventListener("touchmove", () => { kar.hold = Date.now() + 3000; }, { passive: true });
+      panes.push(pane);
+      return pane;
+    };
+    const origOf = (l) => l.text || "";
+    const engOf = (l) => l.en || "";
+    if (two) stage.replaceChildren(mkPane("English", engOf), mkPane(song.langName, origOf));
+    else stage.replaceChildren(mkPane("", origOf));
+    kar.panes = panes;
+    kar.times = song.synced ? karTimes(song.lines, song.duration) : [];
+  }
+  function karTick() {
+    const a = $("kpAudio");
+    const dur = a.duration || (kar.song && kar.song.duration) || 0;
+    if (!kar.seeking) { $("kpSeek").max = dur || 100; $("kpSeek").value = a.currentTime; }
+    $("kpNow").textContent = fmtLen(a.currentTime); $("kpEnd").textContent = fmtLen(dur);
+    $("kpIcon").setAttribute("d", a.paused ? "M8 5v14l11-7z" : "M6 5h4v14H6zm8 0h4v14h-4z");
+    if (kar.song && kar.song.synced) {
+      const t = a.currentTime - (kar.inst && kar.song.inst ? kar.song.inst.offset || 0 : 0) + kar.offset, T = kar.times;
+      let i = -1, lo = 0, hi = T.length - 1;
+      while (lo <= hi) { const m = (lo + hi) >> 1; if (T[m].start <= t) { i = m; lo = m + 1; } else hi = m - 1; }
+      for (const pane of kar.panes) {
+        const L = pane._lines;
+        if (i !== kar.cur) {
+          L.forEach((d, n) => { d.classList.toggle("done", n < i); d.classList.toggle("now", n === i); if (n !== i) d._spans.forEach((w) => w.style.removeProperty("--p")); });
+        }
+        if (i >= 0) {
+          const d = L[i], span = T[i];
+          if (d._words && d._words.length) { // word times from the lyrics file itself
+            d._spans.forEach((w, n) => {
+              const ws = d._words[n] ? d._words[n][0] : span.end, we = d._words[n + 1] ? d._words[n + 1][0] : span.end;
+              w.style.setProperty("--p", Math.max(0, Math.min(1, (t - ws) / Math.max(0.05, we - ws))));
+            });
+          } else {
+            const p = Math.max(0, Math.min(1, (t - span.start) / (span.end - span.start))) * (d._total || 1);
+            d._spans.forEach((w) => w.style.setProperty("--p", Math.max(0, Math.min(1, (p - w._from) / w._len))));
+          }
+        }
+        if (i !== kar.cur && Date.now() > kar.hold) {
+          const target = L[Math.max(0, i)];
+          if (target) pane.scrollTo({ top: target.offsetTop - pane.clientHeight * 0.4, behavior: "smooth" });
+        }
+      }
+      kar.cur = i;
+    }
+    kar.raf = requestAnimationFrame(karTick);
+  }
+  $("kpPlay").addEventListener("click", () => { const a = $("kpAudio"); if (a.paused) a.play().catch(() => {}); else a.pause(); });
+  $("kpSeek").addEventListener("input", () => { kar.seeking = true; $("kpAudio").currentTime = parseFloat($("kpSeek").value) || 0; kar.hold = 0; });
+  $("kpSeek").addEventListener("change", () => { kar.seeking = false; });
+  function karShowOffset() { $("kpOff").textContent = `Timing ${kar.offset > 0 ? "+" : ""}${kar.offset.toFixed(1)}s`; }
+  function karNudge(by) {
+    kar.offset = Math.round((kar.offset + by) * 10) / 10;
+    try { localStorage.setItem(karOffKey(kar.song.id), String(kar.offset)); } catch {}
+    karShowOffset(); kar.cur = -2;
+  }
+  $("kpEarly").addEventListener("click", () => karNudge(-0.25));
+  $("kpLate").addEventListener("click", () => karNudge(0.25));
+  document.addEventListener("keydown", (e) => {
+    if ($("karPlay").hidden || e.target.tagName === "INPUT") return;
+    if (e.key === " ") { e.preventDefault(); $("kpPlay").click(); }
+    if (e.key === "ArrowRight") $("kpAudio").currentTime += 5;
+    if (e.key === "ArrowLeft") $("kpAudio").currentTime -= 5;
+    if (e.key === "Escape") closeSing();
+  });
+
+  // The Pi's YouTube downloads, in the upload list (whichever device started them).
+  function ytRows() {
+    if (!onPi()) return [];
+    return (state.youtube || []).map((j) => {
+      const li = document.createElement("li"); li.className = "yt" + (j.state === "failed" ? " failed" : "");
+      const name = document.createElement("span"); name.className = "q-name"; name.textContent = j.title;
+      const stat = document.createElement("span"); stat.className = "q-stat";
+      const pct = Math.floor((j.progress || 0) * 100);
+      stat.textContent = j.state === "failed" ? (j.error || "Couldn't download it")
+        : j.state === "queued" ? "In line to download from YouTube"
+        : j.state === "converting" ? "Putting the picture and sound together"
+        : j.state === "saving" ? "Saving it" : `Downloading, ${pct}% of ${fmtSize(j.size || 0)}${j.speed ? ", " + fmtRate(j.speed) : ""}`;
+      const btn = document.createElement("button"); btn.className = "link";
+      btn.textContent = j.state === "failed" ? "Dismiss" : "Cancel";
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        try { await api(`/api/yt/${encodeURIComponent(j.id)}`, { method: "DELETE" }); } catch (e) { toast(e.message, true); }
+        refresh().catch(() => {});
+      });
+      const bar = document.createElement("div"); bar.className = "q-bar";
+      const fill = document.createElement("i"); fill.style.width = (j.state === "saving" ? 100 : pct) + "%";
+      bar.append(fill);
+      li.append(name, stat, btn, bar);
+      return li;
+    });
   }
 
   // ---------- Uploads on every device ----------
