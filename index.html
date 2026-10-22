@@ -153,6 +153,14 @@
   .yt-note { margin: 0 0 14px; color: var(--dim); font-size: 14px; }
   #ytUrl { width: 100%; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); margin-bottom: 14px; }
   .yt-err { margin: -4px 0 14px; color: var(--red); font-size: 14px; }
+  .yt-pbar { height: 12px; border-radius: 99px; background: var(--panel-2); overflow: hidden; margin: 18px 0 10px; }
+  .yt-pbar i { display: block; height: 100%; width: 0; border-radius: 99px; background: var(--accent); transition: width .6s ease-out; }
+  .yt-pbar.done i { background: var(--green); }
+  .yt-pbar.wait i { width: 30% !important; animation: ytWait 1.2s ease-in-out infinite alternate; }
+  @keyframes ytWait { from { transform: translateX(-100%); } to { transform: translateX(330%); } }
+  .yt-pline { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; font-variant-numeric: tabular-nums; }
+  .yt-pline b { font-size: 26px; }
+  .yt-pline span { color: var(--dim); font-size: 14px; }
   .yt-card { display: grid; grid-template-columns: 160px 1fr; gap: 14px; align-items: start; margin-bottom: 14px; }
   .yt-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: var(--panel-2); }
   .yt-card b { display: block; font-weight: 500; font-size: 16px; line-height: 1.3; overflow-wrap: anywhere; }
@@ -227,12 +235,16 @@
   .kar-find { display: flex; gap: 10px; margin-bottom: 14px; }
   .kar-find input { flex: 1; min-width: 0; padding: 12px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-size: 16px; }
   .kar-list { display: grid; gap: 8px; margin: 0 0 22px; }
-  .kar-row { display: grid; grid-template-columns: 96px 1fr auto; gap: 14px; align-items: center; padding: 10px; border-radius: 14px;
+  .kar-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px; border-radius: 14px;
     background: var(--panel); border: 0; text-align: left; color: var(--paper); width: 100%; }
   button.kar-row:hover { background: var(--panel-2); }
   .kar-row img, .kar-row .kar-ph { width: 96px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 9px; background: var(--panel-2); }
   .kar-row b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .kar-row span { display: block; color: var(--dim); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kar-row > div { min-width: 0; }
+  .kar-row span.kar-more { white-space: normal; }
+  .kar-row span.kar-tag { overflow: visible; text-overflow: clip; }
+  .kar-row span.kar-by { color: var(--paper); opacity: .85; font-size: 14px; }
   .kar-row .kar-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
   .kar-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); color: var(--dim); }
   .kar-tag.gold { color: var(--accent); }
@@ -280,7 +292,7 @@
   .kl.done .kw { --p: 1; }
   .kp-plain .kl { cursor: default; opacity: .85; color: var(--paper); }
   .kp-note { text-align: center; color: var(--dim); font-size: 13px; margin: 0 0 18px; }
-  .kp-bar { display: grid; grid-template-columns: auto auto 1fr auto auto auto; gap: 12px; align-items: center; padding: 14px 18px 22px; }
+  .kp-bar { display: grid; grid-template-columns: auto auto 1fr auto auto; gap: 12px; align-items: center; padding: 14px 18px 22px; }
   .kp-voc { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line);
     background: var(--panel); color: var(--paper); font-size: 14px; font-weight: 600; white-space: nowrap; }
   .kp-voc svg { width: 18px; height: 18px; fill: var(--accent); }
@@ -291,11 +303,8 @@
   .kp-play svg { width: 26px; height: 26px; fill: var(--on-accent); }
   .kp-time { color: var(--dim); font-size: 13px; font-variant-numeric: tabular-nums; min-width: 38px; }
   #kpSeek { width: 100%; accent-color: var(--accent); }
-  .kp-nudge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
-  .kp-nudge button { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--paper); }
   @media (max-width: 640px) {
     .kp-bar { grid-template-columns: auto auto 1fr auto; }
-    .kp-nudge { grid-column: 1 / 4; justify-content: flex-start; }
     .kp-voc { grid-column: 4; justify-self: end; }
     .kp-stage.two { gap: 0 12px; padding: 0 10px; }
   }
@@ -729,6 +738,16 @@
   .p-body:-webkit-full-screen .p-stage[data-fit="square"] { aspect-ratio: auto; max-height: none; }
   .p-body:fullscreen .p-stage[data-fit="square"] video { width: auto; height: 100%; aspect-ratio: 4 / 3; }
   .p-body:-webkit-full-screen .p-stage[data-fit="square"] video { width: auto; height: 100%; aspect-ratio: 4 / 3; }
+  /* Full screen is really full screen: just the picture. The buttons (screen size, subtitles, exit)
+     float at the top over it and fade out when the mouse sits still, the description's hidden. */
+  .p-body:fullscreen { position: relative; overflow: hidden; }
+  .p-body:fullscreen .p-desc { display: none; }
+  .p-body:fullscreen .p-foot { position: absolute; top: 0; left: 0; right: 0; z-index: 4; margin: 0; padding: 14px 18px; background: rgba(0,0,0,.6); transition: opacity .25s ease; }
+  .p-body:-webkit-full-screen { position: relative; overflow: hidden; }
+  .p-body:-webkit-full-screen .p-desc { display: none; }
+  .p-body:-webkit-full-screen .p-foot { position: absolute; top: 0; left: 0; right: 0; z-index: 4; margin: 0; padding: 14px 18px; background: rgba(0,0,0,.6); transition: opacity .25s ease; }
+  .p-body.fs-idle .p-foot { opacity: 0; pointer-events: none; }
+  .p-body.fs-idle { cursor: none; }
   .p-prompt { position: absolute; right: 18px; bottom: 68px; z-index: 3; }
   .p-prompt[hidden] { display: none; }
   .p-prompt .btn { min-width: 210px; padding: 14px 28px; font-size: 18px; font-weight: 700; box-shadow: 0 6px 24px rgba(0,0,0,.45); }
@@ -1251,7 +1270,6 @@
     <span class="kp-time" id="kpNow">0:00</span>
     <input type="range" id="kpSeek" min="0" max="100" step="0.1" value="0" aria-label="Skip around the song">
     <span class="kp-time" id="kpEnd">0:00</span>
-    <div class="kp-nudge" title="If the words are early or late"><button type="button" id="kpEarly" aria-label="Lyrics earlier">&minus;</button><span id="kpOff">Timing 0.0s</span><button type="button" id="kpLate" aria-label="Lyrics later">+</button></div>
     <button type="button" class="kp-voc" id="kpVoc" aria-pressed="false" title="Switch between the song with the singer's vocals and the instrumental"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg><span id="kpVocText">Vocals</span></button>
   </div>
   <audio id="kpAudio" preload="auto"></audio>
@@ -1360,6 +1378,17 @@
     </div>
     <p class="yt-err" id="ytErr2" hidden></p>
     <div class="dlg-acts"><button class="btn ghost push" id="ytBack">Different link</button><button class="btn ghost" id="ytNah">Nah</button><button class="btn" id="ytGo">Download it</button></div>
+  </div>
+  <div id="ytProg" hidden>
+    <div class="yt-card">
+      <img id="ytpThumb" alt="" referrerpolicy="no-referrer">
+      <div><b id="ytpName"></b><span id="ytpWhere"></span></div>
+    </div>
+    <div class="yt-pbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="ytpBar"><i id="ytpFill"></i></div>
+    <div class="yt-pline"><b id="ytpPct">0%</b><span id="ytpInfo">Starting...</span></div>
+    <p class="yt-err" id="ytErr3" hidden></p>
+    <p class="yt-note" id="ytpNote">Closing this doesn't stop it, it keeps downloading on the Pi.</p>
+    <div class="dlg-acts"><button class="btn ghost push" id="ytpCancel">Cancel download</button><button class="btn" id="ytpClose">Close</button></div>
   </div>
 </dialog>
 
@@ -1682,6 +1711,7 @@ self.onmessage = async (e) => {
   const GB = 1000 ** 3;
 
   const state = {
+    fromYouTube: new Set(), // keys of videos from the YouTube downloader: their own section, never a show
     files: [],
     used: 0,
     limit: 8 * GB,       // replaced by what the Worker reports
@@ -1785,9 +1815,12 @@ self.onmessage = async (e) => {
   // Anime arcs come after any seasons, in story order: the order the Pi looked up (its list of the
   // big anime's arcs, or Wikipedia), then by first episode number, or by when they were uploaded
   // if every arc starts back at episode 1. Arc tabs are numbered 1000 and up.
+  // YouTube downloads go in "From YouTube" and never join (or start) a show, whatever they're called.
+  const isYT = (f) => !!f && state.fromYouTube.has(f.key);
   function groupFiles(files) {
-    const shows = new Map(), other = [];
+    const shows = new Map(), other = [], youtube = [];
     for (const f of files) {
+      if (isYT(f)) { youtube.push(f); continue; }
       const info = isVideo(f) ? parseName(f.name) : null;
       if (!info || !info.show || info.season === undefined) { other.push(f); continue; }
       const id = info.show.toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -1817,7 +1850,7 @@ self.onmessage = async (e) => {
       show.hasArcs = arcs.length > 0;
       delete show.arcs;
     }
-    return { shows: list, other };
+    return { shows: list, other, youtube };
   }
   // "3 arcs", "2 seasons", or both.
   function partsLabel(show) {
@@ -1851,6 +1884,7 @@ self.onmessage = async (e) => {
   }
   // The name shown for a file. Episodes without a name in the file get theirs from TVmaze.
   const titleOf = (f) => {
+    if (isYT(f)) return f.name.replace(/\.[^.]+$/, ""); // the video's own YouTube title
     if (!isVideo(f)) return f.name;
     const title = prettyTitle(f.name), info = parseName(f.name);
     if (info.season !== undefined && !info.episodeName) { const ep = tvEpisode(f); if (ep && ep.name) return `${title}: ${ep.name}`; }
@@ -2262,7 +2296,7 @@ self.onmessage = async (e) => {
   function folderOf(f) {
     const place = state.meta.place;
     let id = place[f.key];
-    if (id === undefined && isVideo(f)) { const sid = showIdOfName(f.name); if (sid) id = place["show:" + sid]; }
+    if (id === undefined && isVideo(f) && !isYT(f)) { const sid = showIdOfName(f.name); if (sid) id = place["show:" + sid]; }
     return id && state.meta.folders[id] ? id : "";
   }
   function folderPath(id) {
@@ -2350,7 +2384,7 @@ self.onmessage = async (e) => {
     const out = [];
     const walk = (parent) => { for (const id of childFolders(parent)) { out.push({ key: "folder:" + id, what: { kind: "folder", id }, label: state.meta.folders[id].name, sub: `Folder, in ${whereName(state.meta.folders[id].parent || "")}` }); walk(id); } };
     walk("");
-    const { shows, other } = groupFiles(state.files);
+    const { shows, other, youtube } = groupFiles(state.files);
     for (const show of shows) {
       const at = state.meta.place["show:" + show.id];
       out.push({ key: "show:" + show.id, what: { kind: "show", id: show.id, name: show.name }, label: show.name,
@@ -2362,6 +2396,7 @@ self.onmessage = async (e) => {
       }
     }
     for (const f of other) out.push({ key: "file:" + f.key, what: { kind: "file", f }, label: titleOf(f), sub: `${isVideo(f) ? "Video" : "Photo"}, in ${whereName(folderOf(f))}` });
+    for (const f of youtube) out.push({ key: "file:" + f.key, what: { kind: "file", f }, label: titleOf(f), sub: `From YouTube, in ${whereName(folderOf(f))}` });
     return words.length ? out.filter((c) => fits(c.label)) : out;
   }
   function paintMoveItems() {
@@ -2532,7 +2567,19 @@ self.onmessage = async (e) => {
     } else if (v && v.webkitEnterFullscreen) v.webkitEnterFullscreen();
   }
   $("fsBtn").addEventListener("click", toggleFullscreen);
-  const onFs = () => { $("fsBtn").textContent = fsElement() === $("pBody") ? "Exit full screen" : "Full screen"; };
+  let fsIdle = 0;
+  const fsWake = () => {
+    const body = $("pBody");
+    body.classList.remove("fs-idle");
+    clearTimeout(fsIdle);
+    if (fsElement() === body) fsIdle = setTimeout(() => { if (!body.querySelector(".p-foot:hover, .p-foot :focus-visible, .p-foot select:focus")) body.classList.add("fs-idle"); }, 2500);
+  };
+  for (const ev of ["mousemove", "pointerdown", "keydown", "touchstart"]) $("pBody").addEventListener(ev, fsWake, { passive: true });
+  const onFs = () => {
+    $("fsBtn").textContent = fsElement() === $("pBody") ? "Exit full screen" : "Full screen";
+    fsWake();
+    if (fsElement() !== $("pBody")) { clearTimeout(fsIdle); $("pBody").classList.remove("fs-idle"); }
+  };
   document.addEventListener("fullscreenchange", onFs);
   document.addEventListener("webkitfullscreenchange", onFs);
 
@@ -3540,7 +3587,7 @@ self.onmessage = async (e) => {
   // The home screen, split up: Shows, Movies, Videos and Photos, each with its own boxes.
   // The chips at the top show just one kind. Newest upload first, or A to Z.
   let shelfPick = (() => { try { return localStorage.getItem("mocloud-shelf") || "all"; } catch { return "all"; } })();
-  function shelves(shows, other, folderGrid) {
+  function shelves(shows, other, folderGrid, youtube = []) {
     const movies = [], videos = [], photos = [], docs = [];
     for (const f of other) {
       if (!isVideo(f)) { (isImage(f) ? photos : docs).push(f); continue; }
@@ -3560,6 +3607,7 @@ self.onmessage = async (e) => {
         ]);
       }, true],
       ["videos", "Videos", videos.length, () => order(videos.map((f) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
+      ["youtube", "From YouTube", youtube.length, () => order(youtube.map((f) => ({ name: titleOf(f), at: +new Date(f.uploaded) || 0, el: () => tile(f, titleOf(f)) }))), false],
       ["photos", "Photos", photos.length, () => order(photos.map((f) => ({ name: f.name, at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
       ["files", "Files", docs.length, () => order(docs.map((f) => ({ name: f.name, at: +new Date(f.uploaded) || 0, el: () => tile(f) }))), false],
     ].filter((g) => g[2]);
@@ -3767,7 +3815,7 @@ self.onmessage = async (e) => {
     const found = state.q ? searchMatches(state.q) : null; // searching looks through every folder
     const here = found ? found.files : state.files.filter((f) => folderOf(f) === view); // what's in the folder being looked at
     const parts = [];
-    const { shows, other } = groupFiles(here);
+    const { shows, other, youtube } = groupFiles(here);
     for (const show of shows) tvWant(show.id, show.name);
     const openedShow = !found && state.show ? shows.find((s) => s.id === state.show) : null;
     if (!found && state.show && !openedShow) state.show = ""; // its episodes were moved or deleted
@@ -3787,12 +3835,12 @@ self.onmessage = async (e) => {
       if (!view) { const row = continueRow(); if (row) parts.push(row); }
       let folderGrid = null;
       if (subfolders.length) { folderGrid = gridOf(subfolders.map(folderCard)); folderGrid.classList.add("folder-grid"); }
-      parts.push(...shelves(shows, other, folderGrid));
+      parts.push(...shelves(shows, other, folderGrid, youtube));
     } else if (subfolders.length) { const g = gridOf(subfolders.map(folderCard)); g.classList.add("folder-grid"); parts.push(g); }
     if (!found) {
       // home screen and show pages are done above
     } else if (!shows.length) {
-      if (other.length) parts.push(gridOf(other.map((f) => tile(f)))); // nothing to group: plain grid
+      if (other.length || youtube.length) parts.push(gridOf([...other, ...youtube].map((f) => tile(f)))); // nothing to group: plain grid
     } else {
       parts.push(...shows.map((show) => section("show:" + show.id, show.name, show.count, [tvLine(show), ...
         show.seasons.flatMap((season) => {
@@ -3803,6 +3851,7 @@ self.onmessage = async (e) => {
           }))];
         })].filter(Boolean))));
       if (other.length) parts.push(section("other", "Other", other.length, [gridOf(other.map((f) => tile(f)))]));
+      if (youtube.length) parts.push(section("youtube", "From YouTube", youtube.length, [gridOf(youtube.map((f) => tile(f, titleOf(f))))]));
     }
     grid.replaceChildren(...parts);
     requestAnimationFrame(fitDescs);
@@ -3854,6 +3903,7 @@ self.onmessage = async (e) => {
     state.animeIds = data.anime && typeof data.anime === "object" ? data.anime : {};
     state.arcOrder = data.arcOrder && typeof data.arcOrder === "object" ? data.arcOrder : {};
     state.youtube = Array.isArray(data.youtube) ? data.youtube : [];
+    state.fromYouTube = new Set(Array.isArray(data.fromYouTube) ? data.fromYouTube : []);
     state.karaoke = data.karaoke && typeof data.karaoke === "object" ? data.karaoke : null;
     await loadMeta();
     storageHeadsUp();
@@ -4344,8 +4394,14 @@ self.onmessage = async (e) => {
     }
     parts.push(stor);
 
+    if (backend.id === "flash") parts.push(dropboxCard(state.dropbox));
+    parts.push(modesCard());
+    parts.push(gamesCard());
+    parts.push(subsCard());
+    parts.push(devCard());
+    parts.push(dnaCard());
+    // Lighter download copies last: set once and forget
     if (backend.id === "flash") {
-      parts.push(dropboxCard(state.dropbox));
     } else if (backend.id !== "pi") {
       parts.push(card("Download copies", "These live on the Pi. Switch to the Pi up top to use them."));
     } else if (state.offline) {
@@ -4355,11 +4411,6 @@ self.onmessage = async (e) => {
     } else {
       parts.push(lightCard(setUI.data.light));
     }
-    parts.push(subsCard());
-    parts.push(dnaCard());
-    parts.push(modesCard());
-    parts.push(gamesCard());
-    parts.push(devCard());
     body.replaceChildren(...parts);
   }
 
@@ -5089,12 +5140,12 @@ self.onmessage = async (e) => {
   const yt = { info: null, to: "pi", busy: false };
   const fmtLen = (secs) => { secs = Math.round(secs || 0); const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s2 = secs % 60;
     return h ? `${h}:${String(m).padStart(2, "0")}:${String(s2).padStart(2, "0")}` : `${m}:${String(s2).padStart(2, "0")}`; };
-  async function ytCall(to, path, body, timeout = 150000) {
+  async function ytCall(to, path, body, timeout = 150000, method) {
     const base = to === "flash" ? BACKENDS.flash.url : BACKENDS.pi.url;
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeout);
     let res;
     try {
-      res = await fetch(base + path, { method: body ? "POST" : "GET", signal: ctrl.signal,
+      res = await fetch(base + path, { method: method || (body ? "POST" : "GET"), signal: ctrl.signal,
         headers: { "X-Passcode": to === "flash" ? flashPin : piPasscode(), ...(body ? { "Content-Type": "application/json" } : {}) },
         body: body ? JSON.stringify(body) : undefined });
     } catch { throw new Error(ctrl.signal.aborted ? "YouTube's taking too long. Try again in a bit." : "Can't reach the Pi rn."); }
@@ -5105,8 +5156,57 @@ self.onmessage = async (e) => {
     return data;
   }
   function ytStage(sure) {
-    $("ytAsk").hidden = sure; $("ytSure").hidden = !sure;
+    $("ytAsk").hidden = sure; $("ytSure").hidden = !sure; $("ytProg").hidden = true;
     $("ytErr").hidden = $("ytErr2").hidden = true;
+  }
+  // After Download: the window stays open with the progress, straight from the Pi every second.
+  function ytProgress(job) {
+    clearTimeout(yt.timer);
+    Object.assign(yt, { job: job.id, jobTo: yt.to, seen: false, finished: false });
+    $("ytAsk").hidden = $("ytSure").hidden = true; $("ytProg").hidden = false;
+    $("ytpThumb").src = yt.info.thumb || ""; $("ytpThumb").hidden = !yt.info.thumb;
+    $("ytpName").textContent = yt.info.title;
+    $("ytpWhere").textContent = "To " + (yt.to === "flash" ? "the flash drive" : "the Pi");
+    $("ytErr3").hidden = true; $("ytpNote").hidden = false;
+    $("ytpCancel").hidden = false; $("ytpCancel").disabled = false; $("ytpClose").textContent = "Close";
+    ytShowJob({ state: "queued", progress: 0 });
+    ytPoll();
+  }
+  function ytShowJob(j) {
+    const pct = j.state === "saving" ? 100 : Math.floor((j.progress || 0) * 100);
+    const bar = $("ytpBar"); bar.classList.toggle("wait", j.state === "queued"); bar.classList.toggle("done", !!j.done);
+    $("ytpFill").style.width = (j.done ? 100 : pct) + "%"; bar.setAttribute("aria-valuenow", String(j.done ? 100 : pct));
+    $("ytpPct").textContent = j.done ? "100%" : j.state === "queued" ? "" : pct + "%";
+    const got = j.size ? `${fmtSize((j.progress || 0) * j.size)} of ${fmtSize(j.size)}` : "";
+    const eta = j.eta ? (j.eta >= 60 ? `${Math.round(j.eta / 60)} min left` : `${Math.max(1, Math.round(j.eta))} sec left`) : "";
+    $("ytpInfo").textContent = j.done ? "I'm done. It's in ur library." :
+      j.state === "queued" ? "Getting it from YouTube..." :
+      j.state === "converting" ? "Putting the picture and sound together" :
+      j.state === "saving" ? "Saving it" : [got, j.speed ? fmtRate(j.speed) : "", eta].filter(Boolean).join(" · ") || "Downloading";
+  }
+  async function ytPoll() {
+    if (!$("ytDlg").open || !yt.job || yt.finished) return;
+    try {
+      const d = await ytCall(yt.jobTo, "/api/yt", null, 10000);
+      const j = (d.jobs || []).find((x) => x.id === yt.job);
+      if (j && j.state === "failed") {
+        yt.finished = true;
+        $("ytErr3").textContent = j.error || "Couldn't download it."; $("ytErr3").hidden = false;
+        $("ytpInfo").textContent = ""; $("ytpPct").textContent = ""; $("ytpBar").classList.remove("wait");
+        $("ytpCancel").hidden = true; $("ytpNote").hidden = true; $("ytpClose").textContent = "Close";
+        return;
+      }
+      if (j) { yt.seen = true; ytShowJob(j); }
+      else if (yt.seen || yt.polls > 2) {  // gone from the list: it's in the library now
+        yt.finished = true;
+        ytShowJob({ done: true });
+        $("ytpCancel").hidden = true; $("ytpNote").hidden = true; $("ytpClose").textContent = "Bet";
+        if ((yt.jobTo === "flash") === (backend.id === "flash")) refresh().catch(() => {});
+        return;
+      }
+      yt.polls = (yt.polls || 0) + 1;
+    } catch {}
+    yt.timer = setTimeout(ytPoll, 1000);
   }
   function openYT() {
     yt.info = null; yt.to = "pi";
@@ -5145,9 +5245,9 @@ self.onmessage = async (e) => {
     }
     yt.busy = true; $("ytGo").disabled = true; $("ytGo").textContent = "Starting...";
     try {
-      await ytCall(yt.to, "/api/yt/get", { url: yt.info.url });
-      $("ytDlg").close();
-      toast(`Downloading to ${yt.to === "flash" ? "the flash drive" : "the Pi"}. It shows up in ur library when it's done.`);
+      const job = await ytCall(yt.to, "/api/yt/get", { url: yt.info.url });
+      yt.polls = 0;
+      ytProgress(job);
       if ((yt.to === "flash") === (backend.id === "flash")) refresh().catch(() => {});
     } catch (e) {
       $("ytErr2").textContent = e.message; $("ytErr2").hidden = false;
@@ -5160,6 +5260,15 @@ self.onmessage = async (e) => {
   $("ytNah").addEventListener("click", () => $("ytDlg").close());
   $("ytBack").addEventListener("click", () => { ytStage(false); $("ytUrl").focus(); });
   $("ytGo").addEventListener("click", ytGo);
+  $("ytpClose").addEventListener("click", () => $("ytDlg").close());
+  $("ytDlg").addEventListener("close", () => { clearTimeout(yt.timer); yt.job = null; });
+  $("ytpCancel").addEventListener("click", async () => {
+    if (!yt.job) return;
+    $("ytpCancel").disabled = true;
+    try { await ytCall(yt.jobTo, `/api/yt/${encodeURIComponent(yt.job)}`, null, 10000, "DELETE"); toast("Cancelled it."); $("ytDlg").close(); }
+    catch (e) { toast(e.message, true); $("ytpCancel").disabled = false; }
+    refresh().catch(() => {});
+  });
   document.querySelectorAll(".yt-where button").forEach((b) => b.addEventListener("click", () => { yt.to = b.dataset.to; ytWhere(); }));
 
   // ---------- File DNA ----------
@@ -5418,7 +5527,7 @@ self.onmessage = async (e) => {
   function renderDnaHome(d) {
     $("dnaTitle").textContent = "File DNA";
     const parts = [];
-    const top = card(d.storage === "flash" ? "On the flash drive" : "On the Pi", "Every file gets an identity of its own. Fingerprints and checks run in the background and pause while u're watching or uploading.");
+    const top = card(d.storage === "flash" ? "On the flash drive" : "On the Pi", "Every file gets an identity of its own. Fingerprints and checks run in the background and pause while you're watching or uploading.");
     const stats = el("div", "dna-stats");
     const stat = (n, label) => { const x = el("div", ""); x.append(el("b", "", String(n)), el("span", "", label)); stats.append(x); };
     stat(d.files, "files with an identity");
@@ -5615,8 +5724,8 @@ self.onmessage = async (e) => {
       const open = g.open.filter((s) => g.game === "uno" || s !== "board");
       const status = g.phase === "lobby" ? (open.length ? "Waiting for " + open.map(seatName).join(", ") : "Starting")
         : g.phase === "over" ? "Finished" : "Playing";
-      what.append(el("b", "", GAME_NAMES[g.game] + (g.game === "uno" ? ` · ${g.players} players` : g.mode === "pi" ? " · vs MoCloud" : g.mode === "here" ? " · one device" : "")),
-        el("span", "", status + (g.mine && g.mine.length ? ` · u're ${g.mine.filter((s) => s !== "board").length ? seatName(g.mine[0]) : "the board"}` : "")));
+      what.append(el("b", "", GAME_NAMES[g.game] + (g.game === "uno" ? ` · ${g.players} players${g.mode === "solo" ? " · solo test" : ""}` : g.mode === "pi" ? " · vs MoCloud" : g.mode === "here" ? " · one device" : "")),
+        el("span", "", status + (g.mine && g.mine.length ? ` · you're ${g.mine.filter((s) => s !== "board").length ? seatName(g.mine[0]) : "the board"}` : "")));
       const b = el("button", "btn small", g.mine && g.mine.length ? "Rejoin" : g.phase === "lobby" ? "Join" : "Watch"); b.type = "button";
       b.addEventListener("click", () => gameJoin(g.code));
       row.append(el("span", "gm-code", g.code), what, b);
@@ -5656,7 +5765,7 @@ self.onmessage = async (e) => {
     return l;
   }
   function gameSetup(kind) {
-    const o = { players: 2, rules: { stack: false, drawTill: false, jumpIn: false, sevenO: false }, mode: "here", level: "medium" };
+    const o = { players: 2, rules: { stack: false, drawTill: false, jumpIn: false, sevenO: false }, mode: "here", level: "medium", solo: false };
     try { Object.assign(o.rules, JSON.parse(localStorage.getItem("mocloud-uno-rules")) || {}); } catch {}
     const dlg = $("gameSetup"), B = $("gsBody");
     const draw = () => {
@@ -5668,6 +5777,8 @@ self.onmessage = async (e) => {
         parts.push(seg([[2, "2"], [3, "3"], [4, "4"]], o.players, (v) => { o.players = v; draw(); }));
         parts.push(el("p", "gs-label", "House rules (optional)"));
         for (const [k, t, d] of UNO_HOUSE) parts.push(gsOpt("checkbox", k, o.rules[k], t, d, (on) => { o.rules[k] = on; }));
+        parts.push(el("p", "gs-label", "Testing it?"));
+        parts.push(gsOpt("checkbox", "solo", o.solo, "Test it solo", "MoCloud plays everyone except Player 1, so all u need is ur phone and the board (the Apple TV or an iPad).", (on) => { o.solo = on; }));
       } else {
         parts.push(el("p", "gs-sub", "Four in a row wins. Players take turns going first."));
         parts.push(el("p", "gs-label", "How u playing?"));
@@ -5689,7 +5800,7 @@ self.onmessage = async (e) => {
         go.disabled = true;
         try {
           if (kind === "uno") try { localStorage.setItem("mocloud-uno-rules", JSON.stringify(o.rules)); } catch {}
-          const v = await gameApi("/api/games", { game: kind, players: o.players, rules: o.rules, mode: o.mode, level: o.level, device: gameDevice() });
+          const v = await gameApi("/api/games", { game: kind, players: o.players, rules: o.rules, mode: o.mode, level: o.level, solo: kind === "uno" && o.solo, device: gameDevice() });
           dlg.close();
           openGame(v.code, v);
         } catch (e) { toast(e.message, true); go.disabled = false; }
@@ -5807,7 +5918,7 @@ self.onmessage = async (e) => {
     const v = GM.view;
     if (!v) return;
     const role = gameRole(v);
-    const who = role === "board" ? "u're the board" : role === "watch" ? "watching" : v.game === "c4" && v.mode === "here" ? "one device" : "u're " + seatName(role);
+    const who = role === "board" ? "you're the board" : role === "watch" ? "watching" : v.game === "c4" && v.mode === "here" ? "one device" : "you're " + seatName(role);
     $("gpSub").textContent = GM.offline ? "Can't reach the Pi, reconnecting..." : `Code ${v.code} · ${who}`;
   }
   function renderGame() {
@@ -5870,10 +5981,9 @@ self.onmessage = async (e) => {
     }
     const say = el("div", "c4-say" + (over ? " win" : ""));
     if (over) say.textContent = st.winner === "draw" ? "Board's full. It's a draw." :
-      v.mode === "pi" ? (st.winner === "p1" ? "U beat MoCloud!" : "MoCloud got u this time.") :
-      label(st.winner) === "U" ? "U won!" : `${label(st.winner)} wins!`;
+      v.mode === "pi" && st.winner === "p2" ? "Oh nah ur trash lmao" : `${seatName(st.winner)} ur him fr`;
     else if (st.thinking) { say.textContent = "MoCloud's thinking"; const d = el("span", "c4-think seat-p2"); d.append(el("i"), el("i"), el("i")); say.append(d); }
-    else say.textContent = myTurn ? (v.mode === "here" ? `${seatName(st.turn)}, ur turn` : "Ur turn") : `${label(st.turn)}'s turn`;
+    else say.textContent = `${seatName(st.turn)} its ur turn gang`;
     const shell = el("div", "c4-shell");
     const body = el("div", "c4-body");
     const grid = el("div", "c4-grid");
@@ -5975,7 +6085,7 @@ self.onmessage = async (e) => {
     if (st.color) ring.style.setProperty("--cur", COLOR_HEX[st.color]);
     ring.append(unoCard(st.top));
     pile.append(ring);
-    const turn = el("div", "uh-turn" + (myTurn ? " me" : ""), st.pickColor ? "Pick the first colour" : myTurn ? "Ur turn" : `${seatName(st.turn)}'s turn`);
+    const turn = el("div", "uh-turn" + (myTurn ? " me" : ""), st.pickColor ? "Pick the first colour" : `${seatName(st.turn)} its ur turn gang`);
     mid.append(pile, turn);
     if (st.color) mid.append(el("div", "uh-note", `Colour: ${COLOR_NAMES[st.color]}` + (st.dir === -1 && st.order.length > 2 ? " · going the other way" : "")));
     if (myTurn && st.pending) mid.append(el("div", "uh-warn", `+${st.pending} coming at u` + (v.rules.stack ? ". Stack one or take it" : "")));
@@ -6159,7 +6269,7 @@ self.onmessage = async (e) => {
   function renderUnoEnd(v, role) {
     const st = v.state, w = st.roundWinner || st.winner, over = v.phase === "over";
     const x = el("div", `ux seat-${w}`);
-    const h = el("h2"); h.append(el("em", "", seatName(w)), document.createTextNode(over ? " won the game!" : " won the round"));
+    const h = el("h2"); h.append(el("em", "", seatName(w)), document.createTextNode(over ? " ur him fr" : " won the round"));
     x.append(h, el("p", "ux-pts", over ? `${st.scores[w]} points. GG.` : `+${st.roundPoints} points from wat everyone was left holding. First to ${v.target} wins.`));
     const table = el("div", "ux-table");
     for (const s of [...st.order].sort((a, b) => st.scores[b] - st.scores[a])) {
@@ -6211,9 +6321,9 @@ self.onmessage = async (e) => {
         "U can draw even if u have a card that would work."]),
       h("Action cards"), ul(["Skip: the next player loses their turn.", "Reverse: play switches direction. With 2 players it works like a Skip, so u go again.",
         "Draw Two: the next player draws 2 and loses their turn.", "Wild: u pick the colour that's in play.",
-        "Wild Draw Four: u pick the colour, and the next player draws 4 and loses their turn. U're only allowed to play it when u have no card matching the colour in play."]),
+        "Wild Draw Four: u pick the colour, and the next player draws 4 and loses their turn. You're only allowed to play it when u have no card matching the colour in play."]),
       h("Challenging a Wild Draw Four"), p("Got hit with a Wild Draw Four? U can challenge it instead of drawing. If they were bluffing (they had a card of the colour in play), they draw the 4 and u play as normal. If they played it fair, u draw 6 and lose ur turn."),
-      h("Saying UNO"), p("When u're about to have one card left, tap UNO (before or right after u play ur second-to-last card). If someone catches u before the next player goes, u draw 2."),
+      h("Saying UNO"), p("When you're about to have one card left, tap UNO (before or right after u play ur second-to-last card). If someone catches u before the next player goes, u draw 2."),
       h("Ending a round"), ul(["The round ends when someone plays their last card. If it was a Draw Two or Wild Draw Four, the next player still draws.",
         "Scoring: number cards are worth their number, Skip, Reverse and Draw Two are worth 20, and Wilds and Wild Draw Fours are worth 50.",
         "If the draw pile runs out, the discard pile (except the top card) is shuffled into a new one."]),
@@ -6226,6 +6336,8 @@ self.onmessage = async (e) => {
   // Songs come from YouTube Music's song search (the album versions, no music-video intros). The Pi
   // saves each as an MP3 with its timed lyrics (and an English translation when it isn't in
   // English). Every song is also kept on this device, so karaoke works with no Wi-Fi.
+  // The old timing − / + settings (that control is gone): cleared off this device.
+  try { Object.keys(localStorage).filter((k) => k.startsWith("mocloud-kar-offset-")).forEach((k) => localStorage.removeItem(k)); } catch {}
   const KAR_CACHE = "mocloud-karaoke-v1";
   const KAR_FILES = ["song.json", "audio.mp3", "cover.jpg", "instrumental.mp3"];
   const KAR_NEEDED = ["song.json", "audio.mp3"]; // the cover and the instrumental are extras
@@ -6334,10 +6446,13 @@ self.onmessage = async (e) => {
       const list = el("div", "kar-list");
       for (const r of kar.results) {
         const b = el("button", "kar-row"); b.type = "button";
+        // The song, who sings it, then its album and when it came out (from Apple's music search).
         const mid = el("div", "");
-        mid.append(el("b", "", r.title), el("span", "", [r.artist, r.duration ? fmtLen(r.duration) : ""].filter(Boolean).join(" · ")));
+        mid.append(el("b", "", r.name || r.title), el("span", "kar-by", r.artist || "Unknown artist"));
+        const more = [r.album, karDate(r.released), r.duration ? fmtLen(r.duration) : ""].filter(Boolean).join(" · ");
+        if (more) mid.append(el("span", "kar-more", more));
         const have = kar.songs.some((x) => x.vid === r.id);
-        b.append(karRowArt(r.thumb), mid, el("span", "kar-tag" + (have ? " gold" : ""), have ? "In ur songs" : "Sing it"));
+        b.append(karRowArt(r.thumb), mid, have ? el("span", "kar-tag gold", "In ur songs") : el("span", ""));
         b.addEventListener("click", () => have ? karPlay(kar.songs.find((x) => x.vid === r.id)) : karAsk(r));
         list.append(b);
       }
@@ -6410,18 +6525,24 @@ self.onmessage = async (e) => {
 
   // "Karaoke it?": wat the song is and whether its lyrics follow along, before anything's saved.
   let karAsking = null;
+  function karDate(d) {
+    if (!/^\d{4}-\d{2}-\d{2}/.test(d || "")) return "";
+    const t = new Date(d.slice(0, 10) + "T12:00:00");
+    return isNaN(t) ? "" : t.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
   async function karAsk(r) {
     karAsking = r;
-    $("ksCover").src = r.thumb || ""; $("ksTitle").textContent = r.title; $("ksBy").textContent = r.artist || "";
+    $("ksCover").src = r.thumb || ""; $("ksTitle").textContent = r.name || r.title; $("ksBy").textContent = r.artist || "";
     $("ksLyr").className = "ks-lyr"; $("ksLyr").textContent = "Checking the song and its lyrics...";
     $("ksErr").hidden = true; $("ksGo").disabled = true;
     $("karSure").showModal();
     try {
       const i = await karApi("/api/karaoke/check", { id: r.id });
       if (karAsking !== r) return;
-      $("ksTitle").textContent = i.title; $("ksBy").textContent = [i.artist, i.duration ? fmtLen(i.duration) : ""].filter(Boolean).join(" · ");
+      $("ksTitle").textContent = i.title;
+      $("ksBy").textContent = [i.artist, i.album || r.album, karDate(i.released || r.released), i.duration ? fmtLen(i.duration) : ""].filter(Boolean).join(" · ");
       $("ksLyr").textContent = i.lyrics === "synced" ? "Got the lyrics, they follow along with the song."
-        : i.lyrics === "plain" ? "Got the lyrics, but they aren't timed, so they won't light up as it plays."
+        : i.lyrics === "plain" ? `Got the lyrics${i.lyricsFrom === "Genius" ? " from Genius" : ""}, but they aren't timed, so they won't light up as it plays.`
         : "No lyrics found for this one. It'll just play the song.";
       $("ksLyr").classList.toggle("ok", i.lyrics === "synced");
       $("ksGo").disabled = false;
@@ -6459,7 +6580,6 @@ self.onmessage = async (e) => {
     if (!n.ok) throw new Error("missing");
     return n;
   }
-  const karOffKey = (id) => "mocloud-kar-offset-" + id;
   async function karPlay(sg) {
     let song, audio;
     try {
@@ -6468,8 +6588,6 @@ self.onmessage = async (e) => {
     } catch { return toast("That song isn't saved on this device yet, and the Pi can't be reached rn.", true); }
     kar.saved.add(sg.id);
     kar.song = song;
-    let off = 0; try { off = parseFloat(localStorage.getItem(karOffKey(song.id))) || 0; } catch {}
-    kar.offset = off;
     $("kpTitle").textContent = song.title; $("kpArtist").textContent = song.artist || "";
     const a = $("kpAudio");
     if (a._url) URL.revokeObjectURL(a._url);
@@ -6480,7 +6598,6 @@ self.onmessage = async (e) => {
     let wantInst = false; try { wantInst = localStorage.getItem("mocloud-kar-inst") === "1"; } catch {}
     if (wantInst && song.inst) karSwitch(true, true); // the way u had it last time
     karBuild(song);
-    karShowOffset();
     $("karPlay").hidden = false;
     if (location.hash !== "#sing") history.pushState({ mocloudSing: 1 }, "", "#sing");
     if ("mediaSession" in navigator && typeof MediaMetadata !== "undefined") {
@@ -6491,7 +6608,7 @@ self.onmessage = async (e) => {
     kar.raf = requestAnimationFrame(karTick);
   }
   // Vocals or instrumental. The instrumental can start a little earlier or later than the song, so
-  // the spot u're at carries over and the lyrics shift with it.
+  // the spot you're at carries over and the lyrics shift with it.
   function karShowVoc() {
     const b = $("kpVoc");
     b.setAttribute("aria-pressed", String(!!kar.inst));
@@ -6537,7 +6654,8 @@ self.onmessage = async (e) => {
     return lines.map((l, i) => {
       const next = i + 1 < lines.length ? lines[i + 1].t : length || l.t + 6;
       const chars = (l.text || "").replace(/\s+/g, "").length;
-      return { start: l.t, end: Math.max(l.t + 0.4, Math.min(next - 0.1, l.t + Math.max(1.6, chars * 0.09))) };
+      const end = l.e ? Math.min(next - 0.05, l.e) : Math.min(next - 0.1, l.t + Math.max(1.6, chars * 0.09));
+      return { start: l.t, end: Math.max(l.t + 0.4, end), words: l.w || null };
     });
   }
   function karLineEl(text, words) {
@@ -6575,7 +6693,7 @@ self.onmessage = async (e) => {
           const d = karLineEl(pick(l), pick === origOf ? l.w : null);
           d.addEventListener("click", () => {
             const shift = kar.inst && song.inst ? song.inst.offset || 0 : 0;
-            $("kpAudio").currentTime = Math.max(0, l.t - kar.offset + shift - 0.05); kar.hold = 0;
+            $("kpAudio").currentTime = Math.max(0, l.t + shift - 0.05); kar.hold = 0;
           });
           pane.append(d);
           return d;
@@ -6600,7 +6718,7 @@ self.onmessage = async (e) => {
     $("kpNow").textContent = fmtLen(a.currentTime); $("kpEnd").textContent = fmtLen(dur);
     $("kpIcon").setAttribute("d", a.paused ? "M8 5v14l11-7z" : "M6 5h4v14H6zm8 0h4v14h-4z");
     if (kar.song && kar.song.synced) {
-      const t = a.currentTime - (kar.inst && kar.song.inst ? kar.song.inst.offset || 0 : 0) + kar.offset, T = kar.times;
+      const t = a.currentTime - (kar.inst && kar.song.inst ? kar.song.inst.offset || 0 : 0), T = kar.times;
       let i = -1, lo = 0, hi = T.length - 1;
       while (lo <= hi) { const m = (lo + hi) >> 1; if (T[m].start <= t) { i = m; lo = m + 1; } else hi = m - 1; }
       for (const pane of kar.panes) {
@@ -6610,13 +6728,24 @@ self.onmessage = async (e) => {
         }
         if (i >= 0) {
           const d = L[i], span = T[i];
-          if (d._words && d._words.length) { // word times from the lyrics file itself
+          if (d._words && d._words.length) { // when each word is sung (a word fills while it's sung, up to when its sound stops)
             d._spans.forEach((w, n) => {
-              const ws = d._words[n] ? d._words[n][0] : span.end, we = d._words[n + 1] ? d._words[n + 1][0] : span.end;
+              const W = d._words, ws = W[n] ? W[n][0] : span.end;
+              const we = W[n] && W[n][2] > ws ? W[n][2] : W[n + 1] ? W[n + 1][0] : span.end;
               w.style.setProperty("--p", Math.max(0, Math.min(1, (t - ws) / Math.max(0.05, we - ws))));
             });
           } else {
-            const p = Math.max(0, Math.min(1, (t - span.start) / (span.end - span.start))) * (d._total || 1);
+            // The English side: as far through the line as the singer is (by their words), or by time.
+            let f = Math.max(0, Math.min(1, (t - span.start) / (span.end - span.start)));
+            const W = span.words;
+            if (W && W.length) {
+              let j = -1;
+              while (j + 1 < W.length && W[j + 1][0] <= t) j++;
+              const ws = j >= 0 ? W[j][0] : span.start;
+              const we = j >= 0 && W[j][2] > ws ? W[j][2] : j + 1 < W.length ? W[j + 1][0] : span.end;
+              f = j < 0 ? 0 : Math.min(1, (j + Math.max(0, Math.min(1, (t - ws) / Math.max(0.05, we - ws)))) / W.length);
+            }
+            const p = f * (d._total || 1);
             d._spans.forEach((w) => w.style.setProperty("--p", Math.max(0, Math.min(1, (p - w._from) / w._len))));
           }
         }
@@ -6632,14 +6761,6 @@ self.onmessage = async (e) => {
   $("kpPlay").addEventListener("click", () => { const a = $("kpAudio"); if (a.paused) a.play().catch(() => {}); else a.pause(); });
   $("kpSeek").addEventListener("input", () => { kar.seeking = true; $("kpAudio").currentTime = parseFloat($("kpSeek").value) || 0; kar.hold = 0; });
   $("kpSeek").addEventListener("change", () => { kar.seeking = false; });
-  function karShowOffset() { $("kpOff").textContent = `Timing ${kar.offset > 0 ? "+" : ""}${kar.offset.toFixed(1)}s`; }
-  function karNudge(by) {
-    kar.offset = Math.round((kar.offset + by) * 10) / 10;
-    try { localStorage.setItem(karOffKey(kar.song.id), String(kar.offset)); } catch {}
-    karShowOffset(); kar.cur = -2;
-  }
-  $("kpEarly").addEventListener("click", () => karNudge(-0.25));
-  $("kpLate").addEventListener("click", () => karNudge(0.25));
   document.addEventListener("keydown", (e) => {
     if ($("karPlay").hidden || e.target.tagName === "INPUT") return;
     if (e.key === " ") { e.preventDefault(); $("kpPlay").click(); }
