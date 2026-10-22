@@ -907,6 +907,151 @@
   .gm-hist-row span { color: var(--dim); font-size: 13px; }
   .gm-hist-row small { grid-column: 1 / -1; color: var(--dim); font-size: 13px; }
 
+  .seat-p5 { --seat: #34D399; } .seat-p6 { --seat: #FB923C; }
+  .gm-art.letters { background: radial-gradient(120% 120% at 30% 0%, #3A2E14 0%, #17140C 70%); }
+  .gm-art.life { background: radial-gradient(120% 120% at 70% 0%, #163A2E 0%, #0E1A16 70%); }
+  .ll-dial.mini { width: 132px; pointer-events: none; }
+  .ll-dial.mini .ll-kc b { font-size: 9px; }
+  .ll-dial.mini .ll-kc { box-shadow: 0 2px 0 #9A968C; }
+  .ll-dial.mini .ll-k.down .ll-kc { transform: translateY(2px); }
+  .gm-mini-lp svg { width: 130px; height: auto; display: block; filter: drop-shadow(0 10px 20px rgba(0,0,0,.4)); }
+  /* Letter Lock */
+  .ll { width: min(560px, 100%); margin: 0 auto; padding: 12px 16px 30px; display: grid; gap: 14px; text-align: center; justify-items: stretch; }
+  .ll.ll-board { width: min(1280px, 100%); grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 28px; align-items: center; text-align: left; }
+  .ll-col { display: grid; gap: 14px; align-content: start; }
+  .ll-col.center { justify-items: center; }
+  .ll-catcard { position: relative; padding: 18px 18px 20px; border-radius: 22px; color: #1A1408; text-align: center;
+    background: linear-gradient(160deg, #FFF6E2, #F1DDB5); border: 3px solid #E8C07A; box-shadow: 0 18px 44px rgba(0,0,0,.45), inset 0 0 0 6px #FFF9EE; transform: rotate(-1.2deg); }
+  .ll-catcard::before { content: ""; position: absolute; inset: 10px; border-radius: 14px; border: 1.5px dashed rgba(184,141,69,.55); pointer-events: none; }
+  .ll-catcard-k { font-size: 12px; font-weight: 800; letter-spacing: .16em; color: #B88D45; }
+  .ll-catcard-t { font-size: clamp(24px, 6.5vw, 40px); font-weight: 900; line-height: 1.08; margin-top: 6px; }
+  .ll-catcard.big { padding: 28px 26px 30px; }
+  .ll-catcard.big .ll-catcard-t { font-size: clamp(34px, 4vw, 64px); }
+  .ll-who { font-size: clamp(18px, 3.5vw, 24px); font-weight: 800; color: var(--seat, var(--paper)); }
+  .ll-board .ll-who { font-size: clamp(24px, 2.6vw, 38px); }
+  .ll-who.me { color: var(--accent); }
+  .ll-mode { color: var(--dim); margin: -4px 0 0; }
+  .ll-dial { position: relative; width: min(100%, 420px); aspect-ratio: 1; margin: 0 auto; }
+  .ll-dial.big { width: min(100%, 640px, 74vh); }
+  .ll-rim { position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 50% 38%, #C62F35 0%, #9E1F26 55%, #6E1218 100%);
+    box-shadow: 0 30px 60px rgba(0,0,0,.55), inset 0 -10px 24px rgba(0,0,0,.45), inset 0 8px 18px rgba(255,255,255,.18), 0 0 0 6px #1B1D24, 0 0 0 8px rgba(232,192,122,.6); }
+  .ll-rim::after { content: ""; position: absolute; inset: 21%; border-radius: 50%; background: radial-gradient(circle at 50% 40%, #2A2D36, #121419); box-shadow: inset 0 6px 16px rgba(0,0,0,.7), 0 0 0 4px rgba(0,0,0,.35); }
+  .ll-k { position: absolute; width: 13.2%; aspect-ratio: 1; transform: translate(-50%, -50%) rotate(var(--r)); border: 0; padding: 0; background: none; z-index: 1; }
+  .ll-kc { position: absolute; inset: 0; border-radius: 26% 26% 34% 34%; display: grid; place-items: center;
+    background: linear-gradient(180deg, #FFFFFF, #E4E1DA); box-shadow: 0 6px 0 #9A968C, 0 9px 12px rgba(0,0,0,.45); transition: transform .12s, box-shadow .12s, background .2s; }
+  .ll-kc b { transform: rotate(calc(-1 * var(--r))); font-size: clamp(16px, 4.6vw, 24px); font-weight: 900; color: #16181D; }
+  .ll-dial.big .ll-kc b { font-size: clamp(20px, 2.6vw, 38px); }
+  .ll-k.down .ll-kc { transform: translateY(5px); box-shadow: 0 1px 0 rgba(0,0,0,.6), inset 0 4px 10px rgba(0,0,0,.65), inset 0 0 0 3px var(--seat); background: #23262E; }
+  .ll-k.down .ll-kc b { color: var(--seat); opacity: .9; }
+  .ll-k.seat-board.down .ll-kc { box-shadow: 0 1px 0 rgba(0,0,0,.6), inset 0 4px 10px rgba(0,0,0,.65); }
+  .ll-k.seat-board.down .ll-kc b { color: #6B6F7B; }
+  .ll-k.just .ll-kc { animation: llJust .5s ease-out; }
+  @keyframes llJust { 0% { transform: translateY(-6px) scale(1.18); } 100% { transform: translateY(5px) scale(1); } }
+  .ll-dial.live .ll-k:not(.down) { cursor: pointer; }
+  .ll-dial.live .ll-k:not(.down):active .ll-kc { transform: translateY(4px); box-shadow: 0 2px 0 #9A968C, 0 3px 6px rgba(0,0,0,.4); }
+  .ll-dial.live .ll-k:not(.down) .ll-kc { background: linear-gradient(180deg, #FFF8E6, #F1DDB0); }
+  .ll-core { position: absolute; inset: 27%; border-radius: 50%; display: grid; place-items: center; align-content: center; gap: 0; z-index: 0; }
+  .ll-ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .ll-ring-bg { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 6; }
+  .ll-ring-fill { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke .2s; }
+  .ll-ring-fill.low { stroke: var(--red); }
+  .ll-time { position: relative; font: 800 clamp(32px, 10vw, 56px) ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--paper); line-height: 1; }
+  .ll-dial.big .ll-time { font-size: clamp(44px, 6vw, 92px); }
+  .ll-time.low { color: var(--red); }
+  .ll-core-who { position: relative; color: var(--dim); font-size: 13px; font-weight: 700; margin-top: 4px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ll-dial.big .ll-core-who { font-size: clamp(13px, 1.4vw, 20px); }
+  .ll-players { display: grid; gap: 8px; }
+  .ll-board .ll-players { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .ll-pl { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 14px; background: var(--panel); text-align: left; border: 2px solid transparent; }
+  .ll-pl.on { border-color: var(--seat); box-shadow: 0 0 18px color-mix(in srgb, var(--seat) 30%, transparent); }
+  .ll-pl.out { opacity: .45; }
+  .ll-pl small { grid-column: 2 / -1; color: var(--dim); }
+  .ll-won { display: flex; gap: 4px; }
+  .ll-won i { width: 12px; height: 16px; border-radius: 3px; border: 1.5px solid var(--line); }
+  .ll-won i.got { background: linear-gradient(160deg, #FFF6E2, #E8C07A); border-color: #E8C07A; }
+  .ll-say { display: flex; gap: 10px; }
+  .ll-say .gs-name { margin: 0; }
+  .ll-say .btn { white-space: nowrap; }
+  .ll-bug { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 12px 14px; border-radius: 18px; background: rgba(229,72,77,.14); border: 1.5px solid rgba(229,72,77,.5); }
+  .ll-bugbtn { background: var(--red); color: var(--on-red); font-weight: 800; }
+  .ll-words { display: grid; gap: 6px; text-align: left; }
+  .ll-w { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 12px; background: var(--panel); }
+  .ll-w b { color: var(--seat); font-size: 18px; }
+  .ll-w small { color: var(--dim); }
+  .ll-w.cap span { text-decoration: line-through; opacity: .6; }
+  @media (max-width: 860px) { .ll.ll-board { grid-template-columns: 1fr; } }
+  /* Life Path */
+  .lp { padding: 12px 14px 30px; display: grid; gap: 14px; max-width: 760px; margin: 0 auto; }
+  .lp.lp-board { max-width: none; grid-template-columns: minmax(0, 1fr) minmax(250px, 320px); align-items: start; padding: 14px 18px 24px; }
+  .lp-main { display: grid; gap: 12px; min-width: 0; position: relative; justify-items: center; }
+  .lp-main > .lp-banner { justify-self: stretch; }
+  .lp-board .lp-map { max-width: calc((100vh - 190px) * 1.6); }
+  .lp-choice.on-board { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); width: min(92%, 620px); z-index: 3; animation: lpIn .35s ease-out; }
+  @keyframes lpIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  .lp-map { position: relative; width: 100%; border-radius: 26px; padding: 10px; background: linear-gradient(160deg, #3A2A14, #1B140B);
+    box-shadow: 0 24px 60px rgba(0,0,0,.5), inset 0 0 0 2px rgba(232,192,122,.45); }
+  .lp-svg { display: block; width: 100%; height: auto; border-radius: 18px; overflow: hidden; }
+  .lp-place { font: 800 9px var(--font); letter-spacing: .14em; fill: #fff; text-anchor: middle; paint-order: stroke; stroke: rgba(11,36,20,.55); stroke-width: 3px; }
+  .lp-sign { font: 900 14px var(--font); fill: #475569; text-anchor: middle; }
+  .lp-t { font: 900 8px var(--font); fill: #fff; text-anchor: middle; letter-spacing: .03em; }
+  .lp-t.stop { font-size: 9.5px; }
+  .lp-t.small { font-size: 7px; }
+  .lp-t.big { font-size: 13px; }
+  .lp-t.tiny { font-size: 5.6px; letter-spacing: .08em; }
+  .lp-ico { font-size: 13px; text-anchor: middle; }
+  .lp-num { font: 900 17px var(--font); fill: #fff; text-anchor: middle; dominant-baseline: central; paint-order: stroke; stroke: rgba(0,0,0,.35); stroke-width: 2px; }
+  .lp-num.big { font-size: 22px; }
+  .lp-hub { font-family: var(--font); font-weight: 900; fill: #1A1408; text-anchor: middle; dominant-baseline: central; }
+  .lp-tagt { font: 800 10px var(--font); fill: #0B0D12; text-anchor: middle; }
+  .lp-halo { animation: lpHalo 1.2s ease-in-out infinite alternate; }
+  @keyframes lpHalo { from { opacity: .15; } to { opacity: .55; } }
+  .lp-lastcard-t { width: 224px; height: 40px; display: grid; place-items: center; text-align: center; font: 700 11px/1.2 var(--font); color: #1A1408; overflow: hidden; }
+  .lp-banner { display: flex; gap: 12px; align-items: center; padding: 12px 18px; border-radius: 18px; background: var(--panel); border: 2px solid var(--seat, transparent); }
+  .lp-banner-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--seat, var(--dim)); flex: none; box-shadow: 0 0 14px var(--seat, transparent); }
+  .lp-banner b { flex: 1; font-size: 18px; }
+  .lp-banner.me b { color: var(--accent); }
+  .lp-board .lp-banner b { font-size: clamp(18px, 2vw, 28px); }
+  .lp-last { color: var(--dim); font-size: 14px; white-space: nowrap; }
+  .lp-side { display: grid; gap: 12px; }
+  .lp-dash { padding: 14px; border-radius: 20px; background: var(--panel); border: 2px solid transparent; display: grid; gap: 10px; text-align: left; }
+  .lp-dash.on { border-color: var(--seat); box-shadow: 0 0 24px color-mix(in srgb, var(--seat) 35%, transparent); }
+  .lp-dash.done { opacity: .75; }
+  .lp-dash-h { display: flex; gap: 10px; align-items: center; }
+  .lp-dash-h b { flex: 1; font-size: 17px; }
+  .lp-dash-car { width: 30px; height: 17px; border-radius: 6px; background: var(--seat); border: 1.5px solid #0B0D12; position: relative; flex: none; }
+  .lp-dash-car::after { content: ""; position: absolute; right: 3px; top: 2px; width: 4px; height: 10px; border-radius: 2px; background: #BFE3F5; }
+  .lp-chip { font-size: 12px; padding: 3px 9px; border-radius: 99px; background: var(--panel-2); color: var(--dim); }
+  .lp-bill { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 12px; color: #0F3D22;
+    background: repeating-linear-gradient(135deg, #CDEFD3 0 6px, #C2E8C9 6px 12px); border: 2px solid #4CAF6A; }
+  .lp-bill small { font-weight: 800; letter-spacing: .14em; font-size: 11px; }
+  .lp-bill b { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .lp-cards { display: flex; gap: 8px; flex-wrap: wrap; }
+  .lp-card { flex: 1 1 120px; padding: 9px 11px; border-radius: 12px; background: #FFF9EC; color: #1A1408; display: grid; gap: 2px; border-top: 6px solid #F59E0B; }
+  .lp-card.house { border-top-color: #5EC8D8; }
+  .lp-card small { font-size: 10px; font-weight: 800; letter-spacing: .12em; opacity: .6; }
+  .lp-card b { font-size: 15px; }
+  .lp-card span { font-size: 12px; opacity: .75; }
+  .lp-fam { color: var(--dim); font-size: 13px; }
+  .lp-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .lp-choice.on-board { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .lp-opt { text-align: left; padding: 0; border-radius: 16px; border: 0; background: #FFF9EC; color: #1A1408; display: grid; gap: 4px; overflow: hidden;
+    box-shadow: 0 10px 26px rgba(0,0,0,.35); padding-bottom: 14px; font: inherit; }
+  .lp-opt small { display: block; padding: 8px 14px; background: #F59E0B; color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .14em; }
+  .lp-opt.k-house small { background: #0EA5B7; } .lp-opt.k-fork small { background: #E5484D; } .lp-opt.k-start small { background: #3B82F6; }
+  .lp-opt.nah small { background: #94A3B8; }
+  .lp-opt b { font-size: 19px; padding: 6px 14px 0; }
+  .lp-opt span { font-size: 14px; padding: 0 14px; opacity: .75; }
+  button.lp-opt { cursor: pointer; transition: transform .15s; }
+  button.lp-opt:active { transform: scale(.97); }
+  .lp-spinbtn { justify-self: center; border: 0; background: none; padding: 0; display: grid; justify-items: center; gap: 2px; cursor: pointer; color: var(--paper); }
+  .lp-spinbtn svg { width: min(78vw, 300px); height: auto; filter: drop-shadow(0 16px 30px rgba(232,192,122,.25)); }
+  .lp-spinbtn:active svg { transform: scale(.97); }
+  .lp-spin-hint { font-weight: 800; font-size: 18px; color: var(--accent); animation: lpHalo 1s ease-in-out infinite alternate; }
+  .lp-spin-small { justify-self: center; width: 150px; height: auto; opacity: .9; }
+  .lp-others { display: grid; gap: 10px; }
+  .lp-break { grid-column: 1 / -1; color: var(--dim); }
+  @media (max-width: 900px) { .lp.lp-board { grid-template-columns: 1fr; } .lp-side { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
   /* lobby */
   .lb { width: min(560px, 100%); text-align: center; }
   .lb-title { margin: 0 0 6px; font-size: clamp(26px, 5vw, 38px); }
@@ -4444,7 +4589,6 @@ self.onmessage = async (e) => {
 
     if (backend.id === "flash") parts.push(dropboxCard(state.dropbox));
     parts.push(modesCard());
-    parts.push(gamesCard());
     parts.push(subsCard());
     parts.push(devCard());
     parts.push(dnaCard());
@@ -5630,7 +5774,7 @@ self.onmessage = async (e) => {
   // ---------- Modes (Settings) ----------
   // Extra things MoCloud can do: download a YouTube video, and karaoke.
   function modesCard() {
-    const c = card("Modes", "YouTube to MP4, and karaoke.");
+    const c = card("Modes", "YouTube to MP4, karaoke, and games.");
     const b = el("button", "btn ghost small", "Modes"); b.type = "button";
     b.disabled = !isUrl(BACKENDS.pi.url);
     b.addEventListener("click", openModes);
@@ -5639,6 +5783,7 @@ self.onmessage = async (e) => {
   }
   const YT_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FF3B30" d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8c1.6.4 7.8.4 7.8.4s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z"/></svg>';
   const MIC_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E8C07A" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg>';
+  const GAME_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#5EC8D8" d="M7 6h10a5 5 0 0 1 4.9 6l-1 5a3 3 0 0 1-5.1 1.5L13.6 16h-3.2l-2.2 2.5A3 3 0 0 1 3.1 17l-1-5A5 5 0 0 1 7 6zm1 3v2H6v2h2v2h2v-2h2v-2h-2V9zm7.5 1a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm2.5 2.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5z"/></svg>';
   function modeCard(icon, title, text, label, go) {
     const c = el("div", "set-card mode-card");
     const ic = el("div", "mode-ic"); ic.innerHTML = icon;
@@ -5650,7 +5795,8 @@ self.onmessage = async (e) => {
   function openModes() {
     $("modesBody").replaceChildren(
       modeCard(YT_ICON, "YouTube to MP4", "Paste a link and the Pi downloads the video in the best quality up to 1080p, to the Pi or the flash drive.", "Download a video", openYT),
-      modeCard(MIC_ICON, "Karaoke", "Search for a song, and sing along with lyrics that light up as it plays. Works without Wi-Fi once a song's saved.", "Open karaoke", openKaraoke));
+      modeCard(MIC_ICON, "Karaoke", "Search for a song, and sing along with lyrics that light up as it plays. Works without Wi-Fi once a song's saved.", "Open karaoke", openKaraoke),
+      modeCard(GAME_ICON, "Games", "Connect Four, Uno, Letter Lock and Life Path. Phones are the controllers, and an iPad or the Apple TV is the table.", "Open games", () => openGames()));
     $("modesPage").hidden = false;
     if (location.hash !== "#modes") history.pushState({ mocloudModes: 1 }, "", "#modes");
   }
@@ -5668,7 +5814,7 @@ self.onmessage = async (e) => {
   // every device the moment they happen. A device only ever gets told its own cards.
   const GM = { code: "", view: null, gen: 0, seen: -1, handIds: null, c4Last: "", topLast: null, busy: false, wake: null,
     list: null, listErr: "", listTimer: 0, offline: false };
-  const GAME_NAMES = { c4: "Connect Four", uno: "Uno" };
+  const GAME_NAMES = { c4: "Connect Four", uno: "Uno", letters: "Letter Lock", life: "Life Path" };
   const COLOR_NAMES = { r: "Red", y: "Yellow", g: "Green", b: "Blue" };
   const COLOR_HEX = { r: "#E5484D", y: "#F2C230", g: "#30A46C", b: "#3B82F6" };
   const UNO_HOUSE = [
@@ -5699,14 +5845,6 @@ self.onmessage = async (e) => {
     return data;
   }
 
-  function gamesCard() {
-    const c = card("Games", "Connect Four and Uno. Phones are the controllers, and an iPad or the Apple TV can be the table.");
-    const b = el("button", "btn ghost small", "Games"); b.type = "button";
-    b.disabled = !isUrl(BACKENDS.pi.url);
-    b.addEventListener("click", () => openGames());
-    c.append(b);
-    return c;
-  }
 
   // ----- the Games page -----
   function c4Art() {
@@ -5722,6 +5860,19 @@ self.onmessage = async (e) => {
       u.style.transform = `translate(calc(-50% + ${x}px), -50%) rotate(${rot}deg)`;
       w.append(u);
     });
+    return w;
+  }
+  function llArt() {
+    const d = llDial({ letters: "ABCDEFGHIJKLMNOPRSTW", used: ["C", "H", "M", "S"], words: [{ letter: "C", by: "p2" }, { letter: "H", by: "p3" }, { letter: "M", by: "p1" }, { letter: "S", by: "p4" }] }, null, { big: false });
+    d.classList.add("mini");
+    return d;
+  }
+  function lpArt() {
+    const w = el("div", "gm-mini-lp");
+    const svg = sv("svg", { viewBox: "0 0 240 250" });
+    lpSpinnerSvg(svg, 120, 130, 96, true);
+    svg.querySelector(".lp-wheel").setAttribute("transform", "rotate(-40 120 130)");
+    w.append(svg);
     return w;
   }
   function gameTile(kind, art, title, text) {
@@ -5763,7 +5914,9 @@ self.onmessage = async (e) => {
     const tiles = el("div", "gm-tiles");
     tiles.append(
       gameTile("c4", c4Art(), "Connect Four", "Drop chips, get four in a row. Pass one device around, play against MoCloud, or use two phones."),
-      gameTile("uno", unoArt(), "Uno", "2 to 4 players. Everyone's phone holds their cards, and the board (iPad or Apple TV) shows the table."));
+      gameTile("uno", unoArt(), "Uno", "2 to 4 players. Everyone's phone holds their cards, and the board (iPad or Apple TV) shows the table."),
+      gameTile("letters", llArt(), "Letter Lock", "2 to 6 players. A category, a ticking timer, and 20 letters. Name one, lock its letter, pass the pressure."),
+      gameTile("life", lpArt(), "Life Path", "2 to 4 players. Spin, drive, pick college or work, get married, buy houses. Richest at retirement wins."));
     const going = el("div", "set-card gm-going");
     going.append(el("h3", "", "Games going on"));
     if (GM.listErr && !GM.list) going.append(el("p", "sub", GM.listErr));
@@ -5772,10 +5925,10 @@ self.onmessage = async (e) => {
     for (const g of GM.list || []) {
       const row = el("div", "gm-row");
       const what = el("div", "gm-what");
-      const open = g.open.filter((s) => g.game === "uno" || s !== "board");
+      const open = g.open.filter((s) => g.game !== "c4" || s !== "board");
       const status = g.phase === "lobby" ? (open.length ? "Waiting for " + open.map((s) => seatName(s, {})).join(", ") : "Starting")
         : g.phase === "over" ? "Finished" : "Playing";
-      what.append(el("b", "", GAME_NAMES[g.game] + (g.game === "uno" ? ` · ${g.players} players${g.mode === "solo" ? " · solo test" : ""}` : g.mode === "pi" ? " · vs MoCloud" : g.mode === "here" ? " · one device" : "")),
+      what.append(el("b", "", GAME_NAMES[g.game] + (g.game !== "c4" ? ` · ${g.players} players${g.mode === "solo" ? " · solo test" : ""}` : g.mode === "pi" ? " · vs MoCloud" : g.mode === "here" ? " · one device" : "")),
         el("span", "", status + ((g.taken || []).length ? ` · ${g.taken.join(", ")}` : "") + (g.mine && g.mine.length ? ` · you're in` : "")));
       const b = el("button", "btn small", g.mine && g.mine.length ? "Rejoin" : g.phase === "lobby" ? "Join" : "Watch"); b.type = "button";
       b.addEventListener("click", () => gameJoin(g.code));
@@ -5784,16 +5937,19 @@ self.onmessage = async (e) => {
     }
     // How the last 3 days of Uno went
     const hist = el("div", "set-card gm-going");
-    hist.append(el("h3", "", "Uno, last 3 days"));
+    hist.append(el("h3", "", "Last 3 days"));
     const H = GM.history || [];
-    if (!H.length) hist.append(el("p", "sub", "No finished games yet. They show up here and clear out after 3 days."));
+    if (!H.length) hist.append(el("p", "sub", "No finished games yet (Uno, Letter Lock and Life Path). They show up here and clear out after 3 days."));
     const list = el("div", "gm-hist");
     for (const h of H) {
       const r = el("div", "gm-hist-row");
-      const top = el("div", ""); top.append(el("b", "", h.winner), document.createTextNode(" u him fr"));
+      const top = el("div", ""); top.append(el("b", "", h.winner), document.createTextNode(` u him fr · ${GAME_NAMES[h.game] || "Uno"}`));
       const when = new Date(h.at);
-      r.append(top, el("span", "", `+${h.points} pts · ${when.toLocaleDateString([], { weekday: "short" })} ${when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`),
-        el("small", "", (h.players || []).map((p) => p.name === h.winner ? `${p.name}: out` : `${p.name}: ${p.cards} card${p.cards === 1 ? "" : "s"} (${p.points} pts)`).join(" · ")));
+      const score = h.game === "life" ? lpMoney(h.points) : h.game === "letters" ? `${h.points} cards` : `+${h.points} pts`;
+      const each = (p) => h.game === "life" ? `${p.name}: ${lpMoney(p.points)}` : h.game === "letters" ? `${p.name}: ${p.cards} card${p.cards === 1 ? "" : "s"}`
+        : p.name === h.winner ? `${p.name}: out` : `${p.name}: ${p.cards} card${p.cards === 1 ? "" : "s"} (${p.points} pts)`;
+      r.append(top, el("span", "", `${score} · ${when.toLocaleDateString([], { weekday: "short" })} ${when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`),
+        el("small", "", (h.players || []).map(each).join(" · ")));
       list.append(r);
     }
     hist.append(list);
@@ -5824,13 +5980,33 @@ self.onmessage = async (e) => {
     return l;
   }
   function gameSetup(kind) {
-    const o = { players: 2, rules: { drawTill: false, jumpIn: false, sevenO: false }, mode: "here", level: "medium", solo: false };
+    const o = { players: 2, rules: { drawTill: false, jumpIn: false, sevenO: false }, mode: "here", level: "medium", solo: false, cards: 3, seconds: 10, say: false };
     try { const saved = JSON.parse(localStorage.getItem("mocloud-uno-rules")) || {}; for (const k in o.rules) if (k in saved) o.rules[k] = !!saved[k]; } catch {}
     const dlg = $("gameSetup"), B = $("gsBody");
     const draw = () => {
       const parts = [el("h3", "gs-h", GAME_NAMES[kind])];
       parts[0].id = "gsTitle";
-      if (kind === "uno") {
+      if (kind === "letters") {
+        parts.push(el("p", "gs-sub", "A category comes up. On ur turn, name something in it that starts with an open letter before the timer runs out, and that letter locks. Last one standing wins the card. Each player uses their phone, and one more device is the board."));
+        parts.push(el("p", "gs-label", "How many players?"));
+        parts.push(seg([[2, "2"], [3, "3"], [4, "4"], [5, "5"], [6, "6"]], o.players, (v) => { o.players = v; draw(); }));
+        parts.push(el("p", "gs-label", "Cards to win"));
+        parts.push(seg([[3, "3"], [5, "5"]], o.cards, (v) => { o.cards = v; draw(); }));
+        parts.push(el("p", "gs-label", "Seconds per turn"));
+        parts.push(seg([[10, "10"], [15, "15"], [20, "20"]], o.seconds, (v) => { o.seconds = v; draw(); }));
+        parts.push(el("p", "gs-label", "How do u answer?"));
+        const m = el("div", "gs-modes");
+        m.append(
+          gsOpt("radio", "llsay", !o.say, "Type it", "Type ur word on ur phone. Everyone sees exactly wat u said.", () => { o.say = false; draw(); }),
+          gsOpt("radio", "llsay", o.say, "Say it out loud", "Like the real game: shout ur word and tap its letter. Quicker, louder, more arguing.", () => { o.say = true; draw(); }));
+        parts.push(m);
+      } else if (kind === "life") {
+        parts.push(el("p", "gs-sub", "Spin and drive ur car down one road: college or work, paydays, a wedding, houses, kids or the hustle. Richest at retirement wins. Each player uses their phone, and one more device is the board."));
+        parts.push(el("p", "gs-label", "How many players?"));
+        parts.push(seg([[2, "2"], [3, "3"], [4, "4"]], o.players, (v) => { o.players = v; draw(); }));
+        parts.push(el("p", "gs-label", "Testing it?"));
+        parts.push(gsOpt("checkbox", "solo", o.solo, "Test it solo", "MoCloud drives everyone except Player 1, so all u need is ur phone and the board.", (on) => { o.solo = on; }));
+      } else if (kind === "uno") {
         parts.push(el("p", "gs-sub", "Standard Uno, and every round is its own game. A +2 or +4 can only be answered with ur own +2 or +4. Each player uses their own phone, and one more device is the board."));
         parts.push(el("p", "gs-label", "How many players?"));
         parts.push(seg([[2, "2"], [3, "3"], [4, "4"]], o.players, (v) => { o.players = v; draw(); }));
@@ -5854,12 +6030,13 @@ self.onmessage = async (e) => {
       }
       const acts = el("div", "dlg-acts gs-acts");
       const nah = el("button", "btn ghost", "Nah"); nah.type = "button"; nah.addEventListener("click", () => dlg.close());
-      const go = el("button", "btn", kind === "uno" ? "Start the game" : "Play"); go.type = "button";
+      const go = el("button", "btn", kind !== "c4" ? "Start the game" : "Play"); go.type = "button";
       go.addEventListener("click", async () => {
         go.disabled = true;
         try {
           if (kind === "uno") try { localStorage.setItem("mocloud-uno-rules", JSON.stringify(o.rules)); } catch {}
-          const v = await gameApi("/api/games", { game: kind, players: o.players, rules: o.rules, mode: o.mode, level: o.level, solo: kind === "uno" && o.solo, device: gameDevice() });
+          const rules = kind === "letters" ? { cards: o.cards, seconds: o.seconds, say: o.say } : o.rules;
+          const v = await gameApi("/api/games", { game: kind, players: o.players, rules, mode: o.mode, level: o.level, solo: (kind === "uno" || kind === "life") && o.solo, device: gameDevice() });
           dlg.close();
           openGame(v.code, v);
         } catch (e) { toast(e.message, true); go.disabled = false; }
@@ -5942,8 +6119,8 @@ self.onmessage = async (e) => {
       if (e.id <= GM.seen) continue;
       if (GM.seen >= 0) {
         // The board shows everything that happens. Phones only pop up the big moments from others.
-        const big = (["catch", "swap", "uno", "win", "join", "leave"].includes(e.kind) || / lmao$/.test(e.text)) && e.seat !== role;
-        if (role === "board" || role === "watch" || (v.game === "uno" && big)) gpToast(e);
+        const big = (["catch", "swap", "uno", "win", "join", "leave", "out", "cap", "retire", "wedding"].includes(e.kind) || / lmao$/.test(e.text)) && e.seat !== role;
+        if (role === "board" || role === "watch" || (v.game !== "c4" && big)) gpToast(e);
       }
     }
     GM.seen = Math.max(GM.seen, ...(v.events || []).map((e) => e.id), 0);
@@ -6001,9 +6178,10 @@ self.onmessage = async (e) => {
     const role = gameRole(v);
     $("gamePlay").classList.toggle("as-board", role === "board" || role === "watch");
     $("gamePlay").classList.toggle("as-player", role !== "board" && role !== "watch" && v.game === "uno");
-    $("gpTut").hidden = v.game !== "uno";
+    $("gpTut").hidden = v.game === "c4";
     const tut = v.paused ? renderTutorial(v, role) : null;
     const main = v.phase === "lobby" ? gpCenter(renderLobby(v)) : v.game === "c4" ? renderC4(v)
+      : v.game === "letters" ? renderLetters(v, role) : v.game === "life" ? renderLife(v, role)
       : v.phase === "over" ? gpCenter(renderUnoEnd(v, role)) : role !== "board" && role !== "watch" ? renderUnoHand(v) : renderUnoBoard(v, role);
     S.replaceChildren(...(tut ? [main, tut] : [main]));
   }
@@ -6012,15 +6190,15 @@ self.onmessage = async (e) => {
   // ----- the lobby: everyone picks a spot -----
   function renderLobby(v) {
     const w = el("div", "lb");
-    w.append(el("h2", "lb-title", v.game === "uno" ? "Pick ur spot" : "Pick a side"));
-    w.append(el("p", "lb-how", v.game === "uno"
+    w.append(el("h2", "lb-title", v.game !== "c4" ? "Pick ur spot" : "Pick a side"));
+    w.append(el("p", "lb-how", v.game !== "c4"
       ? "Everyone else gets a heads up on MoCloud to join. Every phone picks a player, and the iPad or the Apple TV is the board."
       : "The other device gets a heads up on MoCloud to join. An iPad or the Apple TV can be the board if u want a big screen."));
     const grid = el("div", "lb-seats");
     for (const s of v.seats) {
       const b = el("button", `lb-seat seat-${s.seat}` + (s.mine ? " mine" : "") + (s.seat === "board" ? " board" : "")); b.type = "button";
       const av = el("div", "lb-av"); av.innerHTML = s.seat === "board" ? ICON_BOARD : ICON_PERSON;
-      const label = s.seat === "board" ? (v.game === "uno" ? "Board" : "Board (optional)") : s.name;
+      const label = s.seat === "board" ? (v.game !== "c4" ? "Board" : "Board (optional)") : s.name;
       b.append(av, el("span", "", label), el("small", "", s.mine ? "This device · tap to switch" : s.pi ? "MoCloud" : s.taken ? "Taken" : "Tap to pick"));
       b.disabled = s.taken && !s.mine;
       b.addEventListener("click", async () => {
@@ -6033,7 +6211,7 @@ self.onmessage = async (e) => {
       grid.append(b);
     }
     w.append(grid);
-    const need = v.seats.filter((s) => !s.taken && (v.game === "uno" || s.seat !== "board")).map((s) => s.name === "The board" ? "the board" : s.name);
+    const need = v.seats.filter((s) => !s.taken && (v.game !== "c4" || s.seat !== "board")).map((s) => s.name === "The board" ? "the board" : s.name);
     const wait = el("p", "lb-wait");
     wait.innerHTML = need.length ? "Waiting for <b></b>" : "Starting...";
     if (need.length) wait.querySelector("b").textContent = need.join(", ");
@@ -6388,8 +6566,539 @@ self.onmessage = async (e) => {
     return x;
   }
 
+  // ----- Letter Lock (MoCloud's own take on the tap-a-letter word game) -----
+  // The timer runs on every screen from what the Pi said was left, so it never needs the clocks to match.
+  GM.timer = { until: 0, total: 10, raf: 0 };
+  function llTimerStart(st) {
+    GM.timer.until = st.left === null || st.left === undefined ? 0 : performance.now() + st.left * 1000;
+    GM.timer.total = st.secs || 10;
+    cancelAnimationFrame(GM.timer.raf);
+    const tick = () => {
+      const left = GM.timer.until ? Math.max(0, (GM.timer.until - performance.now()) / 1000) : null;
+      const frac = left === null ? 0 : Math.min(1, left / GM.timer.total);
+      document.querySelectorAll(".ll-time").forEach((x) => {
+        x.textContent = left === null ? "" : left < 10 ? left.toFixed(1) : String(Math.ceil(left));
+        x.classList.toggle("low", left !== null && left < 3.5);
+      });
+      document.querySelectorAll(".ll-ring-fill").forEach((r) => {
+        r.style.strokeDashoffset = String(LL_RING * (1 - frac));
+        r.classList.toggle("low", left !== null && left < 3.5);
+      });
+      if (GM.code && GM.view && GM.view.game === "letters") GM.timer.raf = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+  const LL_RING = 2 * Math.PI * 46;
+  // The dial: 20 letter keys around the rim like the real thing, the timer in the middle. Locked keys stay
+  // pushed down in the colour of whoever locked them.
+  function llDial(st, onPick, opts) {
+    const d = el("div", "ll-dial" + (opts.big ? " big" : "") + (onPick ? " live" : ""));
+    d.append(el("div", "ll-rim"));
+    const used = new Set(st.used || []);
+    const by = {};
+    for (const w of st.words || []) if (!w.cap && used.has(w.letter)) by[w.letter] = w.by;
+    const last = (st.words || []).length ? st.words[st.words.length - 1] : null;
+    const letters = [...(st.letters || "")];
+    letters.forEach((L, i) => {
+      const a = (i / letters.length) * Math.PI * 2 - Math.PI / 2;
+      const k = el(onPick ? "button" : "div", `ll-k` + (used.has(L) ? ` down seat-${by[L] || "board"}` : "") + (last && last.letter === L && used.has(L) && !last.cap ? " just" : ""));
+      k.style.left = `${50 + Math.cos(a) * 40.5}%`; k.style.top = `${50 + Math.sin(a) * 40.5}%`;
+      k.style.setProperty("--r", `${(i / letters.length) * 360}deg`);
+      const cap = el("span", "ll-kc"); cap.append(el("b", "", L)); k.append(cap);
+      if (onPick) { k.type = "button"; k.disabled = used.has(L); k.addEventListener("click", () => onPick(L)); }
+      d.append(k);
+    });
+    const core = el("div", "ll-core");
+    const ring = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    ring.setAttribute("viewBox", "0 0 100 100"); ring.setAttribute("class", "ll-ring");
+    ring.innerHTML = `<circle cx="50" cy="50" r="46" class="ll-ring-bg"/><circle cx="50" cy="50" r="46" class="ll-ring-fill" stroke-dasharray="${LL_RING}" transform="rotate(-90 50 50)"/>`;
+    core.append(ring, el("span", "ll-time"), el("small", "ll-core-who", opts.who || ""));
+    d.append(core);
+    return d;
+  }
+  function llCardFace(st, big) {
+    const c = el("div", "ll-catcard" + (big ? " big" : ""));
+    c.append(el("div", "ll-catcard-k", `CARD ${st.round} · FIRST TO ${st.target}`), el("div", "ll-catcard-t", st.category));
+    return c;
+  }
+  function llPlayers(st) {
+    const box = el("div", "ll-players");
+    for (const s of st.order) {
+      const out = !(st.alive || []).includes(s);
+      const p = el("div", `ll-pl seat-${s}` + (st.turn === s ? " on" : "") + (out ? " out" : ""));
+      const won = el("span", "ll-won");
+      for (let i = 0; i < st.target; i++) won.append(el("i", i < (st.cards[s] || 0) ? "got" : ""));
+      p.append(el("span", "gp-dot"), el("b", "", seatName(s)), won);
+      if (out) p.append(el("small", "", "out this card"));
+      box.append(p);
+    }
+    return box;
+  }
+  function llBuggin(st) {
+    const c = st.cap;
+    if (!c) return null;
+    const box = el("div", "ll-bug");
+    const what = c.word ? `"${c.word}"` : `their ${c.letter}`;
+    box.append(el("span", "", `${seatName(c.by)} locked ${c.letter}${c.word ? ` with ${what}` : ""}. Real or buggin?`));
+    if (c.can) {
+      const b = el("button", "btn ll-bugbtn", c.voted ? `U said it (${c.votes}/${c.need})` : `Ur buggin 🤨 (${c.votes}/${c.need})`); b.type = "button";
+      b.disabled = c.voted;
+      b.addEventListener("click", () => gameAct("cap"));
+      box.append(b);
+    } else box.append(el("small", "", `ur buggin votes: ${c.votes}/${c.need}`));
+    return box;
+  }
+  function renderLetters(v, role) {
+    const st = v.state;
+    llTimerStart(st);
+    if (v.phase === "over") return gpCenter(renderGameEnd(v, role));
+    if (v.phase === "roundover") {
+      const x = el("div", `ux seat-${st.roundWinner}`);
+      const h = el("h2"); h.append(el("em", "", seatName(st.roundWinner)), document.createTextNode(" wins the card"));
+      x.append(h, llCardFace(st, false), el("p", "ux-pts", `First to ${st.target} cards wins`), llPlayers(st), llWords(st));
+      if (role !== "watch") { const b = el("button", "btn", "Next card"); b.type = "button"; b.addEventListener("click", () => gameAct("next")); x.append(b); }
+      return gpCenter(x);
+    }
+    const board = role === "board" || role === "watch";
+    const mine = st.seat && st.turn === st.seat;
+    const whoText = !st.turn ? "" : mine ? "ur turn" : `${seatName(st.turn)}'s turn`;
+    if (board) {
+      const root = el("div", "ll ll-board");
+      // An iPad lying on the table in say-it mode: whoever's turn it is taps their letter right here.
+      const tap = st.say && role === "board" && st.turn ? (L) => gameAct("tap", { letter: L }) : null;
+      const left = el("div", "ll-col");
+      left.append(llCardFace(st, true), el("div", `ll-who seat-${st.turn}`, st.turn ? `${seatName(st.turn)} its ur turn gang` : ""));
+      if (st.say) left.append(el("p", "ll-mode", tap ? "Say it out loud, then tap its letter (here or on ur phone)" : "Say it out loud, then tap its letter on ur phone"));
+      const bug = llBuggin(st); if (bug) left.append(bug);
+      left.append(llPlayers(st), llWords(st));
+      const right = el("div", "ll-col center");
+      right.append(llDial(st, tap, { big: true, who: whoText }));
+      root.append(left, right);
+      return root;
+    }
+    // a player's phone
+    const root = el("div", "ll");
+    root.append(llCardFace(st, false));
+    const out = !(st.alive || []).includes(st.seat);
+    root.append(el("div", "ll-who" + (mine ? " me" : "") + ` seat-${st.turn}`, !st.turn ? "" : mine ? (st.say ? "Ur turn! Say it, tap the letter" : "Ur turn, name one!") : `${seatName(st.turn)} its ur turn gang`));
+    if (out) root.append(el("div", "uh-warn", "You're out this card. Say ur buggin if someone's lying."));
+    const bug = llBuggin(st); if (bug) root.append(bug);
+    let inp = null;
+    if (mine && !st.say) {
+      const f = el("form", "ll-say");
+      inp = document.createElement("input"); inp.className = "gs-name"; inp.placeholder = "Type ur word"; inp.autocomplete = "off"; inp.maxLength = 40;
+      inp.value = GM.llDraft || "";
+      inp.addEventListener("input", () => { GM.llDraft = inp.value; });
+      const go = el("button", "btn", "Lock it"); go.type = "submit";
+      f.append(inp, go);
+      f.addEventListener("submit", (e) => { e.preventDefault(); const w = inp.value.trim(); if (!w) return; GM.llDraft = ""; gameAct("word", { word: w }); });
+      root.append(f);
+      setTimeout(() => { if (document.activeElement !== inp) inp.focus(); }, 30);
+    } else GM.llDraft = "";
+    // Say-it mode: the tap locks it. Typing mode: tapping a letter starts ur word with it.
+    const pick = !mine ? null : st.say ? (L) => gameAct("tap", { letter: L })
+      : (L) => { if (!inp) return; inp.value = inp.value ? L + inp.value.slice(1) : L; GM.llDraft = inp.value; inp.focus(); };
+    root.append(llDial(st, pick, { big: false, who: whoText }));
+    if (mine) {
+      const give = el("button", "btn ghost small", "I got nothing (I'm out)"); give.type = "button";
+      give.addEventListener("click", () => gameAct("out"));
+      root.append(give);
+    }
+    root.append(llPlayers(st));
+    return root;
+  }
+  function llWords(st) {
+    const box = el("div", "ll-words");
+    for (const w of [...(st.words || [])].reverse().slice(0, 10)) {
+      const r = el("div", `ll-w seat-${w.by}` + (w.cap ? " cap" : ""));
+      r.append(el("b", "", w.letter), el("span", "", w.word || "said out loud"), el("small", "", seatName(w.by) + (w.cap ? " · buggin" : "")));
+      box.append(r);
+    }
+    return box;
+  }
+
+  // ----- Life Path (MoCloud's own take on the spin-and-drive life board game) -----
+  // A real-looking board: the Pi lays the road out (every space's spot and which way the road runs there), and
+  // this draws the land around it, the track, the spaces, the spinner in the middle and everyone's car, with
+  // their spouse and kids riding along as pegs. Cars drive space by space after the spinner stops.
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const LP_SEAT = { p1: "#E8C07A", p2: "#F87171", p3: "#5EC8D8", p4: "#A78BFA" };
+  const LP_TILE = { event: ["#F59E0B", "#B45309"], pay: ["#22A559", "#146C37"], baby: ["#F472B6", "#BE185D"], spin: ["#3B82F6", "#1D4ED8"],
+    taxes: ["#8B5CF6", "#5B21B6"], stop: ["#E5484D", "#9F1239"], start: ["#FACC15", "#A16207"] };
+  const LP_STOPS = new Set(["job", "wedding", "house", "fork", "retire"]);
+  const LP_WORD = { job: ["CAREER", "STOP"], wedding: ["WEDDING", "STOP"], house: ["BUY A", "HOUSE"], fork: ["PICK A", "ROAD"],
+    retire: ["RETIRE", ""], start: ["START", ""], pay: ["PAY", "DAY"], spin: ["SPIN", "TO WIN"], taxes: ["TAX", "DAY"] };
+  const LP_SPIN_COLORS = ["#E5484D", "#F59E0B", "#FACC15", "#22C55E", "#14B8A6", "#3B82F6", "#6366F1", "#A855F7", "#EC4899", "#F97316"];
+  const LP_SPINNER = { x: 560, y: 382, r: 84 };
+  const lpMoney = (n) => (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString();
+  function sv(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs || {}) e.setAttribute(k, attrs[k]);
+    if (parent) parent.append(e);
+    return e;
+  }
+  function svText(parent, x, y, text, attrs) { const t = sv("text", Object.assign({ x, y }, attrs || {}), parent); t.textContent = text; return t; }
+
+  // The land: grass, a lake, mountains, the university, the career tower, the chapel, the neighbourhood, the
+  // city, the bank, the golf course and the retirement estate, all around where the road goes.
+  const LP_LAND = `
+    <defs>
+      <linearGradient id="lpGrass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9AD88A"/><stop offset=".55" stop-color="#74C26E"/><stop offset="1" stop-color="#4FA35B"/></linearGradient>
+      <radialGradient id="lpSun" cx=".5" cy=".45" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      <pattern id="lpTex" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="4" cy="5" r="1.3" fill="#0B3D1A" opacity=".07"/><circle cx="13" cy="13" r="1" fill="#fff" opacity=".08"/></pattern>
+      <linearGradient id="lpWater" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7DD3FC"/><stop offset="1" stop-color="#2E8BC9"/></linearGradient>
+      <linearGradient id="lpRock" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B8A99A"/><stop offset="1" stop-color="#7C6A5B"/></linearGradient>
+      <linearGradient id="lpGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE3F5"/><stop offset="1" stop-color="#6FA8C9"/></linearGradient>
+      <filter id="lpDrop" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.4" flood-color="#0B2414" flood-opacity=".38"/></filter>
+      <filter id="lpSoft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#000" flood-opacity=".3"/></filter>
+      <g id="lpTree"><ellipse cx="0" cy="9" rx="9" ry="3" fill="#0B3D1A" opacity=".25"/><rect x="-1.6" y="0" width="3.2" height="9" fill="#7A4E2D"/><circle cx="0" cy="-3" r="8" fill="#2F8F46"/><circle cx="-4" cy="-6" r="5" fill="#3FA857"/><circle cx="3" cy="-8" r="4" fill="#52BD68"/></g>
+      <g id="lpPine"><ellipse cx="0" cy="10" rx="7" ry="2.5" fill="#0B3D1A" opacity=".25"/><rect x="-1.4" y="4" width="2.8" height="6" fill="#6B4226"/><path d="M0-14L9 5H-9Z" fill="#1F7A3D"/><path d="M0-14L9 5H0Z" fill="#17652F"/></g>
+      <g id="lpHouse"><rect x="-11" y="-6" width="22" height="16" fill="#FFF4E0" stroke="#7C5A3A" stroke-width="1.2"/><path d="M-14-5L0-17L14-5Z" fill="#D9534F" stroke="#7C2D2D" stroke-width="1.2"/><rect x="-3" y="2" width="6" height="8" fill="#8B5A2B"/><rect x="-9" y="-2" width="5" height="5" fill="#9DD3F0"/><rect x="4" y="-2" width="5" height="5" fill="#9DD3F0"/></g>
+    </defs>
+    <rect x="0" y="0" width="1000" height="625" fill="url(#lpGrass)"/>
+    <rect x="0" y="0" width="1000" height="625" fill="url(#lpTex)"/>
+    <rect x="0" y="0" width="1000" height="625" fill="url(#lpSun)"/>
+    <!-- lake and its stream -->
+    <path d="M478 560 C 486 520, 560 506, 618 514 C 680 522, 700 556, 672 586 C 640 616, 520 616, 490 596 C 474 586, 474 572, 478 560 Z" fill="url(#lpWater)" stroke="#E8F7FF" stroke-width="3" opacity=".95"/>
+    <path d="M520 548 q20 -6 40 0 M590 572 q18 -5 34 0 M540 590 q14 -4 28 0" stroke="#E8F7FF" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+    <path d="M672 586 C 700 600, 720 612, 740 625" stroke="url(#lpWater)" stroke-width="12" fill="none" stroke-linecap="round"/>
+    <!-- mountains inside the first big bend -->
+    <g filter="url(#lpDrop)">
+      <path d="M150 196 L205 104 L262 196 Z" fill="url(#lpRock)"/><path d="M205 104 L222 132 L210 128 L200 136 L190 128 Z" fill="#fff"/>
+      <path d="M210 200 L262 118 L312 200 Z" fill="#9C8B7B"/><path d="M262 118 L278 144 L266 140 L257 147 L247 140 Z" fill="#fff"/>
+      <path d="M128 204 L166 150 L200 204 Z" fill="#A59484"/>
+    </g>
+    <use href="#lpPine" x="150" y="226"/><use href="#lpPine" x="230" y="226"/><use href="#lpPine" x="292" y="214"/><use href="#lpPine" x="118" y="120"/>
+    <!-- the university, inside the college loop -->
+    <g transform="translate(150 470)" filter="url(#lpDrop)">
+      <rect x="-48" y="-18" width="96" height="40" fill="#F3E6CC" stroke="#8A6D45" stroke-width="1.5"/>
+      <path d="M-56 -18 L0 -46 L56 -18 Z" fill="#B23A3A" stroke="#6E1F1F" stroke-width="1.5"/>
+      <rect x="-40" y="-12" width="6" height="30" fill="#E2CFA8"/><rect x="-22" y="-12" width="6" height="30" fill="#E2CFA8"/>
+      <rect x="16" y="-12" width="6" height="30" fill="#E2CFA8"/><rect x="34" y="-12" width="6" height="30" fill="#E2CFA8"/>
+      <rect x="-8" y="2" width="16" height="20" fill="#7A4E2D"/><circle cx="0" cy="-28" r="5" fill="#FDE68A" stroke="#8A6D45"/>
+    </g>
+    <text x="150" y="512" class="lp-place">UNIVERSITY</text>
+    <!-- career tower between the college loop and the road -->
+    <g transform="translate(338 494)" filter="url(#lpDrop)">
+      <rect x="-16" y="-52" width="32" height="74" fill="url(#lpGlass)" stroke="#3D5A73" stroke-width="1.5"/>
+      <path d="M-16 -40 H16 M-16 -28 H16 M-16 -16 H16 M-16 -4 H16 M-16 8 H16 M-5 -52 V22 M6 -52 V22" stroke="#3D5A73" stroke-width=".8" opacity=".6"/>
+      <rect x="-20" y="22" width="40" height="5" fill="#64748B"/>
+    </g>
+    <text x="338" y="536" class="lp-place">CAREERS</text>
+    <!-- the chapel by the wedding -->
+    <g transform="translate(318 300)" filter="url(#lpDrop)">
+      <rect x="-14" y="-8" width="28" height="22" fill="#FFFFFF" stroke="#9CA3AF" stroke-width="1.2"/>
+      <path d="M-17 -8 L0 -24 L17 -8 Z" fill="#F9A8D4" stroke="#BE185D" stroke-width="1.2"/>
+      <rect x="-4" y="-40" width="8" height="18" fill="#FFFFFF" stroke="#9CA3AF"/><path d="M0 -50 V-42 M-3 -47 H3" stroke="#B45309" stroke-width="1.6"/>
+      <path d="M-4 14 V4 a4 4 0 0 1 8 0 V14" fill="#BE185D"/>
+    </g>
+    <text x="318" y="330" class="lp-place">CHAPEL</text>
+    <use href="#lpHouse" x="36" y="236"/><use href="#lpTree" x="30" y="300"/><use href="#lpTree" x="22" y="356"/>
+    <!-- the neighbourhood inside the family road -->
+    <use href="#lpHouse" x="430" y="104"/><use href="#lpHouse" x="474" y="88"/><use href="#lpHouse" x="520" y="96"/><use href="#lpHouse" x="566" y="94"/><use href="#lpHouse" x="608" y="124"/>
+    <use href="#lpTree" x="452" y="130"/><use href="#lpTree" x="546" y="130"/><use href="#lpTree" x="498" y="128"/><use href="#lpTree" x="590" y="152"/>
+    <text x="520" y="152" class="lp-place">FAMILY</text>
+    <!-- the city under the hustle road -->
+    <g filter="url(#lpDrop)">
+      <rect x="436" y="214" width="26" height="46" fill="#475569"/><rect x="464" y="200" width="22" height="60" fill="#334155"/>
+      <rect x="488" y="222" width="30" height="38" fill="#64748B"/><rect x="520" y="206" width="20" height="54" fill="#1E293B"/>
+      <rect x="542" y="218" width="28" height="42" fill="#475569"/><rect x="572" y="226" width="22" height="34" fill="#334155"/>
+      <path d="M440 222h18M440 232h18M440 242h18M468 210h14M468 222h14M468 234h14M468 246h14M524 216h12M524 228h12M524 240h12M546 228h20M546 240h20" stroke="#FDE68A" stroke-width="2.4" opacity=".8"/>
+    </g>
+    <text x="515" y="276" class="lp-place">HUSTLE CITY</text>
+    <!-- the bank inside the right-hand bend -->
+    <g transform="translate(862 170)" filter="url(#lpDrop)">
+      <rect x="-40" y="-14" width="80" height="34" fill="#F1F5F9" stroke="#64748B" stroke-width="1.5"/>
+      <path d="M-46 -14 L0 -38 L46 -14 Z" fill="#CBD5E1" stroke="#64748B" stroke-width="1.5"/>
+      <rect x="-32" y="-8" width="6" height="26" fill="#E2E8F0" stroke="#94A3B8"/><rect x="-14" y="-8" width="6" height="26" fill="#E2E8F0" stroke="#94A3B8"/>
+      <rect x="8" y="-8" width="6" height="26" fill="#E2E8F0" stroke="#94A3B8"/><rect x="26" y="-8" width="6" height="26" fill="#E2E8F0" stroke="#94A3B8"/>
+      <text x="0" y="-19" class="lp-sign">$</text>
+    </g>
+    <text x="862" y="206" class="lp-place">BANK</text>
+    <!-- golf course -->
+    <path d="M790 356 C 810 320, 890 318, 912 350 C 930 380, 880 404, 840 400 C 800 396, 776 384, 790 356 Z" fill="#8FE08A" stroke="#E9FCE7" stroke-width="2"/>
+    <ellipse cx="884" cy="372" rx="14" ry="6" fill="#E9D8A6"/><path d="M846 364 V336" stroke="#fff" stroke-width="2"/><path d="M846 336 l12 4 -12 4Z" fill="#E5484D"/><circle cx="846" cy="364" r="2.4" fill="#1F2937"/>
+    <use href="#lpTree" x="770" y="250"/><use href="#lpTree" x="690" y="262"/><use href="#lpTree" x="660" y="480"/><use href="#lpTree" x="690" y="500"/><use href="#lpTree" x="980" y="330"/><use href="#lpTree" x="984" y="400"/>
+    <use href="#lpPine" x="470" y="330"/><use href="#lpPine" x="460" y="420"/><use href="#lpPine" x="650" y="300"/><use href="#lpPine" x="440" y="610"/>
+    <!-- the retirement estate at the end of the road -->
+    <g transform="translate(870 520)" filter="url(#lpDrop)">
+      <rect x="-44" y="-16" width="88" height="34" fill="#FEF3C7" stroke="#A16207" stroke-width="1.5"/>
+      <rect x="-16" y="-34" width="32" height="18" fill="#FEF3C7" stroke="#A16207" stroke-width="1.5"/>
+      <path d="M-50 -16 L-20 -30 H20 L50 -16 Z" fill="#B45309"/><path d="M-20 -34 L0 -46 L20 -34 Z" fill="#B45309"/>
+      <rect x="-6" y="2" width="12" height="16" fill="#7A4E2D"/><rect x="-36" y="-8" width="10" height="9" fill="#9DD3F0"/><rect x="26" y="-8" width="10" height="9" fill="#9DD3F0"/>
+    </g>
+    <text x="870" y="556" class="lp-place">SUNSET ESTATES</text>`;
+
+  function lpTileColors(t) { return LP_STOPS.has(t) ? LP_TILE.stop : LP_TILE[t] || LP_TILE.event; }
+  function lpTrack(svg, board) {
+    const g = sv("g", {}, svg);
+    const path = (s, t) => {
+      const d = Math.hypot(t.x - s.x, t.y - s.y) / 3, a1 = (s.a * Math.PI) / 180, a2 = (t.a * Math.PI) / 180;
+      return `M${s.x} ${s.y} C${s.x + Math.cos(a1) * d} ${s.y + Math.sin(a1) * d} ${t.x - Math.cos(a2) * d} ${t.y - Math.sin(a2) * d} ${t.x} ${t.y}`;
+    };
+    const edges = [];
+    for (const s of board) for (const n of s.next) edges.push(path(s, board[n]));
+    for (const [w, c, dy] of [[44, "rgba(11,36,20,.28)", 4], [40, "#FBF3E1", 0], [32, "#EADCC0", 0]])
+      for (const d of edges) sv("path", { d, stroke: c, "stroke-width": w, fill: "none", "stroke-linecap": "round", transform: `translate(0 ${dy})` }, g);
+  }
+  function lpTiles(svg, board) {
+    const g = sv("g", {}, svg);
+    for (const s of board) {
+      const stop = LP_STOPS.has(s.type) || s.type === "start";
+      const [c, dark] = s.type === "start" ? LP_TILE.start : lpTileColors(s.type);
+      let a = s.a; if (a > 90) a -= 180; if (a <= -90) a += 180;  // spaces never sit upside down
+      const t = sv("g", { transform: `translate(${s.x} ${s.y}) rotate(${a})`, filter: "url(#lpSoft)" }, g);
+      const w = stop ? 50 : 34, h = stop ? 38 : 27;
+      sv("rect", { x: -w / 2, y: -h / 2 + 2.5, width: w, height: h, rx: 7, fill: dark }, t);
+      sv("rect", { x: -w / 2, y: -h / 2, width: w, height: h, rx: 7, fill: c, stroke: "#fff", "stroke-width": 2.2 }, t);
+      const words = LP_WORD[s.type];
+      if (s.type === "baby") svText(t, 0, 5, "👶", { class: "lp-ico" });
+      else if (s.type === "event") sv("path", { d: "M0 -7 L2 -2 L7 -2 L3 1.5 L4.5 7 L0 3.8 L-4.5 7 L-3 1.5 L-7 -2 L-2 -2 Z", fill: "#FFF7E6", opacity: ".9" }, t);
+      else if (s.type === "pay") { svText(t, 0, -1, "$", { class: "lp-t big" }); svText(t, 0, 9, "PAYDAY", { class: "lp-t tiny" }); }
+      else if (words) {
+        svText(t, 0, words[1] ? -2 : 4, words[0], { class: "lp-t" + (stop ? " stop" : "") });
+        if (words[1]) svText(t, 0, 9, words[1], { class: "lp-t" + (stop ? " stop" : "") + " small" });
+      }
+    }
+  }
+  function lpSpinnerSvg(parent, cx, cy, r, big) {
+    const g = sv("g", { class: "lp-spinner" }, parent);
+    sv("circle", { cx, cy: cy + 6, r: r + 10, fill: "rgba(0,0,0,.3)" }, g);
+    sv("circle", { cx, cy, r: r + 10, fill: "#1F2937", stroke: "#E8C07A", "stroke-width": 4 }, g);
+    const wheel = sv("g", { class: "lp-wheel", "data-cx": cx, "data-cy": cy }, g);
+    for (let i = 0; i < 10; i++) {
+      const a0 = ((i * 36 - 90) * Math.PI) / 180, a1 = (((i + 1) * 36 - 90) * Math.PI) / 180;
+      sv("path", { d: `M${cx} ${cy} L${cx + r * Math.cos(a0)} ${cy + r * Math.sin(a0)} A${r} ${r} 0 0 1 ${cx + r * Math.cos(a1)} ${cy + r * Math.sin(a1)} Z`,
+        fill: LP_SPIN_COLORS[i], stroke: "#fff", "stroke-width": 2 }, wheel);
+      const am = (((i + 0.5) * 36 - 90) * Math.PI) / 180;
+      const tx = cx + r * 0.7 * Math.cos(am), ty = cy + r * 0.7 * Math.sin(am);
+      svText(wheel, tx, ty, String(i + 1), { class: "lp-num" + (big ? " big" : ""), transform: `rotate(${(i + 0.5) * 36} ${tx} ${ty})` });
+    }
+    sv("circle", { cx, cy, r: r * 0.22, fill: "#E8C07A", stroke: "#fff", "stroke-width": 3 }, g);
+    svText(g, cx, cy + r * 0.07, "SPIN", { class: "lp-hub", style: `font-size:${r * 0.13}px` });
+    sv("path", { d: `M${cx - 11} ${cy - r - 16} L${cx + 11} ${cy - r - 16} L${cx} ${cy - r + 8} Z`, fill: "#fff", stroke: "#1F2937", "stroke-width": 2 }, g);
+    return g;
+  }
+  function lpCar(seat, p, name, on) {
+    const g = sv("g", { class: "lp-car", "data-seat": seat });
+    const body = sv("g", { class: "lp-car-body" }, g);
+    if (on) sv("ellipse", { cx: 0, cy: 0, rx: 24, ry: 17, fill: LP_SEAT[seat], opacity: ".35", class: "lp-halo" }, body);
+    sv("ellipse", { cx: 0, cy: 4, rx: 17, ry: 10, fill: "rgba(0,0,0,.3)" }, body);
+    for (const [x, y] of [[-11, -11], [5, -11], [-11, 7], [5, 7]]) sv("rect", { x, y, width: 7, height: 4, rx: 1.5, fill: "#111" }, body);
+    sv("rect", { x: -16, y: -9, width: 32, height: 18, rx: 6, fill: LP_SEAT[seat], stroke: "#0B0D12", "stroke-width": 1.6 }, body);
+    sv("rect", { x: 8, y: -7, width: 5, height: 14, rx: 2, fill: "#BFE3F5", stroke: "#0B0D12", "stroke-width": .8 }, body);
+    const pegs = [[2, -4, 3.4, "#60A5FA"]];
+    if (p.married) pegs.push([2, 4, 3.4, "#F9A8D4"]);
+    const kidSpots = [[-5, -4], [-5, 4], [-11, -4], [-11, 4]];
+    for (let k = 0; k < Math.min(4, p.kids); k++) pegs.push([kidSpots[k][0], kidSpots[k][1], 2.6, k % 2 ? "#F9A8D4" : "#93C5FD"]);
+    for (const [x, y] of [[2, -4], [2, 4], ...kidSpots]) sv("circle", { cx: x, cy: y, r: 2.6, fill: "rgba(0,0,0,.35)" }, body);
+    for (const [x, y, r, c] of pegs) sv("circle", { cx: x, cy: y, r, fill: c, stroke: "#fff", "stroke-width": 1 }, body);
+    const tag = sv("g", { class: "lp-tag" }, g);
+    const w = Math.max(30, name.length * 7 + 14);
+    sv("rect", { x: -w / 2, y: -42, width: w, height: 17, rx: 8.5, fill: LP_SEAT[seat], stroke: "#0B0D12", "stroke-width": 1.2 }, tag);
+    svText(tag, 0, -30, name, { class: "lp-tagt" });
+    return g;
+  }
+
+  // Cars drive along the road one space at a time, and wait for the spinner to stop first.
+  GM.lp = { shown: {}, path: {}, stepAt: 0, spinN: null, spinFrom: 0, spinTo: 0, spinT0: 0, raf: 0 };
+  const LP_STEP_MS = 230, LP_SPIN_MS = 2300;
+  function lpRoute(board, from, to) {
+    if (from === to) return [];
+    const prev = { [from]: -1 }, q = [from];
+    while (q.length) { const c = q.shift(); if (c === to) break; for (const n of board[c].next) if (!(n in prev)) { prev[n] = c; q.push(n); } }
+    if (!(to in prev)) return [to];
+    const out = []; for (let c = to; c !== from; c = prev[c]) out.unshift(c);
+    return out;
+  }
+  function lpSync(st) {
+    const L = GM.lp, now = performance.now();
+    if (L.spinN === null) { L.spinN = st.spinN || 0; L.spinTo = st.spin ? -((st.spin - 1) * 36 + 18) : 0; L.spinFrom = L.spinTo; L.spinT0 = 0; }
+    else if ((st.spinN || 0) !== L.spinN && st.spin) {
+      L.spinN = st.spinN; L.spinFrom = lpSpinAngle(now);
+      const target = -((st.spin - 1) * 36 + 18);
+      let to = target; while (to > L.spinFrom - 720) to -= 360;  // 2 or more full turns, landing on the number
+      L.spinTo = to; L.spinT0 = now;
+    }
+    for (const s of st.order) {
+      const pos = st.players[s].pos;
+      if (!(s in L.shown)) { L.shown[s] = pos; L.path[s] = []; continue; }
+      const goal = (L.path[s] || []).length ? L.path[s][L.path[s].length - 1] : L.shown[s];
+      if (goal !== pos) { L.path[s] = (L.path[s] || []).concat(lpRoute(st.board, goal, pos)); L.stepAt = Math.max(L.stepAt, L.spinT0 + LP_SPIN_MS, now); }
+    }
+    cancelAnimationFrame(L.raf);
+  }
+  function lpSpinAngle(now) {
+    const L = GM.lp; if (!L.spinT0) return L.spinTo;
+    const t = Math.min(1, (now - L.spinT0) / LP_SPIN_MS), e = 1 - Math.pow(1 - t, 3);
+    return L.spinFrom + (L.spinTo - L.spinFrom) * e;
+  }
+  function lpFrame(root) {
+    const Q = root || document;
+    const L = GM.lp, v = GM.view;
+    if (!v || v.game !== "life" || !v.state || !v.state.board) return;
+    const st = v.state, now = performance.now();
+    const ang = lpSpinAngle(now);
+    Q.querySelectorAll(".lp-wheel").forEach((w) => w.setAttribute("transform", `rotate(${ang} ${w.dataset.cx} ${w.dataset.cy})`));
+    let busy = L.spinT0 && now - L.spinT0 < LP_SPIN_MS;
+    const moving = st.order.filter((s) => (L.path[s] || []).length);
+    let frac = 0;
+    if (moving.length && now >= L.stepAt) {
+      frac = (now - L.stepAt) / LP_STEP_MS;
+      if (frac >= 1) { for (const s of moving) L.shown[s] = L.path[s].shift(); L.stepAt = now; frac = 0; }
+      busy = true;
+    } else if (moving.length) busy = true;
+    const B = st.board;
+    st.order.forEach((s, k) => {
+      const here = B[L.shown[s]] || B[0], next = (L.path[s] || []).length && now >= L.stepAt ? B[L.path[s][0]] : null;
+      const f = next ? frac : 0, a = next ? next.a : here.a;
+      const x = here.x + ((next ? next.x : here.x) - here.x) * f, y = here.y + ((next ? next.y : here.y) - here.y) * f;
+      // side by side when several cars share a space
+      const side = (k - (st.order.length - 1) / 2) * 15, rad = (a * Math.PI) / 180;
+      const ox = -Math.sin(rad) * side, oy = Math.cos(rad) * side;
+      Q.querySelectorAll(`.lp-car[data-seat="${s}"]`).forEach((c) => {
+        c.setAttribute("transform", `translate(${x + ox} ${y + oy})`);
+        c.querySelector(".lp-car-body").setAttribute("transform", `rotate(${a}) scale(1.3)`);
+      });
+    });
+    if (busy) { cancelAnimationFrame(L.raf); L.raf = requestAnimationFrame(() => lpFrame()); }
+  }
+  function lpBoard(st, opts) {
+    const wrap = el("div", "lp-map" + (opts.big ? " big" : ""));
+    const svg = sv("svg", { viewBox: "0 0 1000 625", class: "lp-svg", preserveAspectRatio: "xMidYMid meet" });
+    const land = sv("g", {}, svg); land.innerHTML = LP_LAND;
+    lpTrack(svg, st.board);
+    lpTiles(svg, st.board);
+    lpSpinnerSvg(svg, LP_SPINNER.x, LP_SPINNER.y, LP_SPINNER.r, false);
+    const cars = sv("g", {}, svg);
+    for (const s of st.order) cars.append(lpCar(s, st.players[s], seatName(s), st.turn === s));
+    // the latest card someone drew, face up on the board
+    if (opts.big) {
+      const e = [...(GM.view.events || [])].reverse().find((x) => ["money", "baby", "wedding", "loan", "spin", "info", "retire"].includes(x.kind));
+      if (e) {
+        const card = sv("g", { class: "lp-lastcard", transform: "translate(560 506)" }, svg);
+        sv("rect", { x: -118, y: -22, width: 236, height: 44, rx: 10, fill: "#FFF9EC", stroke: LP_SEAT[e.seat] || "#E8C07A", "stroke-width": 3, filter: "url(#lpSoft)" }, card);
+        const fo = sv("foreignObject", { x: -112, y: -20, width: 224, height: 40 }, card);
+        const d = document.createElement("div"); d.className = "lp-lastcard-t"; d.textContent = e.text; fo.append(d);
+      }
+    }
+    wrap.append(svg);
+    return wrap;
+  }
+  function lpDash(st, s, me) {
+    const p = st.players[s];
+    const box = el("div", `lp-dash seat-${s}` + (st.turn === s ? " on" : "") + (p.done ? " done" : "") + (me ? " me" : ""));
+    const head = el("div", "lp-dash-h");
+    const car = el("span", "lp-dash-car");
+    head.append(car, el("b", "", seatName(s) + (me ? " (u)" : "")));
+    if (p.done) head.append(el("span", "lp-chip", "retired"));
+    box.append(head);
+    const money = el("div", "lp-bill"); money.append(el("small", "", "CASH"), el("b", "", lpMoney(p.cash)));
+    box.append(money);
+    const cards = el("div", "lp-cards");
+    const job = el("div", "lp-card job");
+    job.append(el("small", "", p.degree ? "CAREER · DEGREE" : "CAREER"), el("b", "", p.job || "No job yet"), el("span", "", p.job ? `${lpMoney(p.salary)} / payday` : "Pick one at the Career stop"));
+    cards.append(job);
+    for (const h of p.houses) { const c = el("div", "lp-card house"); c.append(el("small", "", "HOUSE DEED"), el("b", "", h)); cards.append(c); }
+    box.append(cards);
+    const fam = [p.married ? "married" : "single", p.kids ? `${p.kids} kid${p.kids === 1 ? "" : "s"}` : "", p.loans ? `${p.loans} loan${p.loans === 1 ? "" : "s"} (${lpMoney(p.loans * 60000)} back at the end)` : ""].filter(Boolean);
+    box.append(el("div", "lp-fam", fam.join(" · ")));
+    return box;
+  }
+  function lpBanner(st) {
+    const ch = st.choice;
+    const txt = ch ? (ch.seat === st.seat ? ch.title : `${seatName(ch.seat)} is deciding: ${ch.title.toLowerCase().replace(/\?$/, "")}`)
+      : !st.turn ? "" : st.turn === st.seat ? "Ur turn, spin it" : `${seatName(st.turn)} its ur turn gang`;
+    const b = el("div", `lp-banner seat-${(ch && ch.seat) || st.turn}` + ((ch ? ch.seat : st.turn) === st.seat ? " me" : ""));
+    b.append(el("span", "lp-banner-dot"), el("b", "", txt));
+    if (st.spin) b.append(el("span", "lp-last", `last spin: ${st.spin}`));
+    return b;
+  }
+  function lpChoice(ch, mine) {
+    const box = el("div", "lp-choice");
+    for (const [i, o] of ch.options.entries()) {
+      const b = el(mine ? "button" : "div", `lp-opt k-${ch.kind}` + (o.label.startsWith("Nah") ? " nah" : ""));
+      if (mine) { b.type = "button"; b.addEventListener("click", () => gameAct("choose", { pick: i })); }
+      b.append(el("small", "", { job: "CAREER CARD", house: "HOUSE DEED", start: "UR PATH", fork: "ROAD" }[ch.kind] || ""), el("b", "", o.label), el("span", "", o.text));
+      box.append(b);
+    }
+    return box;
+  }
+  function renderLife(v, role) {
+    const st = v.state;
+    if (v.phase === "over") return gpCenter(renderGameEnd(v, role));
+    lpSync(st);
+    const board = role === "board" || role === "watch";
+    const ch = st.choice;
+    if (board) {
+      const root = el("div", "lp lp-board");
+      const left = el("div", "lp-main");
+      left.append(lpBanner(st), lpBoard(st, { big: true }));
+      if (ch) { const c = lpChoice(ch, false); c.classList.add("on-board"); left.append(c); }
+      const side = el("div", "lp-side");
+      for (const s of st.order) side.append(lpDash(st, s, false));
+      root.append(left, side);
+      lpFrame(root);
+      return root;
+    }
+    const root = el("div", "lp");
+    root.append(lpBanner(st));
+    if (ch && ch.seat === st.seat) root.append(lpChoice(ch, true));
+    else if (st.turn === st.seat && !ch) {
+      // the spinner itself is the button: tap it (or flick it) to spin
+      const b = el("button", "lp-spinbtn"); b.type = "button"; b.setAttribute("aria-label", "Spin");
+      const svg = sv("svg", { viewBox: "0 0 240 250" }, null);
+      lpSpinnerSvg(svg, 120, 130, 96, true);
+      b.append(svg, el("span", "lp-spin-hint", "Tap to spin"));
+      b.addEventListener("click", () => { b.disabled = true; gameAct("spin"); });
+      root.append(b);
+    } else {
+      const svg = sv("svg", { viewBox: "0 0 240 250", class: "lp-spin-small" }, null);
+      lpSpinnerSvg(svg, 120, 130, 96, true);
+      root.append(svg);
+    }
+    if (st.seat) root.append(lpDash(st, st.seat, true));
+    root.append(lpBoard(st, { big: false }));
+    const others = el("div", "lp-others");
+    for (const s of st.order) if (s !== st.seat) others.append(lpDash(st, s, false));
+    root.append(others);
+    lpFrame(root);
+    return root;
+  }
+
+  // ----- the end of a game (Letter Lock and Life Path) -----
+  function renderGameEnd(v, role) {
+    const st = v.state, w = st.winner;
+    const x = el("div", `ux seat-${w}`);
+    const h = el("h2"); h.append(el("em", "", seatName(w)), document.createTextNode(" u him fr"));
+    x.append(h);
+    const table = el("div", "ux-table");
+    if (v.game === "letters") {
+      x.append(el("p", "ux-pts", `First to ${st.target} cards. It's saved on the Games page for 3 days.`));
+      for (const s of [...st.order].sort((a, b) => (st.cards[b] || 0) - (st.cards[a] || 0))) {
+        const row = el("div", `ux-row seat-${s}` + (s === w ? " won" : ""));
+        row.append(el("span", "gp-dot"), el("span", "", seatName(s) + (s === role ? " (u)" : "")), el("b", "", `${st.cards[s] || 0} card${st.cards[s] === 1 ? "" : "s"}`));
+        table.append(row);
+      }
+    } else {
+      x.append(el("p", "ux-pts", "Houses sold, kids counted, loans paid back. It's saved on the Games page for 3 days."));
+      for (const s of [...st.order].sort((a, b) => st.final[b].total - st.final[a].total)) {
+        const f = st.final[s];
+        const row = el("div", `ux-row seat-${s}` + (s === w ? " won" : ""));
+        row.append(el("span", "gp-dot"), el("span", "", seatName(s) + (s === role ? " (u)" : "")), el("b", "", lpMoney(f.total)));
+        row.append(el("small", "lp-break", `cash ${lpMoney(f.cash)} · houses ${lpMoney(f.houses)} · kids ${lpMoney(f.kids)} · loans ${lpMoney(f.loans)}`));
+        table.append(row);
+      }
+    }
+    x.append(table);
+    if (role !== "watch") { const b = el("button", "btn", "Play again"); b.type = "button"; b.addEventListener("click", () => gameAct("again")); x.append(b); }
+    return x;
+  }
+
   // ----- the tutorial (pauses the game for everyone; it's big on the board) -----
   function tutSteps(v) {
+    if (v.game === "letters") return llTutorial(v);
+    if (v.game === "life") return lpTutorial(v);
     const R = v.rules || {};
     const steps = [
       { t: "How Uno works", p: ["Everyone starts with 7 cards. Get rid of all of urs first and u win.", "Every round is its own game: the winner scores points for every card the others are still holding.", "The game's paused while this is up for everyone, so take ur time."] },
@@ -6408,6 +7117,34 @@ self.onmessage = async (e) => {
     steps.push({ t: "The board and the history", p: ["The board (the Apple TV or an iPad) shows the whole table: everyone's card count, the pile, whose turn it is, and every move as it happens.", "Arguing about wat happened? The clock button up top shows every move made this game."] });
     steps.push({ t: "That's it", p: ["Close this and the game picks up right where it left off. Good luck gang."] });
     return steps;
+  }
+  function llTutorial(v) {
+    const R = v.rules || {};
+    return [
+      { t: "How Letter Lock works", p: ["A category comes up on the board, like \"Things in a kitchen\".", `On ur turn, name something in it that starts with an open letter, before the ${R.seconds || 10}-second timer runs out.`, "The game's paused while this is up for everyone."] },
+      R.say
+        ? { t: "Ur turn", p: ["Say ur word out loud so everyone hears it, then tap its first letter on the wheel on ur phone (or on the iPad if it's the board).", "That letter locks for the rest of the card, and the timer starts over for the next player."] }
+        : { t: "Ur turn", p: ["Type ur word on ur phone and tap Lock it. Tapping a letter on the wheel starts ur word with it.", "Its first letter locks for the rest of the card, and the timer starts over for the next player."] },
+      { t: "Locked letters", p: ["Locked letters stay pushed down on the wheel, in the colour of whoever locked them. Nobody can use them again this card.", "There's no Q, U, V, X, Y or Z. If all 20 letters get locked, they all pop back up."] },
+      { t: "Running out", p: ["Timer hits 0 before u lock one? You're out of this card. Can't think of anything? Tap I got nothing.", "Out players still watch, and can still say ur buggin."] },
+      { t: "Ur buggin 🤨", p: ["Someone said something made up, or not in the category? Tap Ur buggin right after they lock it (u get 6 seconds).", "If half the other players agree, the word's thrown out, its letter pops back up, and that player's out."] },
+      { t: "Winning", p: [`Last one standing wins the card. First to ${R.cards || 3} cards u him fr.`, "Every finished game's saved on the Games page for 3 days. The clock button up top shows every word said."] },
+      { t: "That's it", p: ["Close this and the timer picks up right where it stopped. Good luck gang."] },
+    ];
+  }
+  function lpTutorial() {
+    return [
+      { t: "How Life Path works", p: ["Everyone drives a car down the same road, from Start to Retire.", "Whoever retires with the most money wins. The game's paused while this is up for everyone."] },
+      { t: "Spinning", p: ["On ur turn, the spinner shows up on ur phone. Tap it to spin, and it lands on 1 to 10.", "The board (Apple TV or iPad) spins too, then ur car drives that many spaces down the road."] },
+      { t: "Ur car", p: ["Every car has ur name on it. U ride in the front as a blue peg. Get married and ur spouse joins u, and every kid gets a peg in the back.", "The orange spaces are life cards: money in or out. The latest one shows up in the middle of the board."] },
+      { t: "College or work", p: ["Ur first move: pick college or straight to work.", "College is a longer road and $100k in loans, but the best-paying jobs need a degree. Straight to work: no debt, u start earning sooner."] },
+      { t: "Stop signs", p: ["Some spaces stop u no matter how far u spun: Pick ur job, the Wedding, Buy a house, the Crossroads and Retire.", "At a stop u get a choice on ur phone."] },
+      { t: "Money spaces", p: ["Payday ($) pays ur salary every time u pass it, plus a bonus if u land on it.", "Most spaces are cards: money in or out. Tax day takes a cut, Spin to win pays $100k if u spin 8 or more."] },
+      { t: "Family or hustle", p: ["At the Crossroads, pick the Family road (babies, small costs) or the Hustle road (shorter, huge swings both ways).", "Every kid is worth $50k at the end."] },
+      { t: "Houses and loans", p: ["Buy a house at a house stop. At the end it sells for more if u spin 6 or higher.", "Run out of cash and the bank lends u $50k at a time. Each loan costs $60k at the end."] },
+      { t: "Retiring", p: ["The end of the road is Retire. First to get there gets $100k, then $75k, $50k, $25k.", "When everyone's retired: houses sold, kids counted, loans paid back. Richest u him fr."] },
+      { t: "That's it", p: ["Close this and the game picks up right where it left off. The clock button shows every move."] },
+    ];
   }
   function renderTutorial(v, role) {
     const steps = tutSteps(v), i = Math.min(v.paused.step || 0, steps.length - 1), st = steps[i];
@@ -6472,7 +7209,7 @@ self.onmessage = async (e) => {
     document.querySelectorAll(".gm-invite").forEach((x) => x.remove());
     const n = el("div", "gm-invite"); n.setAttribute("role", "status");
     const who = (g.taken || []).length ? g.taken[0] : "Someone";
-    n.append(document.createTextNode(`${who} started ${GAME_NAMES[g.game]}${g.game === "uno" ? ` (${g.players} players)` : ""}`));
+    n.append(document.createTextNode(`${who} started ${GAME_NAMES[g.game]}${g.game !== "c4" ? ` (${g.players} players)` : ""}`));
     const b = el("button", "btn small", "Wanna join?"); b.type = "button";
     b.addEventListener("click", () => { n.remove(); closeGame(); if ($("gamesPage").hidden) openGames(); gameJoin(g.code); });
     const x = el("button", "x", "×"); x.type = "button"; x.setAttribute("aria-label", "Nah");
@@ -6490,6 +7227,14 @@ self.onmessage = async (e) => {
     const h = (t) => el("h3", "", t), p = (t) => el("p", "", t);
     const ul = (items) => { const u = el("ul"); items.forEach((t) => u.append(el("li", "", t))); return u; };
     const title = el("h2", "gs-h", (GAME_NAMES[v.game] || "Game") + " rules"); title.id = "grTitle";
+    if (v.game === "letters" || v.game === "life") {
+      const steps = tutSteps(v).filter((x) => x.t !== "That's it");
+      const out = [title];
+      for (const x of steps) out.push(h(x.t), ul(x.p));
+      if (v.game === "letters") out.push(h("Settings in this game"), ul([`${(v.rules || {}).cards || 3} cards to win`, `${(v.rules || {}).seconds || 10} seconds per turn`, (v.rules || {}).say ? "Say it out loud, then tap the letter" : "Type the words"]));
+      B.replaceChildren(...out);
+      return;
+    }
     if (v.game === "c4") {
       B.replaceChildren(title,
         h("How it works"), p("Take turns dropping a chip into one of the 7 columns. It falls to the lowest open spot."),
