@@ -5404,6 +5404,8 @@ self.onmessage = async (e) => {
   async function pinError(res) {
     const data = await res.json().catch(() => ({}));
     if (res.status === 423 || data.code === "PIN_LOCKED") return new Error(data.error || "Too many wrong tries gang. Locked for a bit.");
+    if (res.status === 401 && data.error === "Wrong passcode.")  // the pin was never checked: this browser's MoCloud passcode for the Pi is old
+      return new Error("The pin wasn't even checked: this browser has an old MoCloud passcode saved for the Pi. Switch to the Pi on the home screen and type the MoCloud passcode again, then try the pin.");
     if (res.status === 401 || res.status === 403) {
       const left = data.triesLeft;
       return new Error(left != null ? `Nah that's not it. ${left} ${left === 1 ? "try" : "tries"} left.` : "Nah that's not it.");
