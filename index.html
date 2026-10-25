@@ -4731,7 +4731,7 @@ self.onmessage = async (e) => {
     const when = new Date(h.at || Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     const x = el("button", "btn ghost small", "Hide"); x.type = "button"; x.addEventListener("click", () => { box.hidden = true; });
     box.replaceChildren(el("b", "", "The Pi turned itself off cuz it got too hot"),
-      el("span", "", `It hit ${h.c}°C at ${when}, so it shut off to protect itself. MoCloud's offline till it's back on. Let it cool down, check nothing's blocking its air, then unplug it and plug it back in.`), x);
+      el("span", "", `It hit ${degF(h.c)} at ${when}, so it shut off to protect itself. MoCloud's offline till it's back on. Let it cool down, check nothing's blocking its air, then unplug it and plug it back in.`), x);
     box.hidden = false;
   }
   (() => { try { const h = JSON.parse(localStorage.getItem("mocloud-heat-off")); if (h) heatShow(h); } catch {} })();
@@ -4881,7 +4881,7 @@ self.onmessage = async (e) => {
       if (h.diskLow) problems.push("The Pi's storage is almost full. Delete something to keep uploads working.");
       if (h.underVoltage) problems.push("The Pi isn't getting enough power right now. Use the official 5.1V 3A power supply, or it may restart on its own.");
       else if (h.underVoltageEarlier) problems.push("The Pi's power dipped too low at some point since it started. If it keeps happening, switch to the official 5.1V 3A power supply.");
-      if (h.tempC != null && h.tempC >= 80) problems.push(`The Pi is running hot (${Math.round(h.tempC)}°C) and slowing itself down. Give it more airflow.`);
+      if (h.tempC != null && h.tempC >= 80) problems.push(`The Pi is running hot (${degF(h.tempC)}) and slowing itself down. Give it more airflow.`);
       if (problems.length) {
         title = problems.length === 1 ? "MoCloud needs attention" : "MoCloud has a few problems";
         lines = problems;
@@ -5401,6 +5401,8 @@ self.onmessage = async (e) => {
       input.focus();
     });
   }
+  // The Pi's temperatures come in Celsius and show in Fahrenheit.
+  function degF(c) { return `${Math.round(Number(c) * 9 / 5 + 32)}°F`; }
   async function pinError(res) {
     const data = await res.json().catch(() => ({}));
     if (res.status === 423 || data.code === "PIN_LOCKED") return new Error(data.error || "Too many wrong tries gang. Locked for a bit.");
@@ -5512,10 +5514,10 @@ self.onmessage = async (e) => {
   // ---------- The fan: test it by hand (Developer settings only) ----------
   function fanCard() {
     const F = devUI.fan;
-    const c = card("Fan", `Normally MoCloud runs it by itself: it aims to keep the Pi at ${F ? F.target : 50}°C, and it's at max from ${F ? F.full : 75}°C. Drag the slider to test it at a set speed.`);
+    const c = card("Fan", `Normally MoCloud runs it by itself: it aims to keep the Pi at ${degF(F ? F.target : 50)}, and it's at max from ${degF(F ? F.full : 75)}. Drag the slider to test it at a set speed.`);
     if (!F) { c.append(el("p", "set-note", "ii calm one sec")); return c; }
     if (F.found === false) c.append(el("p", "set-note", "The Pi can't find a fan it controls. Check the blue wire is on pin 12, and restart the Pi once after installing."));
-    const now = el("div", "fan-now", `${F.pct == null ? "–" : F.pct + "%"} · ${F.manual ? "set by u" : "automatic"}${F.temp != null ? ` · Pi at ${F.temp}°C` : ""}`);
+    const now = el("div", "fan-now", `${F.pct == null ? "–" : F.pct + "%"} · ${F.manual ? "set by u" : "automatic"}${F.temp != null ? ` · Pi at ${degF(F.temp)}` : ""}`);
     const wrap = el("div", "fan-slide");
     const r = document.createElement("input"); r.type = "range"; r.min = "0"; r.max = "100"; r.step = "5"; r.value = String(F.pct || 0);
     r.setAttribute("aria-label", "Fan speed"); r.setAttribute("list", "fanTicks");
@@ -5680,11 +5682,11 @@ self.onmessage = async (e) => {
     const T = devUI.temp;
     if (T) {
       const line = el("p", "set-stat temp-line " + T.level);
-      line.append("Pi temp: ", el("b", "", `${Math.round(T.c)}°C`), ` (${TEMP_WORDS[T.level]})`);
+      line.append("Pi temp: ", el("b", "", degF(T.c)), ` (${TEMP_WORDS[T.level]})`);
       c.append(line);
       const H = devUI.heat;
       if (H) c.append(el("p", "set-note", (H.fansMax ? "Fans are on max rn to cool it down. " : "")
-        + `At ${H.fansAt}°C the fans go to max, and at ${H.offAt}°C the Pi shuts itself off. U get an email both times.`));
+        + `At ${degF(H.fansAt)} the fans go to max, and at ${degF(H.offAt)} the Pi shuts itself off. U get an email both times.`));
       if (T.level === "danger") {
         const wrap = el("div", "codered-wrap");
         const red = el("button", "codered", "CODE RED"); red.type = "button";
@@ -5734,7 +5736,7 @@ self.onmessage = async (e) => {
     const grid = el("div", "speed-grid");
     const cell = (k, v) => { const d = el("div", ""); d.append(el("span", "", k), el("b", "", v)); return d; };
     grid.append(cell("Download", fmtMbps(r.down)), cell("Upload", fmtMbps(r.up)));
-    if (typeof r.tempC === "number") grid.append(cell("Pi temp", `${Math.round(r.tempC)}°C`));
+    if (typeof r.tempC === "number") grid.append(cell("Pi temp", degF(r.tempC)));
     for (const [name, d] of Object.entries(r.disk || {})) {
       if (d.error) grid.append(cell(name, "Couldn't test"));
       else grid.append(cell(`${name} write`, fmtMBs(d.write)), cell(`${name} read`, fmtMBs(d.read)));
@@ -9784,10 +9786,14 @@ self.onmessage = async (e) => {
     const SUBS_EXT = /\.(srt|vtt|ass|ssa)$/i;
     const subFiles = inFolders.filter((x) => SUBS_EXT.test(x.file.name) && !x.file.name.startsWith("."));
     for (const x of subFiles) {
-      const key = groups.has(x.path.join("/")) ? x.path.join("/") : x.path.slice(0, -1).join("/");
-      if (groups.has(key)) (groups.get(key).subs ||= []).push(x.file);
+      // The nearest folder above it with the episodes in it: subtitles can sit a few folders down,
+      // like Subs/<episode name>/2_English.srt. They're sent as that path, so the folders count too.
+      let k = x.path.length;
+      while (k >= 0 && !groups.has(x.path.slice(0, k).join("/"))) k--;
+      if (k < 0) continue;
+      (groups.get(x.path.slice(0, k).join("/")).subs ||= []).push({ file: x.file, rel: [...x.path.slice(k), x.file.name].join("/") });
     }
-    const rest = all.filter((f) => !SUBS_EXT.test(f.name));
+    const rest = videos.map((x) => x.file);  // only wat MoCloud needs: the episodes (and their subtitles, below), not .txt/.nfo/pictures
     let answers = [];
     try {
       answers = (await api("/api/anime/identify", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -9806,20 +9812,21 @@ self.onmessage = async (e) => {
       let pairs = [];
       try {
         pairs = (await api("/api/subs/pair", { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ groups: withSubs.map((g) => ({ folder: g.folder, parents: g.parents, videos: g.files.map((f) => f.name), subs: g.subs.map((f) => f.name) })) }) })).groups || [];
+          body: JSON.stringify({ groups: withSubs.map((g) => ({ folder: g.folder, parents: g.parents, videos: g.files.map((f) => f.name), subs: g.subs.map((x) => x.rel) })) }) })).groups || [];
       } catch {}
       withSubs.forEach((g, i) => {
         const p = (pairs[i] || {}).pairs || {};
-        for (const sf of g.subs) {
-          const v = p[sf.name] && g.files.find((f) => f.name === p[sf.name]);
+        for (const x of g.subs) {
+          const v = p[x.rel] && g.files.find((f) => f.name === p[x.rel]);
           if (!v) continue;
-          const as = (asNames.get(v) || v.name).replace(/\.[^.]+$/, "") + "." + sf.name.split(".").pop().toLowerCase();
-          asNames.set(sf, as); paired.push(sf);
+          const as = (asNames.get(v) || v.name).replace(/\.[^.]+$/, "") + "." + x.file.name.split(".").pop().toLowerCase();
+          asNames.set(x.file, as); paired.push(x.file);
         }
       });
-      const total = withSubs.reduce((n, g) => n + g.subs.length, 0);
-      setTimeout(() => toast(paired.length === total ? `Matched all ${total} subtitle files to their episodes.`
-        : `Matched ${paired.length} of ${total} subtitle files to their episodes. The other ${total - paired.length} didn't clearly go with one, so they're not uploaded.`, paired.length < total), 2500);
+      // Told per episode (a folder can have a few languages per episode, only English is used).
+      const eps = withSubs.reduce((n, g) => n + g.files.length, 0);
+      setTimeout(() => toast(paired.length >= eps ? `Found English subtitles for all ${eps} episodes, they go up with them.`
+        : `Found English subtitles for ${paired.length} of ${eps} episodes, they go up with them. The rest get theirs the usual way.`), 2500);
     }
     addFiles([...rest, ...paired], asNames);
   }
