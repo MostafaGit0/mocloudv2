@@ -39,6 +39,11 @@
   }
   * { box-sizing: border-box; }
   html { background: var(--ink); touch-action: manipulation; }  /* no double-tap zoom on touch screens */
+  /* on everything: a scrolling list starts over from "zoom allowed", so html alone didn't cover it
+     (the canvas, swipe rows and drag handles keep their own settings) */
+  *, *::before, *::after { touch-action: manipulation; }
+  /* iPhone zooms in on any text box with text under 16px when it's tapped: none are */
+  @media (pointer: coarse) { input, select, textarea { font-size: max(16px, 1em) !important; } }
   body {
     margin: 0;
     font: 400 16px/1.5 var(--font);
@@ -275,6 +280,7 @@
   .mode-card .sub { margin: 0; }
   @media (max-width: 560px) { .mode-card { grid-template-columns: auto 1fr; } .mode-card .btn { grid-column: 1 / -1; } }
   .kar-find { display: flex; gap: 10px; margin-bottom: 14px; }
+  .kar-x { padding: 0 14px; font-size: 22px; line-height: 1; }
   .kar-find input { flex: 1; min-width: 0; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); font-size: 16px; }
   .kar-list { display: grid; gap: 8px; margin: 0 0 22px; }
   .kar-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px; border-radius: 7px;
@@ -462,6 +468,24 @@
   .set-stat b { color: var(--paper); font-weight: 600; }
   .set-stat.live { color: var(--accent-2); }
   .set-note { font-size: 13px; color: var(--dim); margin-top: 10px; }
+  .pi-off { background: #E5212F; color: #fff; border-color: #E5212F; width: 100%; }
+  .fan-now { font-size: 14px; color: var(--dim); margin: 4px 0 6px; }
+  .fan-val { display: block; font-size: 22px; margin-bottom: 6px; }
+  .fan-slide input { width: 100%; accent-color: var(--accent); }
+  .fan-marks { display: flex; justify-content: space-between; font-size: 12px; color: var(--dim); }
+  .fan-foot { display: flex; justify-content: flex-end; margin-top: 14px; }
+  .cl-state { font-size: 14px; margin: 4px 0 12px; }
+  .cl-state.on { color: var(--green); } .cl-state.out, .cl-state.off { color: var(--red); } .cl-state.paused { color: var(--accent); }
+  .cl-big { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .cl-track { height: 8px; border-radius: 6px; background: var(--panel-2); overflow: hidden; margin-bottom: 14px; }
+  .cl-track i { display: block; height: 100%; background: var(--green); }
+  .cl-track i.warn { background: var(--accent); } .cl-track i.full { background: var(--red); }
+  .cl-grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; font-size: 14px; }
+  .cl-grid span { color: var(--dim); } .cl-grid .cl-dim { font-size: 12px; font-weight: 400; }
+  .cl-hist { display: grid; gap: 10px; margin-bottom: 8px; }
+  .cl-hist-row { display: grid; gap: 2px; font-size: 14px; }
+  .cl-hist-row em { font-style: normal; font-size: 12px; color: var(--dim); }
+  .cl-add { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .cl-add input { width: 90px; }
   .switch { position: relative; width: 52px; height: 32px; flex: none; border-radius: 6px; border: 0; padding: 0;
     background: var(--line); transition: background .2s; }
   .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%;
@@ -635,6 +659,12 @@
   .pl-drop.new { background: none; border: 1px dashed var(--line); }
   .pl-drop.pl-over { background: var(--accent); color: var(--on-accent); outline: 0; }
   .pl-ghost { position: fixed; z-index: 95; transform: translate(-50%, -120%); padding: 8px 12px; border-radius: 6px; background: var(--paper); color: var(--ink); font-weight: 600; font-size: 14px; pointer-events: none; max-width: 70vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #karInfo { background: var(--panel); border-radius: 10px; padding: 22px; width: min(620px, 94vw); max-height: 86vh; }
+  #karInfo h3 { margin: 0 0 10px; font-size: 20px; }
+  .kar-info-body { overflow-y: auto; max-height: calc(86vh - 130px); padding-right: 4px; margin-bottom: 14px; }
+  .kar-info-body h4 { margin: 18px 0 6px; font-size: 15px; color: var(--accent); }
+  .kar-info-body p { margin: 0 0 6px; font-size: 14px; line-height: 1.5; color: var(--paper); }
+  .kar-info-btn { margin-left: auto; }
   #plPickDlg { background: var(--panel); border-radius: 10px; padding: 22px; width: min(380px, 92vw); }
   #plPickDlg h3 { margin: 0 0 14px; font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
   .pl-choices { display: grid; gap: 8px; margin-bottom: 14px; max-height: 50vh; overflow-y: auto; }
@@ -1488,7 +1518,7 @@
       <button class="btn" id="pick">Choose files</button>
       <button class="btn ghost" id="pickFolder" title="A folder of episodes goes up as an anime arc">Upload a folder</button>
     </div>
-    <input type="file" id="fileInput" accept="video/*,image/*,.mkv,.avi,.mov,.heic" multiple hidden>
+    <input type="file" id="fileInput" accept="video/*,image/*,.mkv,.avi,.mov,.heic,.srt,.vtt,.ass,.ssa" multiple hidden>
     <input type="file" id="folderInput" webkitdirectory multiple hidden>
   </section>
 
@@ -1553,6 +1583,12 @@
   <div class="dlg-acts"><button class="btn ghost push" id="showNone">No episode info</button><button class="btn ghost" id="showCancel">Cancel</button></div>
 </dialog>
 
+<dialog id="karInfo" aria-labelledby="karInfoTitle">
+  <h3 id="karInfoTitle">How karaoke works</h3>
+  <div class="kar-info-body"><h4>Wat karaoke does</h4><p>Search for any song and MoCloud saves it to the Pi with its lyrics lit up word by word as it plays, an English translation next to songs in other languages, and the instrumental (tap Vocals to switch).</p><p>Every saved song is kept on this device too, so it plays without Wi-Fi.</p><h4>How a song gets saved</h4><p>1. Search: YouTube Music, explicit versions only (no music videos or live versions).</p><p>2. The pop-up checks the lyrics first and says where it found them (Musixmatch word by word is the best there is). If a song only has untimed lyrics, it asks before timing them by listening, with how long that takes.</p><p>3. Karaoke it: the Pi downloads the song and makes the MP3 (about 30 s to a minute).</p><p>4. Lyrics and translation (about 10 to 30 s more for songs not in English).</p><p>5. It shows up in Ur songs and u can sing it right away. U can close the app the whole time: it all happens on the Pi.</p><p>6. After that the Pi keeps sharpening it in the background: it lines up the instrumental and places every word where it&#x27;s sung (about 2 min for word-by-word lyrics, around 10 min for line-timed ones). The timing gets better once that&#x27;s done.</p><h4>Where the lyrics come from (free ones first)</h4><p>Musixmatch: word-by-word timing, the best there is (if it&#x27;s down, the pop-up says so and which one it used instead).</p><p>NetEase: word-by-word timing for lots of songs Musixmatch doesn&#x27;t have.</p><p>LRCLIB: lyrics timed line by line.</p><p>Genius: untimed lyrics (then timed by listening), and the correct spelling to check against.</p><p>Claude&#x27;s web search: only when none of those have the song.</p><h4>Translations</h4><p>First: a translation made by people (Musixmatch&#x27;s, or one Claude finds on the web, like Genius or LyricsTranslate).</p><p>Else: Claude Sonnet translates it, close to the original words, with slang and dialect done right. It also fixes typos in the lyrics.</p><p>Backups: Gemini (free), then DeepL, then Google Translate.</p><p>Habibi: Arabic songs call the person they&#x27;re sung to &quot;him&quot; whoever it is, so u pick her or him (in the pop-up, or the Who&#x27;s habibi? button in the player) and the English follows. No AI decides that.</p><h4>Timing the words</h4><p>Whisper (speech-to-text, running on the Pi, free) listens to the song with the instrumental taken out and works out when each word is sung.</p><p>Songs with only untimed lyrics get every line timed this way. If Whisper&#x27;s words are too messy to match, Claude Haiku matches the lyrics to wat Whisper heard instead.</p><p>Instrumental breaks are skipped, so lyrics never run on during the music.</p><h4>Where Claude comes in (and wat it costs)</h4><p>Claude Sonnet: only translating song lyrics (about 3¢ a song).</p><p>Claude Haiku: finding lyrics and translations by people on the web, and matching lyrics to wat Whisper heard (a fraction of a cent to about 1¢).</p><p>Never again for the same song: everything it works out is kept, so playing, checking or re-saving a song doesn&#x27;t ask Claude twice.</p><p>Background catch-up work goes through Claude&#x27;s Batch API at half price.</p><p>If Claude&#x27;s credits are used up, Gemini&#x27;s free tier takes over. Every use, wat it cost and wat&#x27;s left is in Developer settings, under Claude.</p><h4>Everything it uses</h4><p>YouTube Music (search) and yt-dlp (downloading), ffmpeg (making the MP3), Musixmatch, NetEase, LRCLIB, Genius, Claude (Sonnet and Haiku, with web search), Gemini, DeepL, Google Translate, Whisper (on the Pi), and the song&#x27;s instrumental from YouTube.</p><h4>Good to know</h4><p>Karaoke has its own space on the Pi (shown next to Ur songs).</p><p>Songs u saved with Anything to MP4 can go into karaoke from Developer settings.</p><p>Deleting a song removes it from every device.</p></div>
+  <div class="dlg-acts"><button class="btn" id="karInfoClose">Got it</button></div>
+</dialog>
+
 <dialog id="plPickDlg" aria-labelledby="plPickTitle">
   <h3 id="plPickTitle"></h3>
   <div class="pl-choices" id="plPickList"></div>
@@ -1581,7 +1617,7 @@
 <dialog id="info">
   <h3 id="infoTitle"></h3>
   <dl id="infoList"></dl>
-  <div class="info-acts"><button class="btn ghost" id="infoClose">Close</button><button class="link" id="infoFindSubs" hidden>Find subtitles</button><button class="link" id="infoDna" hidden>File DNA</button></div>
+  <div class="info-acts"><button class="btn ghost" id="infoClose">Close</button><button class="link" id="infoFindSubs" hidden>Find subtitles</button><button class="link" id="infoWhisper" hidden>Redo subtitles with Whisper</button><button class="link" id="infoDna" hidden>File DNA</button></div>
 </dialog>
 
 <section id="settingsPage" hidden aria-labelledby="setTitle">
@@ -1637,9 +1673,11 @@
     <div class="set-top">
       <button type="button" class="btn ghost small set-back" id="karBack">&larr; Back</button>
       <h2 id="karTitle">Karaoke</h2>
+      <button type="button" class="btn ghost small kar-info-btn" id="karInfoBtn" aria-label="How karaoke works">ⓘ Info</button>
     </div>
     <form class="kar-find" id="karFind">
       <input type="search" id="karQuery" placeholder="Search for a song" aria-label="Search for a song" autocomplete="off" enterkeyhint="search">
+      <button type="button" class="btn ghost kar-x" id="karClear" aria-label="Stop searching and clear" hidden>&times;</button>
       <button class="btn" id="karGo">Search</button>
     </form>
     <div id="karResults"></div>
@@ -2299,7 +2337,18 @@ self.onmessage = async (e) => {
   // ---------- No zooming with fingers ----------
   // A stray double tap (or two fingers) on a touch screen used to zoom the whole page. Games have their
   // own zoom buttons instead. iPhone Safari ignores the page's "no zoom" setting, so it's stopped here too.
-  document.addEventListener("gesturestart", (e) => e.preventDefault());
+  for (const ev of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+  // Two taps close together: the second one never gets to be a zoom (it still counts as a tap).
+  let lastTap = 0;
+  document.addEventListener("touchend", (e) => {
+    const now = Date.now();
+    if (now - lastTap < 350 && e.changedTouches.length === 1 && !(e.target.closest && e.target.closest("input, textarea, select, [contenteditable]"))) {
+      e.preventDefault();
+      const hit = e.target.closest && e.target.closest("button, a, [role=button], label, .chip, summary, .tile");
+      if (hit && !hit.disabled) hit.click();
+    }
+    lastTap = now;
+  }, { passive: false });
   document.addEventListener("dblclick", (e) => { if (e.target.closest && !e.target.closest("input, textarea, [contenteditable]")) e.preventDefault(); }, { passive: false });
   document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
@@ -3012,7 +3061,7 @@ self.onmessage = async (e) => {
 
 
   // ---------- Subtitles ----------
-  // The Pi finds English subtitles for new uploads (from inside the file, or OpenSubtitles) and
+  // The Pi finds English subtitles for new uploads (from inside the file, subliminal, or Whisper) and
   // keeps them next to each video as a small file. The Subtitles button turns them on and off,
   // remembered on this device. The video's own captions menu works too.
   const SUBS_RE = /^mocloud-subs-([0-9a-f]+)\.vtt$/;
@@ -3045,11 +3094,6 @@ self.onmessage = async (e) => {
   }
   const subsOn = () => { try { return localStorage.getItem("mocloud-subs-on") === "1"; } catch { return false; } };
   const setSubsOn = (on) => { try { localStorage.setItem("mocloud-subs-on", on ? "1" : "0"); } catch {} };
-  const fmtClock = (ms) => {
-    if (!ms) return "the daily reset";
-    const d = new Date(ms), today = new Date().toDateString() === d.toDateString();
-    return d.toLocaleString(undefined, today ? { hour: "numeric", minute: "2-digit" } : { weekday: "short", hour: "numeric", minute: "2-digit" });
-  };
   function paintSubs(v) {
     const on = subsOn();
     $("ccBtn").setAttribute("aria-pressed", String(on));
@@ -3062,7 +3106,9 @@ self.onmessage = async (e) => {
     try {
       const res = await fetch(fileUrl(sf.key), { cache: "no-cache" });
       if (!res.ok || !v.isConnected) return;
-      const url = URL.createObjectURL(new Blob([await res.text()], { type: "text/vtt" }));
+      const text = await res.text();
+      if (text.includes("NOTE MoCloud: made by Whisper")) toast("These subtitles are from Whisper");
+      const url = URL.createObjectURL(new Blob([text], { type: "text/vtt" }));
       if (!v.isConnected) { URL.revokeObjectURL(url); return; }
       const track = document.createElement("track");
       Object.assign(track, { kind: "subtitles", label: "English", srclang: "en", src: url });
@@ -3088,8 +3134,17 @@ self.onmessage = async (e) => {
     } catch (e) { toast(e.message || "Couldn't ask the Pi for subtitles.", true); }
   }
 
+  // Has Whisper (on the Pi) write one video's subtitles, replacing any it has.
+  async function whisperSubs(f) {
+    try {
+      await api("/api/subs/whisper", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: f.key }) });
+      toast(`Whisper's gonna write subtitles for ${titleOf(f)}`);
+      await refresh();
+    } catch (e) { toast(e.message || "Couldn't ask the Pi for Whisper.", true); }
+  }
+
   // Tells you when subtitles are ready (or couldn't be found), once per result on this device,
-  // even if the page was closed while the Pi worked. Also warns when the day's downloads run low.
+  // even if the page was closed while the Pi worked.
   function noticeSubs() {
     if (backend.id !== "pi") return;
     const seenKey = "mocloud-subs-seen";
@@ -3100,7 +3155,7 @@ self.onmessage = async (e) => {
     if (fresh.length) {
       try { localStorage.setItem(seenKey, String(Math.max(...fresh.map((x) => x.at)))); } catch {}
       const label = (x) => titleOf(state.files.find((f) => f.key === x.key) || { key: x.key, name: x.name, type: "video/mp4" });
-      const found = fresh.filter((x) => x.state === "found" && x.kind !== "retimed"), none = fresh.filter((x) => x.state === "none" && !(x.msg || "").startsWith("Anime:")),
+      const found = fresh.filter((x) => x.state === "found" && x.kind !== "retimed"), none = fresh.filter((x) => x.state === "none" && !(x.msg || "").startsWith("Anime:") && !(x.msg || "").startsWith("Stopped from")),
         failed = fresh.filter((x) => x.state === "failed"), retimed = fresh.filter((x) => x.state === "found" && x.kind === "retimed");
       const parts = [];
       if (retimed.length) parts.push(retimed.length === 1 ? `Fixed the subtitle timing for ${label(retimed[0])}` : `Fixed the subtitle timing for ${retimed.length} videos`);
@@ -3108,19 +3163,6 @@ self.onmessage = async (e) => {
       if (none.length) parts.push(none.length === 1 ? `Couldn't find subtitles for ${label(none[0])}` : `Couldn't find subtitles for ${none.length} videos`);
       if (failed.length) parts.push(failed.length === 1 ? (failed[0].msg || `Subtitles didn't work for ${label(failed[0])}`).replace(/\.$/, "") : `Subtitles didn't work for ${failed.length} videos`);
       if (parts.length) toast(parts.join(". ") + ".", !found.length && !retimed.length);
-    }
-    const q = state.subsQuota;
-    if (q && (q.warn || q.full)) {
-      const tag = `${q.full ? "full" : "warn"}:${q.resetAt || ""}`;
-      let last = "";
-      try { last = localStorage.getItem("mocloud-subs-warned") || ""; } catch {}
-      if (last !== tag) {
-        try { localStorage.setItem("mocloud-subs-warned", tag); } catch {}
-        const msg = q.full
-          ? `Daily subtitle limit reached (${q.limit} of ${q.limit}). The rest wait until ${fmtClock(q.resetAt)}.`
-          : `Heads up: ${q.used} of today's ${q.limit} subtitle downloads used. ${q.remaining} left until ${fmtClock(q.resetAt)}.`;
-        setTimeout(() => toast(msg, true), fresh.length ? 5000 : 0);
-      }
     }
   }
 
@@ -3136,18 +3178,14 @@ self.onmessage = async (e) => {
       return li;
     };
     const label = (x) => titleOf(state.files.find((f) => f.key === x.key) || { key: x.key, name: x.name, type: "video/mp4" });
-    const out = busy.filter((x) => !["queued", "waiting"].includes(x.state)).map((x) => row(label(x), {
-      searching: "Looking for subtitles",
-      downloading: "Downloading subtitles",
+    const out = busy.filter((x) => x.state !== "queued").map((x) => row(label(x), {
+      searching: x.msg || "Subliminal is looking for subtitles",
+      downloading: x.msg || "Subliminal is downloading them",
       adding: x.msg ? "Subtitles found, adding them once nobody's watching" : "Adding subtitles",
     }[x.state] || x.msg || "Working on subtitles"));
-    const queued = busy.filter((x) => x.state === "queued"), waiting = busy.filter((x) => x.state === "waiting");
+    const queued = busy.filter((x) => x.state === "queued");
     if (queued.length) out.push(row(queued.length === 1 ? label(queued[0]) : `${queued.length} videos`,
       queued.every((x) => x.msg) ? queued[0].msg : "In line for subtitles"));
-    if (waiting.length) {
-      const at = fmtClock(state.subsQuota && state.subsQuota.resetAt);
-      out.push(row(waiting.length === 1 ? label(waiting[0]) : `${waiting.length} videos`, `Daily subtitle limit reached. Picks back up at ${at}`));
-    }
     return out;
   }
 
@@ -4558,7 +4596,7 @@ self.onmessage = async (e) => {
   function watchFixes() {
     clearTimeout(fixPoll);
     const waitingPics = piMakesThumbs() && state.thumbsPending > 0; // the Pi is still making pictures
-    const subsBusy = (state.subs || []).some((x) => !SUBS_DONE.includes(x.state) && x.state !== "waiting");
+    const subsBusy = (state.subs || []).some((x) => !SUBS_DONE.includes(x.state));
     const ytBusy = (state.youtube || []).some((j) => j.state !== "failed");
     if (ytBusy && !state.offline) {
       fixPoll = setTimeout(() => refresh().catch(() => {}), 2500);
@@ -4575,7 +4613,7 @@ self.onmessage = async (e) => {
     Object.assign(state, {
       files: all.filter((f) => !isSys(f)), sysFiles: all.filter(isSys), used: data.used, limit: data.limit,
       processing: (data.processing || []).filter((p) => !isSys(p)), thumbsPending: data.thumbsPending || 0,
-      subs: backend.id === "pi" ? data.subs || [] : [], subsQuota: backend.id === "pi" ? data.subsQuota || null : null,
+      subs: backend.id === "pi" ? data.subs || [] : [], subsFrom: backend.id === "pi" ? data.subsFrom || {} : {},
       intros: backend.id === "pi" ? data.intros || {} : {},
       light: backend.id === "pi" ? data.light || {} : {}, storageAlert: data.storageAlert === undefined ? 90 : data.storageAlert,
       freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
@@ -4922,15 +4960,24 @@ self.onmessage = async (e) => {
     $("infoFindSubs").hidden = !canAsk;
     $("infoFindSubs").textContent = subsFile(full.key) ? "Look for subtitles again" : job ? "Try subtitles again" : "Find subtitles";
     $("infoFindSubs").onclick = () => { $("info").close(); findSubs(full); };
+    $("infoWhisper").hidden = !canAsk;
+    $("infoWhisper").textContent = subsFile(full.key) ? "Redo subtitles with Whisper" : "Make subtitles with Whisper";
+    $("infoWhisper").onclick = () => { $("info").close(); whisperSubs(full); };
     $("infoDna").hidden = !onPi() || !state.files.some((x) => x.key === full.key);
     $("infoDna").onclick = () => { $("info").close(); openDna(full.key); };
     if (!$("info").open) $("info").showModal();
   }
   function subsLine(f) {
     const job = backend.id === "pi" ? subsJob(f.key) : null;
-    if (job && job.state === "waiting") return "Found, waiting for the daily download limit to reset";
     if (job && !SUBS_DONE.includes(job.state)) return subsFile(f.key) ? "English (checking the timing)" : "Looking for them now";
-    if (subsFile(f.key)) return job && job.source === "file" ? "English (came with the file)" : job && job.kind === "retimed" ? "English (timing fixed)" : "English";
+    if (subsFile(f.key)) {
+      const from = (state.subsFrom || {})[f.key] || (job && job.source) || "";
+      if (from === "file") return "English (came with the file)";
+      if (from === "whisper") return "English (made by Whisper)";
+      if (from === "subliminal") return "English (found by subliminal)";
+      if (from === "upload") return "English (u uploaded them)";
+      return job && job.kind === "retimed" ? "English (timing fixed)" : "English";
+    }
     if (job && job.state === "none") return job.msg || "None found online";
     if (job && job.state === "failed") return job.msg || "Couldn't get them";
     return backend.id === "pi" && state.piSubs ? "None" : "";
@@ -5236,8 +5283,6 @@ self.onmessage = async (e) => {
       all.addEventListener("click", findAllMissingSubs);
       box.append(all);
     }
-    const q = state.subsQuota;
-    if (q) box.append(el("p", "set-note", `${q.remaining} of ${q.limit} subtitle downloads left today.`));
 
     const row = (f, title) => {
       const on = hasSubs(f.key);
@@ -5288,7 +5333,7 @@ self.onmessage = async (e) => {
     const missing = state.files.filter((f) => isVideo(f) && !hasSubs(f.key)
       && !((subsJob(f.key) || {}).state && !SUBS_DONE.includes(subsJob(f.key).state)));
     if (!missing.length) return;
-    if (!confirm(`Look again for all ${missing.length} missing? A free OpenSubtitles account gets 20 downloads a day, so if there's a lot, the rest go through after the daily reset by themselves.`)) return;
+    if (!confirm(`Look again for all ${missing.length} missing?`)) return;
     subsUI.asking = true; renderSubsPage();
     let asked = 0;
     for (const f of missing) {
@@ -5421,16 +5466,18 @@ self.onmessage = async (e) => {
       devUI.clean = cl; devUI.err = "";
       if (h) { devUI.hist = h.history; devUI.link = h.link; }
       if (t) { devUI.temp = t.temp; devUI.heat = t.heat || null; }
+      devUI.fan = await devApi("/api/dev/fan").catch((e) => { if (e.message === "locked") throw e; return devUI.fan || null; });
+      devUI.claude = await devApi("/api/dev/claude").catch((e) => { if (e.message === "locked") throw e; return devUI.claude || null; });
       devUI.picked = new Set([...devUI.picked].filter((k) => cl.items.some((i) => i.key === k)));
     } catch (e) { if (e.message === "locked") return; devUI.err = e.message; }
     if (!isDevOpen()) return;
-    renderDev();
+    if (!devUI.fanDrag) renderDev(); // not while the fan slider's being dragged
     const scanning = devUI.clean && devUI.clean.scanning;
     devUI.timer = setTimeout(() => loadDev(false), scanning ? 3000 : 8000);
   }
 
   function renderDev() {
-    const parts = [speedCard()];
+    const parts = [speedCard(), fanCard(), offCard(), claudeCard()];
     const C = devUI.clean;
     if (!C) parts.push(card(devUI.err ? "Couldn't load it" : "Loading", devUI.err || "ii calm one sec"));
     else {
@@ -5442,6 +5489,114 @@ self.onmessage = async (e) => {
     }
     parts.push(karFileCard());
     $("devBody").replaceChildren(...parts);
+  }
+
+  // ---------- Shut the Pi off (Developer settings only): asks twice ----------
+  function offCard() {
+    const c = card("Shut the Pi off", "Turns the Pi off completely. MoCloud's offline everywhere till u unplug it and plug it back in.");
+    const b = el("button", "btn pi-off", "Shut the Pi off"); b.type = "button";
+    b.addEventListener("click", async () => {
+      if (!(await askSure("Shut the Pi off?", "MoCloud goes offline everywhere till u unplug the Pi and plug it back in.", "Yeah shut it off", "Nah"))) return;
+      if (!(await askSure("U sure sure?", "It only comes back on when someone unplugs it and plugs it back in.", "Shut it off", "Wait no"))) return;
+      try {
+        await devApi("/api/dev/codered", jsonPost({ sure: true }));
+        toast("The Pi's shutting off. Unplug it and plug it back in to turn it back on.", true);
+      } catch (e) { if (e.message !== "locked") toast(e.message, true); }
+    });
+    c.append(b);
+    return c;
+  }
+
+  // ---------- The fan: test it by hand (Developer settings only) ----------
+  function fanCard() {
+    const F = devUI.fan;
+    const c = card("Fan", `Normally MoCloud runs it by itself: it aims to keep the Pi at ${F ? F.target : 50}°C, and it's at max from ${F ? F.full : 75}°C. Drag the slider to test it at a set speed.`);
+    if (!F) { c.append(el("p", "set-note", "ii calm one sec")); return c; }
+    if (F.found === false) c.append(el("p", "set-note", "The Pi can't find a fan it controls. Check the blue wire is on pin 12, and restart the Pi once after installing."));
+    const now = el("div", "fan-now", `${F.pct == null ? "–" : F.pct + "%"} · ${F.manual ? "set by u" : "automatic"}${F.temp != null ? ` · Pi at ${F.temp}°C` : ""}`);
+    const wrap = el("div", "fan-slide");
+    const r = document.createElement("input"); r.type = "range"; r.min = "0"; r.max = "100"; r.step = "5"; r.value = String(F.pct || 0);
+    r.setAttribute("aria-label", "Fan speed"); r.setAttribute("list", "fanTicks");
+    const ticks = document.createElement("datalist"); ticks.id = "fanTicks";
+    for (const v of [0, 25, 50, 75, 100]) { const o = document.createElement("option"); o.value = String(v); ticks.append(o); }
+    const marks = el("div", "fan-marks"); for (const v of [0, 25, 50, 75, 100]) marks.append(el("span", "", v + "%"));
+    const val = el("b", "fan-val", (F.pct || 0) + "%");
+    r.addEventListener("input", () => { val.textContent = r.value + "%"; devUI.fanDrag = true; });
+    r.addEventListener("pointerdown", () => { devUI.fanDrag = true; });
+    r.addEventListener("change", async () => {
+      devUI.fanDrag = false;
+      try { devUI.fan = await devApi("/api/dev/fan", jsonPost({ pct: +r.value })); renderDev(); } catch (e) { if (e.message !== "locked") toast(e.message, true); }
+    });
+    wrap.append(r, ticks, marks);
+    const back = el("button", "btn small", "Back to automatic"); back.type = "button"; back.disabled = !F.manual;
+    back.addEventListener("click", async () => {
+      try { devUI.fan = await devApi("/api/dev/fan", jsonPost({ auto: true })); renderDev(); toast("Fan's back on automatic."); } catch (e) { if (e.message !== "locked") toast(e.message, true); }
+    });
+    const foot = el("div", "fan-foot"); foot.append(back);
+    c.append(now, val, wrap, foot);
+    return c;
+  }
+
+  // ---------- Claude: wat it's spent (Developer settings only) ----------
+  const money = (v) => v == null ? "–" : v < 0.01 && v > 0 ? `${(v * 100).toFixed(2)}¢` : `$${v.toFixed(2)}`;
+  function claudeCard() {
+    const C = devUI.claude;
+    const c = card("Claude", "MoCloud counts every Claude request itself (Anthropic doesn't share ur balance), so keep this key just for MoCloud. At 90% u get an email; at 100% MoCloud stops using Claude and Gemini takes over, so it never spends more than u put in.");
+    if (!C) { c.append(el("p", "set-note", "ii calm one sec")); return c; }
+    c.append(el("p", "cl-state " + C.state, C.note));
+    if (C.budget) {
+      const pct = Math.min(100, C.percent || 0);
+      const tr = el("div", "cl-track"), fill = el("i"); fill.style.width = pct + "%";
+      fill.className = pct >= 100 ? "full" : pct >= 90 ? "warn" : ""; tr.append(fill);
+      c.append(el("div", "cl-big", `${money(C.spent)} used of ${money(C.budget)} (${(C.percent || 0).toFixed(1)}%)`), tr);
+    }
+    const grid = el("div", "cl-grid");
+    for (const [k, v] of [["Put in", money(C.budget)], ["Used", money(C.spent)], ["Left", money(C.left)], ["Today", money(C.today)],
+      ["Per day (last 2 weeks)", money(C.perDay)], ["Lasts about", C.daysLeft == null ? "–" : `${C.daysLeft} more days`], ["Requests", String(C.requests)],
+      ["90% email", C.warned90 ? "Sent" : "Not yet"]]) grid.append(el("span", "", k), el("b", "", v));
+    c.append(grid);
+    if (C.jobs.length) {
+      c.append(el("h4", "", "Wat it's spent on"));
+      const g2 = el("div", "cl-grid");
+      for (const j of C.jobs) g2.append(el("span", "", `${j.name} (${j.requests})`), el("b", "", money(j.cost)));
+      for (const m of C.models) g2.append(el("span", "cl-dim", `${m.name}: ${m.requests} requests`), el("b", "cl-dim", money(m.cost)));
+      c.append(g2);
+    }
+    c.append(el("h4", "", "Bought more credits?"));
+    const row = el("div", "cl-add");
+    const amt = document.createElement("input"); amt.type = "number"; amt.min = "0"; amt.step = "1"; amt.placeholder = "10"; amt.className = "kf-in"; amt.setAttribute("aria-label", "Amount in dollars");
+    const add = el("button", "btn small", "Add it"); add.type = "button";
+    const fix = el("button", "btn ghost small", "Set total instead"); fix.type = "button";
+    const go = async (body) => {
+      const v = parseFloat(amt.value);
+      if (!(v >= 0)) return toast("Type the dollar amount first.", true);
+      try { devUI.claude = await devApi("/api/dev/claude/budget", jsonPost(body(v))); amt.value = ""; renderDev(); toast("Got it."); } catch (e) { if (e.message !== "locked") toast(e.message, true); }
+    };
+    add.addEventListener("click", () => go((v) => ({ add: v })));
+    fix.addEventListener("click", () => go((v) => ({ set: v })));
+    row.append(el("span", "", "$"), amt, add, fix);
+    c.append(row, el("p", "set-note", "Add the amount after buying credits at platform.claude.com. That also re-arms the 90% email."));
+    // History: every time Claude was used, newest first.
+    c.append(el("h4", "", "History"));
+    const H = C.history || [];
+    if (!H.length) c.append(el("p", "set-note", "Nothing yet."));
+    else {
+      const list = el("div", "cl-hist");
+      for (const h of H.slice(0, devUI.clMore ? 200 : 15)) {
+        const d = new Date(h.at);
+        const when = d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        const r = el("div", "cl-hist-row");
+        r.append(el("span", "", h.what), el("em", "", `${when} · ${h.model}${h.batch ? " (half price)" : ""} · ${money(h.cost)}`));
+        list.append(r);
+      }
+      c.append(list);
+      if (H.length > 15) {
+        const more = el("button", "link", devUI.clMore ? "Show less" : `Show all ${H.length}`); more.type = "button";
+        more.addEventListener("click", () => { devUI.clMore = !devUI.clMore; renderDev(); });
+        c.append(more);
+      }
+    }
+    return c;
   }
 
   // ---------- Saved videos into karaoke (Developer settings only) ----------
@@ -8460,6 +8615,7 @@ self.onmessage = async (e) => {
   function renderKar() {
     // search results
     const R = $("karResults");
+    $("karClear").hidden = !($("karQuery").value || kar.results || kar.searching);
     if (kar.searching) R.replaceChildren(el("p", "kar-empty", "Looking on YouTube Music..."));
     else if (kar.results === null) R.replaceChildren();
     else if (!kar.results.length) R.replaceChildren(el("p", "kar-empty", "No songs found. Try the artist's name too."));
@@ -8541,10 +8697,20 @@ self.onmessage = async (e) => {
     if (!q || kar.searching) return;
     $("karQuery").blur();
     kar.searching = true; renderKar();
-    try { kar.results = (await karApi(`/api/karaoke/search?q=${encodeURIComponent(q)}`)).results || []; }
-    catch (err) { kar.results = null; toast(err.message, true); }
+    const mine = (kar.searchN = (kar.searchN || 0) + 1);
+    let got = null, err = null;
+    try { got = (await karApi(`/api/karaoke/search?q=${encodeURIComponent(q)}`)).results || []; } catch (e2) { err = e2; }
+    if (mine !== kar.searchN) return; // cleared with the X while it was looking
+    kar.results = got; if (err) toast(err.message, true);
     kar.searching = false; renderKar();
   });
+  // The X: stops searching and clears the list.
+  $("karClear").addEventListener("click", () => {
+    kar.searchN = (kar.searchN || 0) + 1;
+    kar.results = null; kar.searching = false; $("karQuery").value = "";
+    renderKar();
+  });
+  $("karQuery").addEventListener("input", () => { $("karClear").hidden = !($("karQuery").value || kar.results || kar.searching); });
 
   // "Karaoke it?": wat the song is and whether its lyrics follow along, before anything's saved.
   let karAsking = null;
@@ -8580,6 +8746,8 @@ self.onmessage = async (e) => {
     }
   }
   $("ksNah").addEventListener("click", () => { karAsking = null; $("karSure").close(); });
+  $("karInfoBtn").addEventListener("click", () => $("karInfo").showModal());
+  $("karInfoClose").addEventListener("click", () => $("karInfo").close());
   // Who habibi is: Arabic love songs say "him" whoever it's about, so u pick, and the English follows.
   function karHabShow(to) {
     for (const b of $("ksHab").querySelectorAll("[data-to]")) b.setAttribute("aria-pressed", String(b.dataset.to === to));
@@ -9609,7 +9777,15 @@ self.onmessage = async (e) => {
       groups.get(key).files.push(v.file);
     }
     const list = [...groups.values()];
-    toast("ii calm one sec, figuring out which anime this is...");
+    // Subtitle files in the folder (or a "Subs" folder inside it) go with their episodes: the Pi pairs them
+    // up ("Episode 3.srt" with "Show S01E03.mkv") and they go up named after their episode.
+    const SUBS_EXT = /\.(srt|vtt|ass|ssa)$/i;
+    const subFiles = inFolders.filter((x) => SUBS_EXT.test(x.file.name) && !x.file.name.startsWith("."));
+    for (const x of subFiles) {
+      const key = groups.has(x.path.join("/")) ? x.path.join("/") : x.path.slice(0, -1).join("/");
+      if (groups.has(key)) (groups.get(key).subs ||= []).push(x.file);
+    }
+    const rest = all.filter((f) => !SUBS_EXT.test(f.name));
     let answers = [];
     try {
       answers = (await api("/api/anime/identify", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -9623,7 +9799,27 @@ self.onmessage = async (e) => {
       told.push(`${a.arc} of ${a.anime}`);
     });
     toast(told.length ? `Uploading ${told.join(", ")}.` : "Couldn't tell which anime that is, so it's going up as regular videos.");
-    addFiles(all, asNames);
+    const withSubs = list.filter((g) => g.subs && g.subs.length), paired = [];
+    if (withSubs.length) {
+      let pairs = [];
+      try {
+        pairs = (await api("/api/subs/pair", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ groups: withSubs.map((g) => ({ folder: g.folder, parents: g.parents, videos: g.files.map((f) => f.name), subs: g.subs.map((f) => f.name) })) }) })).groups || [];
+      } catch {}
+      withSubs.forEach((g, i) => {
+        const p = (pairs[i] || {}).pairs || {};
+        for (const sf of g.subs) {
+          const v = p[sf.name] && g.files.find((f) => f.name === p[sf.name]);
+          if (!v) continue;
+          const as = (asNames.get(v) || v.name).replace(/\.[^.]+$/, "") + "." + sf.name.split(".").pop().toLowerCase();
+          asNames.set(sf, as); paired.push(sf);
+        }
+      });
+      const total = withSubs.reduce((n, g) => n + g.subs.length, 0);
+      setTimeout(() => toast(paired.length === total ? `Matched all ${total} subtitle files to their episodes.`
+        : `Matched ${paired.length} of ${total} subtitle files to their episodes. The other ${total - paired.length} didn't clearly go with one, so they're not uploaded.`, paired.length < total), 2500);
+    }
+    addFiles([...rest, ...paired], asNames);
   }
 
   let dragDepth = 0;
