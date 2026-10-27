@@ -1495,6 +1495,7 @@
           <button type="button" data-source="cloud" aria-pressed="false">Cloudflare</button>
           <button type="button" data-source="flash" aria-pressed="false">Flash drive</button>
         </div>
+        <button type="button" class="btn ghost small" id="refreshBtn" title="Catch up with ur other devices">Refresh</button>
         <button type="button" class="btn ghost small dl-open" id="dlOpen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg><span id="dlOpenLabel">Downloads</span></button>
         <button type="button" class="btn ghost gear-btn" id="setOpen" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.9 4.6 1.7 1.7 0 0 0 9.97 3.04V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.26.6.85 1 1.51 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg></button>
       </div>
@@ -3083,7 +3084,7 @@ self.onmessage = async (e) => {
   // The little dot by a title: gold once the subtitles are downloaded (for a show: every
   // episode), steel grey until then. Only on the Pi, where subtitles are found.
   function subsDot(files) {
-    if (backend.id !== "pi" || !state.piSubs || !files.length) return null;
+    if (backend.id !== "pi" || !state.piSubs || !files.length || files.every(isYT)) return null; // Anything to MP4: no subtitles, no dot
     const on = files.every((f) => hasSubs(f.key));
     const d = document.createElement("span");
     d.className = "subs-dot" + (on ? " yes" : "");
@@ -3222,30 +3223,49 @@ self.onmessage = async (e) => {
     // Looked up as it plays: the library may still be loading when a video opens from a link.
     const introOf = () => (onPi() && state.intros ? state.intros[f.key] : null);
     const nextOf = () => (f._dl ? null : nextEpisodeOf(f));
-    let mode = "", timer = null;
+    // Where the end credits start (found by the Pi): the "Next Episode in 5" countdown starts there.
+    const creditsOf = () => (onPi() && state.credits ? state.credits[f.key] || null : null);
+    let mode = "", timer = null, fromCredits = false, creditsDismissed = false;
     const set = (m, label) => { mode = m; box.hidden = !m; go.textContent = label || ""; };
     const stop = () => { clearInterval(timer); timer = null; };
-    const playNext = () => { stop(); const next = nextOf(); if ($("player").open && next) openPlayer(next); };
-    go.addEventListener("click", () => {
-      const intro = introOf();
-      if (mode === "intro" && intro) { v.currentTime = intro[1]; set(""); } else playNext();
-    });
-    v.addEventListener("timeupdate", () => {
-      const t = v.currentTime, d = v.duration, intro = introOf();
-      if (timer) { if (t < d - 3) { stop(); set(""); } return; }
-      if (intro && t >= intro[0] - 0.5 && t < intro[1] - 1) { if (mode !== "intro") set("intro", "Skip Intro"); }
-      else if (d > 180 && d - t <= 60 && nextOf()) { if (mode !== "next") set("next", "Next Episode"); }
-      else if (mode) set("");
-    });
-    v.addEventListener("ended", () => {
-      if (!nextOf()) return;
-      if (queueFrom && shuffleKeys.includes(f.key)) { playNext(); return; }  // a playlist: straight to the next one
+    const playNext = () => {
+      stop();
+      const next = nextOf();
+      if (fromCredits && v.duration) noteDone();  // left at the credits: it counts as watched
+      if ($("player").open && next) openPlayer(next);
+    };
+    const noteDone = () => { setProg(f.key, v.duration, v.duration); scheduleProgSync(500); };
+    const countdown = (credits) => {
+      fromCredits = credits;
       let left = 5;
       set("count", `Next Episode in ${left}`);
       timer = setInterval(() => {
         left -= 1;
         if (left <= 0) playNext(); else go.textContent = `Next Episode in ${left}`;
       }, 1000);
+    };
+    go.addEventListener("click", () => {
+      const intro = introOf();
+      if (mode === "intro" && intro) { v.currentTime = intro[1]; set(""); } else playNext();
+    });
+    v.addEventListener("timeupdate", () => {
+      const t = v.currentTime, d = v.duration, intro = introOf();
+      if (timer) {
+        // Went back into the episode: the countdown stops (and the credits one doesn't come back).
+        if (t < (fromCredits ? creditsOf() - 1 : d - 3)) { if (fromCredits) creditsDismissed = true; stop(); set(""); }
+        return;
+      }
+      const credits = creditsOf();
+      if (intro && t >= intro[0] - 0.5 && t < intro[1] - 1) { if (mode !== "intro") set("intro", "Skip Intro"); }
+      else if (credits && !creditsDismissed && t >= credits && d - t > 2 && nextOf()
+               && !(queueFrom && shuffleKeys.includes(f.key))) countdown(true);
+      else if (mode) set("");
+    });
+    v.addEventListener("ended", () => {
+      if (!nextOf()) return;
+      if (queueFrom && shuffleKeys.includes(f.key)) { playNext(); return; }  // a playlist: straight to the next one
+      stop();
+      countdown(false);
     });
     v._stopPrompts = stop;
   }
@@ -3378,12 +3398,20 @@ self.onmessage = async (e) => {
 
   // The row at the top: videos you're partway through, and the next episode of a show you're watching.
   const CONTINUE_DAYS = 3;
+  // Videos whose last play came from a playlist (this browser's own list): they stay out of Continue watching.
+  const viaPlaylist = (() => { try { return new Set(JSON.parse(localStorage.getItem("mocloud-via-playlist") || "[]")); } catch { return new Set(); } })();
+  function notePlayedFrom(f) {
+    const had = viaPlaylist.has(f.key);
+    if (queueFrom) viaPlaylist.add(f.key); else viaPlaylist.delete(f.key);
+    if (had !== viaPlaylist.has(f.key)) { try { localStorage.setItem("mocloud-via-playlist", JSON.stringify([...viaPlaylist])); } catch {} }
+  }
   function continueItems() {
     const byKey = new Map(state.files.filter(isVideo).map((f) => [f.key, f]));
     const latest = new Map(); // show (or single video) -> its most recently watched video
     for (const [key, p] of Object.entries(prog.map)) {
       const f = byKey.get(key);
       if (!f || !p) continue;
+      if (isYT(f) || viaPlaylist.has(key)) continue; // saved from links, or played from a playlist: not in the row
       const group = showIdOfName(f.name) || key;
       const cur = latest.get(group);
       if (!cur || p.at > cur.p.at) latest.set(group, { f, p, group });
@@ -4615,6 +4643,7 @@ self.onmessage = async (e) => {
       processing: (data.processing || []).filter((p) => !isSys(p)), thumbsPending: data.thumbsPending || 0,
       subs: backend.id === "pi" ? data.subs || [] : [], subsFrom: backend.id === "pi" ? data.subsFrom || {} : {},
       intros: backend.id === "pi" ? data.intros || {} : {},
+      credits: backend.id === "pi" ? data.credits || {} : {},
       light: backend.id === "pi" ? data.light || {} : {}, storageAlert: data.storageAlert === undefined ? 90 : data.storageAlert,
       freeTier: data.freeTier, partSize: data.partSize, fromCache: false,
     });
@@ -4955,7 +4984,7 @@ self.onmessage = async (e) => {
       return [dt, dd];
     }));
     const job = video && backend.id === "pi" ? subsJob(full.key) : null;
-    const canAsk = video && backend.id === "pi" && state.piSubs && state.files.some((x) => x.key === full.key)
+    const canAsk = video && !isYT(full) && backend.id === "pi" && state.piSubs && state.files.some((x) => x.key === full.key)
       && !(job && !SUBS_DONE.includes(job.state));
     $("infoFindSubs").hidden = !canAsk;
     $("infoFindSubs").textContent = subsFile(full.key) ? "Look for subtitles again" : job ? "Try subtitles again" : "Find subtitles";
@@ -4988,6 +5017,7 @@ self.onmessage = async (e) => {
   // ---------- Player ----------
   function openPlayer(f) {
     if (!shuffleKeys.includes(f.key)) { shuffleKeys = []; queueFrom = ""; queueLoop = "off"; } // picking something else ends a shuffle or playlist
+    notePlayedFrom(f);
     const stage = $("pStage");
     stage.querySelectorAll("video").forEach((old) => { // the next episode replaces this one: tidy it up first
       if (old._saveProgress) { old._saveProgress(); scheduleProgSync(800); }
@@ -5259,7 +5289,7 @@ self.onmessage = async (e) => {
     const box = el("div", "set-card");
     if (backend.id !== "pi") { box.append(el("p", "sub", "Subtitles live on the Pi. Switch to the Pi up top to see them.")); return body.replaceChildren(box); }
     if (!state.piSubs) { box.append(el("p", "sub", "Subtitle search isn't set up on the Pi yet, so nothing's getting subtitles.")); return body.replaceChildren(box); }
-    const videos = state.files.filter(isVideo);
+    const videos = state.files.filter((f) => isVideo(f) && !isYT(f)); // Anything to MP4 videos don't get subtitles
     const have = videos.filter((f) => hasSubs(f.key)).length, missing = videos.length - have;
     const pass = (f) => subsUI.filter === "all" || (subsUI.filter === "have") === hasSubs(f.key);
 
@@ -5330,7 +5360,7 @@ self.onmessage = async (e) => {
   }
 
   async function findAllMissingSubs() {
-    const missing = state.files.filter((f) => isVideo(f) && !hasSubs(f.key)
+    const missing = state.files.filter((f) => isVideo(f) && !isYT(f) && !hasSubs(f.key)
       && !((subsJob(f.key) || {}).state && !SUBS_DONE.includes(subsJob(f.key).state)));
     if (!missing.length) return;
     if (!confirm(`Look again for all ${missing.length} missing?`)) return;
@@ -5402,7 +5432,7 @@ self.onmessage = async (e) => {
     });
   }
   // The Pi's temperatures come in Celsius and show in Fahrenheit.
-  function degF(c) { return `${Math.round(Number(c) * 9 / 5 + 32)}°F`; }
+  function degF(c) { return `${Math.round(Number(c))}°C (${Math.round(Number(c) * 9 / 5 + 32)}°F)`; }
   async function pinError(res) {
     const data = await res.json().catch(() => ({}));
     if (res.status === 423 || data.code === "PIN_LOCKED") return new Error(data.error || "Too many wrong tries gang. Locked for a bit.");
@@ -9848,6 +9878,13 @@ self.onmessage = async (e) => {
     });
   });
   $("pick").addEventListener("click", () => $("fileInput").click());
+  // Catches up with ur other devices: wat's been watched, uploaded, moved or deleted.
+  $("refreshBtn").addEventListener("click", async () => {
+    const b = $("refreshBtn"); b.disabled = true;
+    try { await refresh(); await syncProgress(); renderLibrary(); toast("Caught up"); }
+    catch (e) { toast(e.message || "Couldn't reach MoCloud rn.", true); }
+    finally { b.disabled = false; }
+  });
   $("fileInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
   $("pickFolder").addEventListener("click", () => $("folderInput").click());
   $("folderInput").addEventListener("change", (e) => {
