@@ -1482,6 +1482,35 @@
   @media (prefers-reduced-motion: reduce) {
     .c4-chip.drop, .ub-disc .uc.fresh, .uh-hand .uc.new, .gp-toast, .ub-dir svg, .uh-uno, .uh-catch, .ub-pend { animation: none !important; }
   }
+  /* Select: pick several things right on the page */
+  body.selecting [data-sel] { position: relative; cursor: pointer; border-radius: var(--r-sm); }
+  body.selecting [data-sel]::after {
+    content: ""; position: absolute; inset: -6px; border-radius: 14px; border: 1px solid var(--line);
+    background: rgba(0,0,0,.001); z-index: 5;
+  }
+  body.selecting [data-sel]::before {
+    content: ""; position: absolute; top: 8px; left: 8px; width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--paper); background: rgba(17,19,24,.7); z-index: 6; box-sizing: border-box;
+  }
+  body.selecting [data-sel].picked::after { border: 3px solid var(--accent); background: rgba(var(--accent-rgb), .14); }
+  body.selecting [data-sel].picked::before {
+    border-color: var(--accent); background: var(--accent) center/16px no-repeat
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111318' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  }
+  .sel-bar {
+    position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60;
+    width: min(560px, calc(100vw - 24px)); display: grid; gap: 10px; padding: 12px; box-sizing: border-box;
+    background: rgba(28,32,41,.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  }
+  .sel-bar[hidden] { display: none; }
+  .sel-bar #selCount { text-align: center; font-weight: 600; font-size: 14px; }
+  .sel-acts { display: flex; gap: 8px; }
+  .sel-acts button { flex: 1; padding: 10px 6px; border-radius: 12px; border: 0; background: var(--panel-2); color: var(--paper); font-weight: 600; font-size: 14px; cursor: pointer; }
+  .sel-acts button:disabled { opacity: .45; cursor: default; }
+  .sel-acts button[hidden] { display: none; }
+  .sel-acts .danger { color: var(--red); }
+  body.selecting #grid { padding-bottom: 120px; }
 </style>
 </head>
 <body>
@@ -1532,11 +1561,22 @@
     <h2 class="crumbs" id="crumbs">Ur files</h2>
     <div class="lib-tools">
       <input type="search" id="search" class="search" placeholder="Search stuff" aria-label="Search ur library" autocomplete="off">
-      <span id="count"></span><button class="btn ghost small" id="newFolder">New folder</button><button class="btn ghost small" id="moveBtn">Move</button>
+      <span id="count"></span><button class="btn ghost small" id="newFolder">New folder</button><button class="btn ghost small" id="moveBtn">Move</button><button class="btn ghost small" id="selectBtn">Select</button>
     </div>
   </div>
   <div id="grid"></div>
   <div class="empty" id="empty" hidden></div>
+<div class="sel-bar" id="selBar" hidden role="toolbar" aria-label="Wat to do with the picked things">
+  <div id="selCount"></div>
+  <div class="sel-acts">
+    <button type="button" id="selMove">Move</button>
+    <button type="button" id="selPl">Playlist</button>
+    <button type="button" id="selJoin" hidden>Make one video</button>
+    <button type="button" id="selOut" hidden>Take out</button>
+    <button type="button" id="selDel" class="danger">Delete</button>
+    <button type="button" id="selCancel">Cancel</button>
+  </div>
+</div>
 </div>
 
 <div class="dragveil" id="veil" hidden>Drop to upload</div>
@@ -1564,6 +1604,7 @@
       <input type="range" id="zoomRange" min="100" max="200" step="5" value="125" aria-label="Zoom amount" hidden>
       <button type="button" class="chip" id="ccBtn" aria-pressed="false" hidden>Subtitles</button>
       <button type="button" class="chip" id="plLoop" hidden>Loop: off</button>
+      <button type="button" class="chip" id="soloLoop" hidden aria-pressed="false">Loop: off</button>
       <button type="button" class="chip" id="plNext" hidden>Next</button>
       <button type="button" class="chip" id="fsBtn">Full screen</button>
     </div>
@@ -2846,6 +2887,156 @@ self.onmessage = async (e) => {
     });
     toast(items.length === 1 ? `Moved to ${whereName(dest)}` : `Moved ${items.length} things to ${whereName(dest)}`);
   }
+  // ----- Select: pick several things right on the page (tap the cards), then move them, add the videos to a
+  // playlist, take them out of the playlist that's open, or delete them, all at once. Works across folders. -----
+  const selState = { on: false, items: new Map() };
+  const selKey = (what) => (what.kind === "file" ? "file:" + what.f.key : what.kind + ":" + what.id);
+  function selMark(card, what) {
+    card.dataset.sel = selKey(what);
+    card._selWhat = what;
+    if (selState.items.has(card.dataset.sel)) card.classList.add("picked");
+  }
+  function selVideoKeys() {
+    const out = [];
+    for (const w of selState.items.values()) {
+      if (w.kind === "file" && isVideo(w.f)) out.push(w.f.key);
+      else if (w.kind === "show" && w.show) out.push(...showFiles(w.show).map((f) => f.key));
+    }
+    return [...new Set(out)];
+  }
+  function selFiles() {
+    const out = [];
+    for (const w of selState.items.values()) {
+      if (w.kind === "file") out.push(w.f);
+      else if (w.kind === "show" && w.show) out.push(...showFiles(w.show));
+    }
+    const seen = new Set();
+    return out.filter((f) => !seen.has(f.key) && seen.add(f.key));
+  }
+  function selPaint() {
+    document.body.classList.toggle("selecting", selState.on);
+    document.querySelectorAll("[data-sel]").forEach((c) => c.classList.toggle("picked", selState.items.has(c.dataset.sel)));
+    $("selectBtn").textContent = selState.on ? "Done" : "Select";
+    $("selBar").hidden = !selState.on;
+    const n = selState.items.size, vids = selVideoKeys();
+    $("selCount").textContent = n ? `${n} picked` : "Tap things to pick them";
+    $("selMove").disabled = !n || state.offline;
+    $("selDel").disabled = !n || state.offline;
+    $("selPl").hidden = backend.id === "flash";
+    $("selPl").disabled = !vids.length || state.offline;
+    $("selOut").hidden = !state.playlist;
+    $("selOut").disabled = !vids.length || state.offline;
+    $("selJoin").hidden = !state.playlist || backend.id !== "pi";
+    $("selJoin").disabled = vids.length < 2 || state.offline;
+  }
+  function selEnd() { selState.on = false; selState.items.clear(); selPaint(); }
+  $("selectBtn").addEventListener("click", () => { if (selState.on) selEnd(); else { selState.on = true; selPaint(); } });
+  $("selCancel").addEventListener("click", selEnd);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && selState.on && !document.querySelector("dialog[open]")) selEnd(); });
+  // While picking, a tap on a card picks it (instead of playing or opening it).
+  document.addEventListener("click", (e) => {
+    if (!selState.on) return;
+    const card = e.target.closest && e.target.closest("[data-sel]");
+    if (!card) return;
+    e.preventDefault(); e.stopPropagation();
+    const k = card.dataset.sel;
+    if (selState.items.has(k)) selState.items.delete(k); else selState.items.set(k, card._selWhat);
+    selPaint();
+  }, true);
+  $("selMove").addEventListener("click", () => {
+    if (state.offline) return;
+    moveSel.clear();
+    for (const [k, w] of selState.items) moveSel.set(k, w);
+    selEnd();
+    moveStep("dest");
+    $("moveDlg").showModal();
+  });
+  $("selPl").addEventListener("click", async () => {
+    const keys = selVideoKeys();
+    if (!keys.length) return;
+    const choice = await askChoice(`Add ${keys.length} ${keys.length === 1 ? "video" : "videos"} to`, [...plList().map(([id, pl]) => [id, pl.name]), ["new", "+ New playlist"]]);
+    if (!choice) return;
+    let id = choice;
+    if (choice === "new") { const n = await plAskName(); if (!n) return; id = plNew(n); if (!id) return; }
+    const pl = state.meta.playlists[id];
+    const fresh = keys.filter((k) => !pl.keys.includes(k));
+    if (!fresh.length) { toast(`They're all alr in ${pl.name}`); selEnd(); return; }
+    if (changeMeta((m) => { m.playlists[id].keys.push(...fresh); m.playlists[id].at = Date.now(); })) {
+      toast(`Added ${fresh.length} to ${pl.name}` + (fresh.length < keys.length ? ` (${keys.length - fresh.length} were alr in it)` : ""));
+    }
+    selEnd();
+  });
+  // Make one video: the picked ones, in the playlist's order, joined on the Pi into one new video.
+  $("selJoin").addEventListener("click", async () => {
+    const id = state.playlist, pl = id && state.meta.playlists[id];
+    if (!pl) return;
+    const picked = new Set(selVideoKeys());
+    const keys = pl.keys.filter((k) => picked.has(k));
+    if (keys.length < 2) return toast("Pick 2 or more to make one video.", true);
+    const name = await askName("Name the new video (they're joined in the playlist's order, the originals stay)", `${pl.name} (${keys.length} videos)`);
+    if (!name || !name.trim()) return;
+    selEnd();
+    try {
+      await api("/api/merge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ keys, name: name.trim(), playlist: id }) });
+      toast(`Joining ${keys.length} videos into one. It shows up in this playlist when it's done.`);
+      await refresh();
+    } catch (e) { toast(e.message, true); }
+  });
+  // A join that's finished: the new video goes in its playlist right where the first picked one was, and in
+  // the same folder. Then the Pi forgets the job. (Whichever device sees it first does this.)
+  const mergesHandled = new Set();
+  function finishMerges() {
+    for (const j of state.merges || []) {
+      if (!["done", "failed"].includes(j.state) || mergesHandled.has(j.id)) continue;
+      mergesHandled.add(j.id);
+      if (j.state === "done" && j.key) {
+        changeMeta((m) => {
+          const pl = j.playlist && m.playlists[j.playlist];
+          if (pl && !pl.keys.includes(j.key)) {
+            const at = pl.keys.indexOf(j.after);
+            pl.keys.splice(at < 0 ? pl.keys.length : at, 0, j.key);
+          }
+          const folder = j.folderOf && m.place[j.folderOf];
+          if (folder) m.place[j.key] = folder;
+        });
+        toast(`Joined ${j.count} videos into ${j.name}`);
+      } else if (j.state === "failed") toast(`Couldn't join ${j.name}: ${j.error || "it didn't work"}`, true);
+      api("/api/merge/" + encodeURIComponent(j.id), { method: "DELETE" }).catch(() => {});
+    }
+  }
+  $("selOut").addEventListener("click", () => {
+    const id = state.playlist, pl = id && state.meta.playlists[id];
+    if (!pl) return;
+    const out = new Set(selVideoKeys());
+    if (changeMeta((m) => { m.playlists[id].keys = m.playlists[id].keys.filter((k) => !out.has(k)); })) {
+      toast(`Took ${out.size} out of ${pl.name}. They're still in MoCloud.`);
+    }
+    selEnd();
+  });
+  $("selDel").addEventListener("click", async () => {
+    const files = selFiles();
+    const folders = [...selState.items.values()].filter((w) => w.kind === "folder").map((w) => w.id);
+    const n = files.length;
+    if (!n && !folders.length) return;
+    const what = [n ? `${n} ${n === 1 ? "thing" : "things"}` : "", folders.length ? `${folders.length} ${folders.length === 1 ? "folder" : "folders"}` : ""].filter(Boolean).join(" and ");
+    if (!(await askSure(`Delete ${what}?`, "Gone for every device. This can't be undone." + (folders.length ? " Folders go away, but wat's inside them moves up one level and stays." : ""), "Delete them", "Nah"))) return;
+    selEnd();
+    if (n) toast(`Deleting ${n}...`);
+    let gone = 0, err = null;
+    for (const f of files) {
+      try {
+        await api(`/api/files/${encodeURIComponent(f.key)}`, { method: "DELETE" });
+        dropSharedThumb(f.key);
+        const local = dl.items.get(dlId(backend.id, f.key));
+        if (local) await removeDownload(local.id, true);
+        gone++;
+      } catch (e) { err = e; }
+    }
+    for (const id of folders) if (state.meta.folders[id]) deleteFolder(id);
+    if (n) toast(err ? `Deleted ${gone} of ${n}. ${err.message}` : `Deleted ${gone} ${gone === 1 ? "thing" : "things"}` + (folders.length ? ` and ${folders.length} ${folders.length === 1 ? "folder" : "folders"}` : ""), !!err);
+    await refresh().catch(() => {});
+  });
+
   function moveChoices() {
     const words = norm($("moveFilter").value).split(" ").filter(Boolean);
     const fits = (text) => words.every((w) => norm(text).includes(w));
@@ -2931,6 +3122,7 @@ self.onmessage = async (e) => {
   function folderCard(id) {
     const f = state.meta.folders[id];
     const el = document.createElement("article"); el.className = "folder-card";
+    selMark(el, { kind: "folder", id });
     const open = document.createElement("button"); open.className = "folder-open";
     const n = countIn(id), subs = childFolders(id).length;
     open.innerHTML = FOLDER_ICON;
@@ -3544,6 +3736,11 @@ self.onmessage = async (e) => {
     acts.append(play, shuf, loop, ren, del);
     head.append(title, acts);
     page.append(back, head);
+    for (const j of (state.merges || []).filter((x) => x.playlist === id && (x.state === "queued" || x.state === "working"))) {
+      const line = el("p", "pl-hint", `Making one video: ${j.name} (${j.count} videos) · ` + (j.state === "queued" ? "in line"
+        : `${Math.round((j.progress || 0) * 100)}%` + (j.mode === "encode" ? " (re-encoding them to match, this one takes a while)" : "")));
+      page.append(line);
+    }
     const files = plFiles(pl);
     if (!files.length) { page.append(el("p", "pl-empty", "Empty for now. Go back to ur videos and drag one onto this playlist, or tap Playlist under any video.")); return page; }
     page.append(el("p", "pl-hint", "Drag videos to change the order."));
@@ -3677,9 +3874,22 @@ self.onmessage = async (e) => {
     });
   }
   // Player: the playlist's loop setting and a Next button while one plays.
+  // A saved link that's not playing from a playlist: its own Loop button (plays it over and over).
+  let soloLoopKey = "";
   function plPlayerCtl(f) {
     const on = !!queueFrom && shuffleKeys.includes(f.key) && state.meta.playlists[queueFrom];
     $("plLoop").hidden = $("plNext").hidden = !on;
+    const solo = !on && isYT(f);
+    if (soloLoopKey !== f.key) soloLoopKey = "";   // a different video: loop's off again
+    $("soloLoop").hidden = !solo;
+    if (solo) {
+      const looping = soloLoopKey === f.key;
+      $("soloLoop").textContent = looping ? "Loop: on" : "Loop: off";
+      $("soloLoop").setAttribute("aria-pressed", String(looping));
+      $("soloLoop").classList.toggle("on", looping);
+      const v = $("pStage").querySelector("video");
+      if (v) v.loop = looping;
+    }
     if (!on) return;
     $("plLoop").textContent = plLoopLabel(queueLoop);
     const v = $("pStage").querySelector("video");
@@ -3689,6 +3899,11 @@ self.onmessage = async (e) => {
     queueLoop = queueLoop === "off" ? "all" : queueLoop === "all" ? "one" : "off";
     if (queueFrom && state.meta.playlists[queueFrom]) changeMeta((m) => { m.playlists[queueFrom].loop = queueLoop; });
     if (player.f) plPlayerCtl(player.f);
+  });
+  $("soloLoop").addEventListener("click", () => {
+    if (!player.f) return;
+    soloLoopKey = soloLoopKey === player.f.key ? "" : player.f.key;
+    plPlayerCtl(player.f);
   });
   $("plNext").addEventListener("click", () => { const n = player.f && nextEpisodeOf(player.f); if (n) openPlayer(n); else toast("That's the last one"); });
 
@@ -3933,6 +4148,7 @@ self.onmessage = async (e) => {
   function tile(f, label, opts = {}) {
     const el = document.createElement("article");
     el.className = "tile";
+    selMark(el, { kind: "file", f });
     const video = isVideo(f);
     const asPoster = "poster" in opts; // movies: a tall poster box that plays when tapped
 
@@ -4243,6 +4459,7 @@ self.onmessage = async (e) => {
   function showCard(show) {
     const files = showFiles(show);
     const el = document.createElement("article"); el.className = "tile show-card poster";
+    selMark(el, { kind: "show", id: show.id, name: show.name, show });
     const box = document.createElement("button"); box.className = "thumb";
     box.setAttribute("aria-label", `Open ${show.name}`);
     posterArt(box, showImg(show.id), files, show.name);
@@ -4268,7 +4485,7 @@ self.onmessage = async (e) => {
     let x0 = 0, y0 = 0, dx = 0, on = false, side = false;
     tile.classList.add("swipeable");
     tile.addEventListener("pointerdown", (e) => {
-      if (e.pointerType !== "touch") return;
+      if (e.pointerType !== "touch" || selState.on) return;
       x0 = e.clientX; y0 = e.clientY; dx = 0; on = true; side = false;
     });
     tile.addEventListener("pointermove", (e) => {
@@ -4294,7 +4511,7 @@ self.onmessage = async (e) => {
     let timer = null, x0 = 0, y0 = 0;
     const stop = () => { clearTimeout(timer); timer = null; box.classList.remove("holding"); };
     box.addEventListener("pointerdown", (e) => {
-      if (e.button > 0 || state.offline) return;
+      if (e.button > 0 || state.offline || selState.on) return;
       x0 = e.clientX; y0 = e.clientY;
       box.classList.add("holding");
       timer = setTimeout(() => { stop(); box._held = true; deleteShow(show); }, 650);
@@ -4626,7 +4843,8 @@ self.onmessage = async (e) => {
     const waitingPics = piMakesThumbs() && state.thumbsPending > 0; // the Pi is still making pictures
     const subsBusy = (state.subs || []).some((x) => !SUBS_DONE.includes(x.state));
     const ytBusy = (state.youtube || []).some((j) => j.state !== "failed");
-    if (ytBusy && !state.offline) {
+    const joining = (state.merges || []).some((j) => j.state === "queued" || j.state === "working");
+    if ((ytBusy || joining) && !state.offline) {
       fixPoll = setTimeout(() => refresh().catch(() => {}), 2500);
     } else if (((state.processing && state.processing.length) || waitingPics) && !state.offline) {
       fixPoll = setTimeout(() => refresh().catch(() => {}), 4000);
@@ -4651,9 +4869,11 @@ self.onmessage = async (e) => {
     state.animeIds = data.anime && typeof data.anime === "object" ? data.anime : {};
     state.arcOrder = data.arcOrder && typeof data.arcOrder === "object" ? data.arcOrder : {};
     state.youtube = Array.isArray(data.youtube) ? data.youtube : [];
+    state.merges = Array.isArray(data.merges) ? data.merges : [];
     state.fromYouTube = new Set(Array.isArray(data.fromYouTube) ? data.fromYouTube : []);
     state.karaoke = data.karaoke && typeof data.karaoke === "object" ? data.karaoke : null;
     await loadMeta();
+    finishMerges(); // after the folders and playlists are fresh, so nothing older gets saved over them
     storageHeadsUp();
     if (isSettingsOpen()) renderSettings();
     syncProgress(); // where you left off, from your other devices
