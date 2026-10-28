@@ -8769,7 +8769,10 @@ self.onmessage = async (e) => {
   // The old timing − / + settings (that control is gone): cleared off this device.
   try { Object.keys(localStorage).filter((k) => k.startsWith("mocloud-kar-offset-")).forEach((k) => localStorage.removeItem(k)); } catch {}
   const KAR_CACHE = "mocloud-karaoke-v1";
-  const KAR_FILES = ["song.json", "audio.mp3", "cover.jpg", "instrumental.mp3"];
+  const KAR_FILES = ["song.json", "audio.mp3", "cover.jpg", "instrumental.mp3", "audio.m4a", "instrumental.m4a"];
+  // The .m4a copies are wat plays here: browsers jump to the exact spot in them (in the MP3s they only guess,
+  // so after scrubbing or tapping a lyric the words fell behind). Older songs get theirs from the Pi in a bit.
+  const karHas = (sg, f) => f === "instrumental.mp3" ? !!sg.inst : f === "audio.m4a" ? !!sg.m4a : f === "instrumental.m4a" ? !!(sg.inst && sg.instM4a) : true;
   const KAR_NEEDED = ["song.json", "audio.mp3"]; // the cover and the instrumental are extras
   const kar = { songs: [], jobs: [], used: 0, space: 0, timer: 0, results: null, searching: false, saved: new Set(), song: null, raf: 0, lines: [], panes: [], cur: -1, hold: 0 };
   const karUrl = (id, f) => `${BACKENDS.pi.url}/karaoke/${id}/${f}`;
@@ -8798,11 +8801,12 @@ self.onmessage = async (e) => {
     if (!c) return;
     for (const sg of kar.songs) {
       const stale = sg.rev && karRevs[sg.id] && karRevs[sg.id] !== sg.rev;
-      if (kar.saved.has(sg.id) && !stale) continue;
+      const missingM4a = (sg.m4a && !(await c.match(karUrl(sg.id, "audio.m4a")))) || (sg.inst && sg.instM4a && !(await c.match(karUrl(sg.id, "instrumental.m4a"))));
+      if (kar.saved.has(sg.id) && !stale && !missingM4a) continue;
       try {
-        if (stale) await c.delete(karUrl(sg.id, "song.json")); // updated on the Pi: the new lyrics file
+        if (stale) for (const f of ["song.json", "instrumental.m4a"]) await c.delete(karUrl(sg.id, f)); // updated on the Pi: the new lyrics (and instrumental)
         for (const f of KAR_FILES) {
-          if (f === "instrumental.mp3" && !sg.inst) continue;
+          if (!karHas(sg, f)) continue;
           if (await c.match(karUrl(sg.id, f))) continue;
           const r = await fetch(karUrl(sg.id, f), { cache: "no-store" });
           if (r.ok) await c.put(karUrl(sg.id, f), r);
@@ -9044,7 +9048,9 @@ self.onmessage = async (e) => {
     let song, audio;
     try {
       song = await (await karFile(sg.id, "song.json")).json();
-      audio = URL.createObjectURL(await (await karFile(sg.id, "audio.mp3")).blob());
+      let file = null;
+      if (sg.m4a) { try { file = await karFile(sg.id, "audio.m4a"); } catch {} }   // the exact-jumping copy
+      audio = URL.createObjectURL(await (file || await karFile(sg.id, "audio.mp3")).blob());
     } catch { return toast("That song isn't saved on this device yet, and the Pi can't be reached rn.", true); }
     kar.saved.add(sg.id);
     kar.song = song;
@@ -9113,7 +9119,12 @@ self.onmessage = async (e) => {
     let url = kar.vocUrl;
     if (toInst) {
       if (!kar.instUrl) {
-        try { kar.instUrl = URL.createObjectURL(await (await karFile(song.id, "instrumental.mp3")).blob()); }
+        try {
+          const sg = kar.songs.find((x) => x.id === song.id) || {};
+          let file = null;
+          if (sg.instM4a) { try { file = await karFile(song.id, "instrumental.m4a"); } catch {} }
+          kar.instUrl = URL.createObjectURL(await (file || await karFile(song.id, "instrumental.mp3")).blob());
+        }
         catch { toast("Couldn't load the instrumental rn. Try again once the Pi's reachable.", true); return; }
       }
       url = kar.instUrl;
