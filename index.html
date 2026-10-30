@@ -65,7 +65,7 @@
   .wordmark .mo { color: var(--accent); }
   .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 
-  /* Pi / Cloudflare storage switch */
+  /* Pi / flash drive storage switch */
   .source { display: inline-flex; padding: 3px; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); }
   .source button {
     border: 0; border-radius: 6px; padding: 6px 14px; background: transparent;
@@ -273,12 +273,18 @@
   .nav-card:disabled { opacity: .55; cursor: default; }
   .nav-card .sub { margin-bottom: 0; }
   .nav-go svg { width: 22px; height: 22px; color: var(--dim); display: block; }
-  .mode-card { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; }
-  .mode-card .mode-ic { width: 32px; display: grid; place-items: center; }
-  .mode-card .mode-ic svg { width: 28px; height: 28px; }
-  .mode-card h3 { margin: 0 0 4px; }
-  .mode-card .sub { margin: 0; }
-  @media (max-width: 560px) { .mode-card { grid-template-columns: auto 1fr; } .mode-card .btn { grid-column: 1 / -1; } }
+  /* Modes: a row of tiles at the top of the home screen (like the apps) */
+  .modes { margin-bottom: 26px; }
+  .modes-row { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .modes-row::-webkit-scrollbar { display: none; }
+  .mode-tile { flex: none; width: 150px; height: 118px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; padding: 13px;
+    border-radius: 10px; border: 0; background: var(--panel); color: var(--paper); text-align: left; font: inherit; cursor: pointer; }
+  .mode-tile:hover:not(:disabled) { background: var(--panel-2); }
+  .mode-tile:disabled { opacity: .55; cursor: default; }
+  .mode-tile svg { width: 26px; height: 26px; }
+  .mode-tile .mt-txt { display: grid; gap: 3px; min-height: 50px; align-content: start; }
+  .mode-tile b { font-size: 14px; font-weight: 600; }
+  .mode-tile span { font-size: 12px; color: var(--dim); line-height: 1.3; }
   .kar-find { display: flex; gap: 10px; margin-bottom: 14px; }
   .kar-x { padding: 0 14px; font-size: 22px; line-height: 1; }
   .kar-find input { flex: 1; min-width: 0; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); font-size: 16px; }
@@ -326,7 +332,18 @@
   .heat-off .btn { justify-self: end; color: #fff; background: transparent; border: 1px solid rgba(255,255,255,.6); }
   .ks-hab { display: grid; gap: 8px; margin: -6px 0 18px; font-size: 14px; }
   .ks-hab-pick { display: flex; gap: 8px; }
-  .kp-hab { margin-left: auto; white-space: nowrap; }
+  .kp-acts { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .kp-hab { white-space: nowrap; }
+  .kp-mo-btn { font-size: 18px; line-height: 1; padding: 6px 12px; }
+  .kp-mo { position: absolute; z-index: 3; left: 18px; right: 18px; top: calc(70px + env(safe-area-inset-top)); display: grid; gap: 6px;
+    padding: 12px; border-radius: 10px; background: var(--panel-2); }
+  .kp-mo[hidden] { display: none; }
+  .kp-mo-h { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+  .kp-mo-h b { font-weight: 600; }
+  .kp-mo-h span { color: var(--dim); font-variant-numeric: tabular-nums; }
+  .kp-mo-track { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .kp-mo-fill { height: 100%; width: 0; background: var(--accent); transition: width .6s ease; }
+  .kp-mo-err { color: var(--red); font-size: 12px; margin: 0; }
   /* the player */
   #karPlay { position: fixed; inset: 0; z-index: 43; background: var(--ink); display: grid; grid-template-rows: 1fr; }
   /* Only the lyrics while u sing: the top and the controls float over them and fade out 2.5 seconds after
@@ -1511,6 +1528,7 @@
   .sel-acts button[hidden] { display: none; }
   .sel-acts .danger { color: var(--red); }
   body.selecting #grid { padding-bottom: 120px; }
+  #ytSaveAs { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); color: var(--paper); font-size: 15px; margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -1521,7 +1539,6 @@
       <div class="brand-row">
         <div class="source" role="group" aria-label="Which storage to use">
           <button type="button" data-source="pi" aria-pressed="true">Pi</button>
-          <button type="button" data-source="cloud" aria-pressed="false">Cloudflare</button>
           <button type="button" data-source="flash" aria-pressed="false">Flash drive</button>
         </div>
         <button type="button" class="btn ghost small" id="refreshBtn" title="Catch up with ur other devices">Refresh</button>
@@ -1627,7 +1644,7 @@
 
 <dialog id="karInfo" aria-labelledby="karInfoTitle">
   <h3 id="karInfoTitle">How karaoke works</h3>
-  <div class="kar-info-body"><h4>Wat karaoke does</h4><p>Search for any song and MoCloud saves it to the Pi with its lyrics lit up word by word as it plays, an English translation next to songs in other languages, and the instrumental (tap Vocals to switch).</p><p>Every saved song is kept on this device too, so it plays without Wi-Fi.</p><h4>How a song gets saved</h4><p>1. Search: YouTube Music, explicit versions only (no music videos or live versions).</p><p>2. The pop-up checks the lyrics first and says where it found them (Musixmatch word by word is the best there is). If a song only has untimed lyrics, it asks before timing them by listening, with how long that takes.</p><p>3. Karaoke it: the Pi downloads the song and makes the MP3 (about 30 s to a minute).</p><p>4. Lyrics and translation (about 10 to 30 s more for songs not in English).</p><p>5. It shows up in Ur songs and u can sing it right away. U can close the app the whole time: it all happens on the Pi.</p><p>6. After that the Pi keeps sharpening it in the background: it lines up the instrumental and places every word where it&#x27;s sung (about 2 min for word-by-word lyrics, around 10 min for line-timed ones). The timing gets better once that&#x27;s done.</p><h4>Where the lyrics come from (free ones first)</h4><p>Musixmatch: word-by-word timing, the best there is (if it&#x27;s down, the pop-up says so and which one it used instead).</p><p>NetEase: word-by-word timing for lots of songs Musixmatch doesn&#x27;t have.</p><p>LRCLIB: lyrics timed line by line.</p><p>Genius: untimed lyrics (then timed by listening), and the correct spelling to check against.</p><p>Claude&#x27;s web search: only when none of those have the song.</p><h4>Translations</h4><p>First: a translation made by people (Musixmatch&#x27;s, or one Claude finds on the web, like Genius or LyricsTranslate).</p><p>Else: Claude Sonnet translates it, close to the original words, with slang and dialect done right. It also fixes typos in the lyrics.</p><p>Backups: Gemini (free), then DeepL, then Google Translate.</p><p>Habibi: Arabic songs call the person they&#x27;re sung to &quot;him&quot; whoever it is, so u pick her or him (in the pop-up, or the Who&#x27;s habibi? button in the player) and the English follows. No AI decides that.</p><h4>Timing the words</h4><p>Whisper (speech-to-text, running on the Pi, free) listens to the song with the instrumental taken out and works out when each word is sung.</p><p>Songs with only untimed lyrics get every line timed this way. If Whisper&#x27;s words are too messy to match, Claude Haiku matches the lyrics to wat Whisper heard instead.</p><p>Instrumental breaks are skipped, so lyrics never run on during the music.</p><h4>Where Claude comes in (and wat it costs)</h4><p>Claude Sonnet: only translating song lyrics (about 3¢ a song).</p><p>Claude Haiku: finding lyrics and translations by people on the web, and matching lyrics to wat Whisper heard (a fraction of a cent to about 1¢).</p><p>Never again for the same song: everything it works out is kept, so playing, checking or re-saving a song doesn&#x27;t ask Claude twice.</p><p>Background catch-up work goes through Claude&#x27;s Batch API at half price.</p><p>If Claude&#x27;s credits are used up, Gemini&#x27;s free tier takes over. Every use, wat it cost and wat&#x27;s left is in Developer settings, under Claude.</p><h4>Everything it uses</h4><p>YouTube Music (search) and yt-dlp (downloading), ffmpeg (making the MP3), Musixmatch, NetEase, LRCLIB, Genius, Claude (Sonnet and Haiku, with web search), Gemini, DeepL, Google Translate, Whisper (on the Pi), and the song&#x27;s instrumental from YouTube.</p><h4>Good to know</h4><p>Karaoke has its own space on the Pi (shown next to Ur songs).</p><p>Songs u saved with Anything to MP4 can go into karaoke from Developer settings.</p><p>Deleting a song removes it from every device.</p></div>
+  <div class="kar-info-body"><h4>Wat karaoke does</h4><p>Search for any song and MoCloud saves it to the Pi with its lyrics lit up word by word as it plays, an English translation next to songs in other languages, and the instrumental (tap Vocals to switch).</p><p>Every saved song is kept on this device too, so it plays without Wi-Fi.</p><h4>How a song gets saved</h4><p>1. Search: YouTube Music, explicit versions only (no music videos or live versions).</p><p>2. The pop-up checks the lyrics first and says where it found them (Musixmatch word by word is the best there is). If a song only has untimed lyrics, it asks before timing them by listening, with how long that takes.</p><p>3. Karaoke it: the Pi downloads the song and makes the MP3 (about 30 s to a minute).</p><p>4. Lyrics and translation (about 10 to 30 s more for songs not in English).</p><p>5. It shows up in Ur songs and u can sing it right away. U can close the app the whole time: it all happens on the Pi.</p><p>6. After that the Pi keeps sharpening it in the background: it lines up the instrumental and places every word where it&#x27;s sung (about 2 min for word-by-word lyrics, around 10 min for line-timed ones). The timing gets better once that&#x27;s done.</p><h4>Where the lyrics come from (free ones first)</h4><p>Musixmatch: word-by-word timing, the best there is (if it&#x27;s down, the pop-up says so and which one it used instead).</p><p>NetEase: word-by-word timing for lots of songs Musixmatch doesn&#x27;t have.</p><p>LRCLIB: lyrics timed line by line.</p><p>Genius: untimed lyrics (then timed by listening), and the correct spelling to check against.</p><p>Claude&#x27;s web search: only when none of those have the song.</p><h4>Translations</h4><p>First: a translation made by people (Musixmatch&#x27;s, or one Claude finds on the web, like Genius or LyricsTranslate).</p><p>Else: Claude Sonnet translates it, close to the original words, with slang and dialect done right. It also fixes typos in the lyrics.</p><p>Backups: Gemini (free), then DeepL, then Google Translate.</p><p>Habibi: Arabic songs call the person they&#x27;re sung to &quot;him&quot; whoever it is, so u pick her or him (in the pop-up, or the Who&#x27;s habibi? button in the player) and the English follows. No AI decides that.</p><h4>Timing the words</h4><p>Whisper (speech-to-text, running on the Pi, free) listens to the song with the instrumental taken out and works out when each word is sung.</p><p>Songs with only untimed lyrics get every line timed this way. If Whisper&#x27;s words are too messy to match, Claude Haiku matches the lyrics to wat Whisper heard instead.</p><p>Instrumental breaks are skipped, so lyrics never run on during the music.</p><p>MoTime (ur PC): only when u ask, from the &#8943; button in a song&#x27;s player. It lines every word up with the singing; Undo MoTime puts the song back how it was.</p><h4>Where Claude comes in (and wat it costs)</h4><p>Claude Sonnet: only translating song lyrics (about 3¢ a song).</p><p>Claude Haiku: finding lyrics and translations by people on the web, and matching lyrics to wat Whisper heard (a fraction of a cent to about 1¢).</p><p>Never again for the same song: everything it works out is kept, so playing, checking or re-saving a song doesn&#x27;t ask Claude twice.</p><p>Background catch-up work goes through Claude&#x27;s Batch API at half price.</p><p>If Claude&#x27;s credits are used up, Gemini&#x27;s free tier takes over. Every use, wat it cost and wat&#x27;s left is in Developer settings, under Claude.</p><h4>Everything it uses</h4><p>YouTube Music (search) and yt-dlp (downloading), ffmpeg (making the MP3), Musixmatch, NetEase, LRCLIB, Genius, Claude (Sonnet and Haiku, with web search), Gemini, DeepL, Google Translate, Whisper (on the Pi), and the song&#x27;s instrumental from YouTube.</p><h4>Good to know</h4><p>Karaoke has its own space on the Pi (shown next to Ur songs).</p><p>Songs u saved with Anything to MP4 can go into karaoke from Developer settings.</p><p>Deleting a song removes it from every device.</p></div>
   <div class="dlg-acts"><button class="btn" id="karInfoClose">Got it</button></div>
 </dialog>
 
@@ -1682,15 +1699,6 @@
   </div>
 </section>
 
-<section id="modesPage" class="mode-page" hidden aria-labelledby="modesTitle">
-  <div class="set-wrap">
-    <div class="set-top">
-      <button type="button" class="btn ghost small set-back" id="modesBack">&larr; Back</button>
-      <h2 id="modesTitle">Modes</h2>
-    </div>
-    <div id="modesBody"></div>
-  </div>
-</section>
 <section id="pcPage" class="mode-page" hidden aria-labelledby="pcTitle">
   <div class="set-wrap">
     <div class="set-top">
@@ -1734,7 +1742,15 @@
   <div class="kp-top">
     <button type="button" class="btn ghost small" id="kpBack">&larr; Back</button>
     <div class="kp-name"><b id="kpTitle"></b><span id="kpArtist"></span></div>
-    <button type="button" class="btn ghost small kp-hab" id="kpHab" hidden></button>
+    <div class="kp-acts">
+      <button type="button" class="btn ghost small kp-hab" id="kpHab" hidden></button>
+      <button type="button" class="btn ghost small kp-mo-btn" id="kpMo" aria-label="MoTime" title="MoTime">&#8943;</button>
+    </div>
+  </div>
+  <div class="kp-mo" id="kpMoBar" hidden>
+    <div class="kp-mo-h"><b id="kpMoText"></b><span id="kpMoLeft"></span></div>
+    <div class="kp-mo-track" id="kpMoTrack"><div class="kp-mo-fill" id="kpMoFill"></div></div>
+    <p class="kp-mo-err" id="kpMoErr" hidden></p>
   </div>
   <div class="kp-stage" id="kpStage"></div>
   <div class="kp-bar">
@@ -1856,6 +1872,8 @@
       <div><b id="ytName"></b><span id="ytBy"></span></div>
     </div>
     <div class="yt-facts" id="ytFacts"></div>
+    <p class="yt-where-h">Name it</p>
+    <input type="text" id="ytSaveAs" aria-label="Wat to name it" autocomplete="off" maxlength="150">
     <p class="yt-where-h">Save it to</p>
     <div class="yt-where" role="radiogroup" aria-label="Where to save it">
       <button type="button" role="radio" data-to="pi" aria-checked="true">The Pi</button>
@@ -2169,20 +2187,16 @@ self.onmessage = async (e) => {
   // =====================================================================
   const SERVER_URL = "https://mocloud.tail47b571.ts.net";
 
-  // Your old Cloudflare storage. The switch at the top of the page flips between the two,
-  // for example when the Pi is offline and you still want what's on Cloudflare.
-  const CLOUD_URL = "https://crimson-pond-7d8a.benmostafa1010.workers.dev";
-
   // The 128 GB flash drive plugged into the same Pi: its own storage, locked with the pin.
   const FLASH_URL = /^https?:\/\//.test(SERVER_URL) ? SERVER_URL.replace(/\/+$/, "") + ":8443" : "";
 
   const BACKENDS = {
     pi: { id: "pi", name: "Pi", url: SERVER_URL.replace(/\/+$/, "") },
-    cloud: { id: "cloud", name: "Cloudflare", url: CLOUD_URL.replace(/\/+$/, "") },
     flash: { id: "flash", name: "Flash drive", url: FLASH_URL },
   };
   const isUrl = (u) => /^https?:\/\//.test(u);
-  const onPi = () => backend.id !== "cloud"; // the Pi's SSD or the flash drive: both run the Pi's server
+  // MoCloud doesn't use Cloudflare anymore: wat this browser remembered for it goes
+  try { Object.keys(localStorage).filter((k) => /^mocloud-.*-cloud$/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch {}
   let backend = (() => {
     try {
       const saved = localStorage.getItem("mocloud-source");
@@ -2525,9 +2539,7 @@ self.onmessage = async (e) => {
     $("gaugeLeft").textContent = `${fmtSize(left)} left of ${fmtSize(limit)}`;
     $("gaugeNote").textContent = state.offline
       ? (state.fromCache ? "Last known numbers. MoCloud is offline right now." : "MoCloud is offline right now.")
-      : backend.id === "cloud"
-        ? `Uploads stop at ${fmtSize(limit)}. I dont got money like dat unfort.`
-        : `Uploads stop at ${fmtSize(limit)}, so the Pi doesn't eventually explode.` + (kar ? ` The yellow is ${fmtSize(kar)} saved for karaoke.` : "");
+      : `Uploads stop at ${fmtSize(limit)}, so the Pi doesn't eventually explode.` + (kar ? ` The yellow is ${fmtSize(kar)} saved for karaoke.` : "");
     $("fullBanner").hidden = !full || state.offline;
     $("pick").disabled = full;
   }
@@ -2572,6 +2584,7 @@ self.onmessage = async (e) => {
   function pruneThumbs() {
     const live = new Set(state.files.map((f) => f.key));
     for (const [key, t] of [...thumbs.entries()]) {
+      if (t.src === "cloud") { thumbs.delete(key); thumbStore(key, null); continue; } // from when MoCloud used Cloudflare
       if ((t.src || "pi") !== backend.id) continue; // belongs to the other storage
       if (!live.has(key)) { thumbs.delete(key); thumbStore(key, null); }
     }
@@ -2616,7 +2629,7 @@ self.onmessage = async (e) => {
   const thumbHash = (key) => { let h = 5381; for (const c of String(key)) h = ((h * 33) ^ c.codePointAt(0)) >>> 0; return h.toString(16); };
   const THUMB_RE = /^mocloud-thumb-([0-9a-f]+)(?:-(\d+(?:\.\d+)?)x(\d+)x(\d+))?(-hq)?\.jpg$/;
   // The Pi makes its own sharp picture for every video ("-hq"); those beat browser-made ones.
-  const piMakesThumbs = () => onPi() && state.piThumbs;
+  const piMakesThumbs = () => state.piThumbs;
   function sharedThumb(key) {
     const h = thumbHash(key);
     let best = null, bestM = null;
@@ -2652,6 +2665,23 @@ self.onmessage = async (e) => {
         if (t && (t.src || "pi") === backend.id && !sharedThumb(f.key)) await shareThumb(f.key, t);
       }
     } finally { sharingAll = false; }
+  }
+  // Every video's picture is loaded once in the background, one at a time, and the browser keeps it for good
+  // (the Pi says so), so scrolling never waits on a thumbnail. They're small: a few MB for the whole library.
+  let warming = false;
+  const warmed = new Set();
+  async function warmThumbs() {
+    if (warming) return;
+    warming = true;
+    try {
+      for (const f of state.files) {
+        if (state.offline) break;
+        const t = sharedThumb(f.key);
+        if (!t || warmed.has(t.url)) continue;
+        warmed.add(t.url);
+        await new Promise((done) => { const im = new Image(); im.onload = im.onerror = done; im.src = t.url; });
+      }
+    } finally { warming = false; }
   }
   // When a video is deleted, its picture goes too.
   function dropSharedThumb(key) {
@@ -2693,7 +2723,7 @@ self.onmessage = async (e) => {
   }, { rootMargin: "300px" }) : null;
 
   // ---------- MoCloud's own small file: the folder list ----------
-  // It's kept in your storage right next to the videos (on the Pi or on Cloudflare), so folders are
+  // It's kept in your storage right next to the videos (on the Pi or the flash drive), so folders are
   // the same on every device. It's hidden from the library.
   const META_NAME = "mocloud-folders.json";
   const isSys = (f) => f.name === META_NAME || f.name === "mocloud-progress.json" || /^mocloud-subs-[0-9a-f]+\.vtt$/.test(f.name) || THUMB_RE.test(f.name); // MoCloud's own files stay out of the library
@@ -3413,10 +3443,10 @@ self.onmessage = async (e) => {
     box.append(go);
     stage.append(box);
     // Looked up as it plays: the library may still be loading when a video opens from a link.
-    const introOf = () => (onPi() && state.intros ? state.intros[f.key] : null);
+    const introOf = () => (state.intros ? state.intros[f.key] : null);
     const nextOf = () => (f._dl ? null : nextEpisodeOf(f));
     // Where the end credits start (found by the Pi): the "Next Episode in 5" countdown starts there.
-    const creditsOf = () => (onPi() && state.credits ? state.credits[f.key] || null : null);
+    const creditsOf = () => (state.credits ? state.credits[f.key] || null : null);
     let mode = "", timer = null, fromCredits = false, creditsDismissed = false;
     const set = (m, label) => { mode = m; box.hidden = !m; go.textContent = label || ""; };
     const stop = () => { clearInterval(timer); timer = null; };
@@ -3480,7 +3510,7 @@ self.onmessage = async (e) => {
   // ---------- Pick up where you left off ----------
   // Where you stopped in each video is kept on this device straight away and also saved in your
   // storage (a small file next to the folder list), so you can stop on one device and carry on
-  // on another. Each storage (Pi, Cloudflare) has its own.
+  // on another. Each storage (Pi, flash drive) has its own.
   const PROG_NAME = "mocloud-progress.json";
   const prog = { map: {}, remoteKey: null, dirty: false, timer: null, saving: false, again: false };
   const progLocalKey = () => "mocloud-progress-" + backend.id;
@@ -4221,7 +4251,7 @@ self.onmessage = async (e) => {
       if (!del.classList.contains("armed")) {
         del.classList.add("armed"); del.textContent = "Tap again to delete";
         armed = setTimeout(() => { del.classList.remove("armed"); del.textContent = "Delete"; }, 4500);
-        del._impact = onPi() ? dnaImpact(f.key) : null; // File DNA: wat goes with it, wat depends on it
+        del._impact = dnaImpact(f.key); // File DNA: wat goes with it, wat depends on it
         if (del._impact) del._impact.then((im) => { if (im && del.classList.contains("armed")) { const t = dnaImpactText(im); if (t) toast(t); } });
         return;
       }
@@ -4796,6 +4826,7 @@ self.onmessage = async (e) => {
     else if (openedCol) parts.push(collectionPage(openedCol));
     else if (!found) {
       if (!view && backend.id === "flash" && dbxBannerWanted()) parts.push(dropboxCard(state.dropbox, true));
+      if (!view && isUrl(BACKENDS.pi.url)) parts.push(modesRow());
       if (!view) { const row = continueRow(); if (row) parts.push(row); }
       let folderGrid = null;
       if (subfolders.length) { folderGrid = gridOf(subfolders.map(folderCard)); folderGrid.classList.add("folder-grid"); }
@@ -4881,6 +4912,7 @@ self.onmessage = async (e) => {
     await thumbsReady;
     pruneThumbs();
     shareKnownThumbs();
+    warmThumbs();
     renderGauge();
     renderLibrary();
     renderQueue();
@@ -4933,10 +4965,6 @@ self.onmessage = async (e) => {
     const timer = setTimeout(() => ctrl.abort(), 5000); // the Pi answers this instantly when it's up
     state.driveMissing = false;
     try {
-      if (backend.id === "cloud") { // the Cloudflare Worker has no health report, just check it answers
-        const res = await fetch(API + "/", { cache: "no-store", signal: ctrl.signal });
-        return res.ok ? { ok: true } : null;
-      }
       const res = await fetch(API + "/api/health", { cache: "no-store", signal: ctrl.signal });
       if (!res.ok) return null;
       const data = await res.json();
@@ -5103,14 +5131,11 @@ self.onmessage = async (e) => {
       const since = new Date(state.offlineSince).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       if (state.offlineReason === "internet") {
         title = "Ur offline";
-        lines.push(`This device has no internet connection, so MoCloud can't be reached. Ur files are safe on ${backend.id === "cloud" ? "Cloudflare" : "the Pi"}.`);
+        lines.push(`This device has no internet connection, so MoCloud can't be reached. Ur files are safe on the Pi.`);
       } else if (state.offlineReason === "drive") {
         title = "MoCloud's SSD is disconnected";
         lines.push("The Pi is on, but it can't find the SSD that holds ur files. Plug it back into one of the Pi's blue USB ports.");
         lines.push("Ur files are safe on the SSD. Nothing has been deleted, they're just locked. This page unlocks on its own within about 30 seconds of the SSD going back in.");
-      } else if (state.offlineReason === "server" && backend.id === "cloud") {
-        title = "Can't reach ur Cloudflare storage";
-        lines.push(`Cloudflare stopped answering at ${since}. This is usually brief. Ur files there are safe.`);
       } else if (state.offlineReason === "server") {
         title = "MoCloud server is offline";
         lines.push(`The Pi stopped answering at ${since}. It may be unplugged, restarting, or its internet may be down.`);
@@ -5158,8 +5183,8 @@ self.onmessage = async (e) => {
       btn.disabled = checking;
       btn.addEventListener("click", checkNow);
       f.append(t, btn);
-      const other = backend.id === "pi" ? BACKENDS.cloud : BACKENDS.pi;
-      if (isUrl(other.url)) {
+      const other = BACKENDS.pi;
+      if (backend.id !== "pi" && isUrl(other.url)) {
         const sw = document.createElement("button"); sw.className = "btn ghost";
         sw.textContent = `Switch to ${other.name}`;
         sw.addEventListener("click", () => switchSource(other.id));
@@ -5212,7 +5237,7 @@ self.onmessage = async (e) => {
     $("infoWhisper").hidden = !canAsk;
     $("infoWhisper").textContent = subsFile(full.key) ? "Redo subtitles with Whisper" : "Make subtitles with Whisper";
     $("infoWhisper").onclick = () => { $("info").close(); whisperSubs(full); };
-    $("infoDna").hidden = !onPi() || !state.files.some((x) => x.key === full.key);
+    $("infoDna").hidden = !state.files.some((x) => x.key === full.key);
     $("infoDna").onclick = () => { $("info").close(); openDna(full.key); };
     if (!$("info").open) $("info").showModal();
   }
@@ -5319,8 +5344,7 @@ self.onmessage = async (e) => {
   }
 
   // ---------- Settings page (the gear) ----------
-  // Download copies, where the space is going, Smart Cleanup and the storage heads-up. Most of it
-  // lives on the Pi, so on Cloudflare the page just says so.
+  // Download copies, where the space is going, Smart Cleanup and the storage heads-up.
   const setUI = { data: null, clean: null, goal: 0, picked: new Set(), timer: null, loading: false, err: "" };
   function isSettingsOpen() { return !$("settingsPage").hidden; }
 
@@ -5398,7 +5422,7 @@ self.onmessage = async (e) => {
     const pct = state.limit ? Math.round((state.used / state.limit) * 100) : 0;
 
     // Storage + heads-up
-    const stor = card("Storage", backend.id === "pi" ? "Ur Pi's SSD." : backend.id === "flash" ? "Ur flash drive, plugged into the Pi." : "Ur Cloudflare storage.");
+    const stor = card("Storage", backend.id === "flash" ? "Ur flash drive, plugged into the Pi." : "Ur Pi's SSD.");
     const line = el("div", "set-stat");
     line.innerHTML = `<b>${fmtSize(state.used)}</b> used of ${fmtSize(state.limit)} (${pct}%)`;
     const usage = el("div", "usage" + (state.storageAlert && pct >= state.storageAlert ? " hot" : ""));
@@ -5421,14 +5445,11 @@ self.onmessage = async (e) => {
     parts.push(stor);
 
     if (backend.id === "flash") parts.push(dropboxCard(state.dropbox));
-    parts.push(modesCard());
     parts.push(subsCard());
     parts.push(devCard());
     parts.push(dnaCard());
     // Lighter download copies last: set once and forget
     if (backend.id === "flash") {
-    } else if (backend.id !== "pi") {
-      parts.push(card("Download copies", "These live on the Pi. Switch to the Pi up top to use them."));
     } else if (state.offline) {
       parts.push(card("MoCloud is offline", "Settings come back once the Pi does."));
     } else if (!setUI.data) {
@@ -6305,7 +6326,7 @@ self.onmessage = async (e) => {
       bar.append(fill);
       li.append(name, stat, btn, bar);
       return li;
-    }), ...(onPi() ? state.processing || [] : []).map((p) => {
+    }), ...(state.processing || []).map((p) => {
       const li = document.createElement("li"); li.className = "fixing";
       const name = document.createElement("span"); name.className = "q-name"; name.textContent = p.name;
       const stat = document.createElement("span"); stat.className = "q-stat";
@@ -6417,6 +6438,7 @@ self.onmessage = async (e) => {
       const i = yt.info = await ytCall("pi", "/api/yt/info", { url });
       $("ytThumb").src = i.thumb || ""; $("ytThumb").hidden = !i.thumb;
       $("ytName").textContent = i.title;
+      $("ytSaveAs").value = i.title; // saved under this name (change it to anything)
       $("ytBy").textContent = [i.channel, i.duration ? fmtLen(i.duration) : ""].filter(Boolean).join(" · ");
       const facts = [i.height ? `${i.height}p${i.fps > 30 ? Math.round(i.fps) : ""}` : "", i.codec || "",
         i.size ? `${i.exact ? "" : "about "}${fmtSize(i.size)}` : "size unknown"].filter(Boolean);
@@ -6436,7 +6458,8 @@ self.onmessage = async (e) => {
     }
     yt.busy = true; $("ytGo").disabled = true; $("ytGo").textContent = "Starting...";
     try {
-      const job = await ytCall(yt.to, "/api/yt/get", { url: yt.info.url });
+      const name = $("ytSaveAs").value.trim();
+      const job = await ytCall(yt.to, "/api/yt/get", { url: yt.info.url, name: name && name !== yt.info.title ? name : "" });
       yt.polls = 0;
       ytProgress(job);
       if ((yt.to === "flash") === (backend.id === "flash")) refresh().catch(() => {});
@@ -6483,7 +6506,7 @@ self.onmessage = async (e) => {
   async function dnaApi(path, opts) { return api(path, opts); }
   function dnaCard() {
     return navCard("File DNA", "Every file's fingerprint, where it came from, wat was made from it, its copies, and whether it's still intact.",
-      () => openDna(""), !onPi() || state.offline, onPi() ? "" : "File DNA lives on the Pi and the flash drive.");
+      () => openDna(""), state.offline, "");
   }
   function openDna(key) {
     dnaUI.stack = [key];
@@ -6765,38 +6788,33 @@ self.onmessage = async (e) => {
     return bits.join(" ");
   }
 
-  // ---------- Modes (Settings) ----------
-  // Extra things MoCloud can do: download a YouTube video, and karaoke.
-  function modesCard() {
-    return navCard("Modes", "Anything to MP4, karaoke, and games.", openModes, !isUrl(BACKENDS.pi.url));
-  }
+  // ---------- Modes (a row of tiles at the top of the home screen, like the apps) ----------
+  // Extra things MoCloud can do: save a video from a link, karaoke, games and PC games.
   const YT_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#E8C07A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>';
   const MIC_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E8C07A" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg>';
   const GAME_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E8C07A" d="M7 6h10a5 5 0 0 1 4.9 6l-1 5a3 3 0 0 1-5.1 1.5L13.6 16h-3.2l-2.2 2.5A3 3 0 0 1 3.1 17l-1-5A5 5 0 0 1 7 6zm1 3v2H6v2h2v2h2v-2h2v-2h-2V9zm7.5 1a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm2.5 2.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5z"/></svg>';
   const PC_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#E8C07A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" d="M3 5h18v11H3zM8 20h8M12 16v4"/></svg>';
-  function modeCard(icon, title, text, label, go) {
-    const c = el("div", "set-card mode-card");
-    const ic = el("div", "mode-ic"); ic.innerHTML = icon;
-    const mid = el("div", ""); mid.append(el("h3", "", title), el("p", "sub", text));
-    const b = el("button", "btn small", label); b.type = "button"; b.addEventListener("click", go);
-    c.append(ic, mid, b);
-    return c;
+  function modeTile(icon, title, text, go) {
+    const b = el("button", "mode-tile"); b.type = "button";
+    b.innerHTML = icon;
+    const t = el("div", "mt-txt"); t.append(el("b", "", title), el("span", "", text));
+    b.append(t);
+    b.disabled = !isUrl(BACKENDS.pi.url);
+    b.addEventListener("click", go);
+    return b;
   }
-  function openModes() {
-    $("modesBody").replaceChildren(
-      modeCard(YT_ICON, "Anything to MP4", "Paste a link from YouTube, TikTok, Reels or most other sites and the Pi saves the video as an MP4, up to 1080p, to the Pi or the flash drive.", "Save a video", openYT),
-      modeCard(MIC_ICON, "Karaoke", "Search for a song, and sing along with lyrics that light up as it plays. Works without Wi-Fi once a song's saved.", "Open karaoke", openKaraoke),
-      modeCard(GAME_ICON, "Games", "Connect Four, Uno, Tapple, Life and Pictionary. Phones are the controllers, and an iPad or the Apple TV is the table.", "Open games", () => openGames()),
-      modeCard(PC_ICON, "PC games", "Wake ur PC, start a game from its MoCloud Games folder, and show it here (Jackbox-style: phones join the way the game says). Works away from home too.", "Open PC games", openPcGames));
-    $("modesPage").hidden = false;
-    if (location.hash !== "#modes") history.pushState({ mocloudModes: 1 }, "", "#modes");
+  function modesRow() {
+    const wrap = el("section", "modes");
+    const h = el("h3", "row-title", "Modes");
+    const row = el("div", "modes-row");
+    row.append(
+      modeTile(YT_ICON, "Anything to MP4", "Save a video from a link", openYT),
+      modeTile(MIC_ICON, "Karaoke", "Sing along", openKaraoke),
+      modeTile(GAME_ICON, "Games", "Phones are the controllers", () => openGames()),
+      modeTile(PC_ICON, "PC games", "Play from ur PC", openPcGames));
+    wrap.append(h, row);
+    return wrap;
   }
-  function closeModes(fromHistory) {
-    if ($("modesPage").hidden) return;
-    $("modesPage").hidden = true;
-    if (!fromHistory && location.hash === "#modes") history.back();
-  }
-  $("modesBack").addEventListener("click", () => closeModes());
 
   // ---------- PC games (Jackbox-style: the game runs on ur PC, MoCloud shows its screen) ----------
   // The Pi wakes the PC and starts the game, the PC sends its screen to the Pi, and this page (or the
@@ -8861,7 +8879,6 @@ self.onmessage = async (e) => {
   window.addEventListener("popstate", () => {
     if (location.hash !== "#sing") closeSing(true);
     if (location.hash !== "#karaoke" && location.hash !== "#sing") closeKaraoke(true);
-    if (location.hash !== "#modes" && location.hash !== "#karaoke" && location.hash !== "#sing") closeModes(true);
   });
 
   function karRowArt(src) {
@@ -9066,6 +9083,7 @@ self.onmessage = async (e) => {
     karBuild(song);
     karHabButton();
     $("karPlay").hidden = false;
+    karMoWatch(sg.id);
     if (location.hash !== "#sing") history.pushState({ mocloudSing: 1 }, "", "#sing");
     if ("mediaSession" in navigator && typeof MediaMetadata !== "undefined") {
       try { navigator.mediaSession.metadata = new MediaMetadata({ title: song.title, artist: song.artist || "", album: "MoCloud karaoke" }); } catch {}
@@ -9100,6 +9118,86 @@ self.onmessage = async (e) => {
       $("kpAudio").currentTime = at;
       toast(`Got it, habibi is ${to} in this one.`);
     } catch (e) { toast(e.message, true); }
+  });
+  // MoTime on this song: only when u ask (the ⋯ button). A bar shows how far it is and the time left.
+  const karMo = { id: "", st: null, timer: 0 };
+  const KMO_BUSY = ["waiting", "waking", "starting", "working"];
+  function karMoShow() {
+    const m = karMo.st, bar = $("kpMoBar");
+    const show = !!m && (KMO_BUSY.includes(m.state) || m.state === "failed");
+    bar.hidden = !show;
+    if (!show) return;
+    $("kpMoText").textContent = m.state === "failed" ? "MoTime didn't work" : m.state === "waking" ? "MoTime: waking ur PC..."
+      : m.state === "working" ? "MoTime: timing the words..." : "MoTime: starting...";
+    const left = m.state === "failed" ? null : m.left;
+    $("kpMoLeft").textContent = left == null ? "" : left >= 90 ? `about ${Math.round(left / 60)} min left` : `about ${Math.round(left)} s left`;
+    $("kpMoTrack").hidden = m.state === "failed";
+    $("kpMoFill").style.width = Math.round((m.progress || 0) * 100) + "%";
+    $("kpMoErr").hidden = m.state !== "failed";
+    $("kpMoErr").textContent = m.error || "";
+  }
+  async function karMoCheck() {
+    const id = karMo.id;
+    if (!id || $("karPlay").hidden) return;
+    let m = null;
+    try { m = await karApi("/api/karaoke/motime?id=" + encodeURIComponent(id)); } catch {}
+    if (id !== karMo.id) return;
+    const wasBusy = karMo.st && KMO_BUSY.includes(karMo.st.state);
+    karMo.st = m;
+    karMoShow();
+    if (wasBusy && m && m.state === "done") {
+      await karSongRefresh(id);
+      toast("MoTime's done. " + (m.note || ""));
+    }
+    clearTimeout(karMo.timer);
+    karMo.timer = setTimeout(karMoCheck, m && KMO_BUSY.includes(m.state) ? 3000 : 30000);
+  }
+  function karMoWatch(id) {
+    karMo.id = id; karMo.st = null; karMoShow();
+    clearTimeout(karMo.timer);
+    karMoCheck();
+  }
+  // The song's new timing, straight from the Pi (and kept on this device), without losing ur spot.
+  async function karSongRefresh(id) {
+    try {
+      const r = await fetch(karUrl(id, "song.json"), { cache: "no-store" });
+      if (!r.ok) return;
+      const song = await r.clone().json();
+      const c = await karCache();
+      if (c) await c.put(karUrl(id, "song.json"), r);
+      if (song.rev) { karRevs[id] = song.rev; karRevSave(); }
+      if (kar.song && kar.song.id === id) {
+        const a = $("kpAudio"), at = a.currentTime;
+        kar.song = song; karBuild(song); karHabButton();
+        a.currentTime = at;
+      }
+    } catch {}
+  }
+  $("kpMo").addEventListener("click", async () => {
+    const s = kar.song;
+    if (!s) return;
+    const m = karMo.st, busy = m && KMO_BUSY.includes(m.state);
+    const opts = [];
+    if (!busy) opts.push(["fix", "Fix timing with MoTime"]);
+    if (!busy && m && m.canUndo) opts.push(["undo", "Undo MoTime"]);
+    if (!opts.length) return toast("MoTime's working on this one rn.");
+    const pick = await askChoice("MoTime", opts);
+    await new Promise((r) => setTimeout(r, 80));   // the first box's close finishes before the second opens
+    if (pick === "fix") {
+      const ok = await askChoice("Let MoTime fix this song? Ur PC lines every word up with the singing (it gets woken if it's asleep). If u don't like how it comes out, Undo MoTime puts it back.", [["yes", "Fix it"]]);
+      if (ok !== "yes") return;
+      try { karMo.st = await karApi("/api/karaoke/motime", { id: s.id }); karMoShow(); clearTimeout(karMo.timer); karMo.timer = setTimeout(karMoCheck, 3000); }
+      catch (e) { toast(e.message, true); }
+    } else if (pick === "undo") {
+      const ok = await askChoice("Undo MoTime on this song? The lyrics timing goes back how it was before MoTime touched it.", [["yes", "Undo"]]);
+      if (ok !== "yes") return;
+      try {
+        const r = await karApi("/api/karaoke/motime/undo", { id: s.id });
+        await karSongRefresh(s.id);
+        toast(r.note || "Done.");
+        karMoCheck();
+      } catch (e) { toast(e.message, true); }
+    }
   });
   const karWake = autoHide($("karPlay"), () => !$("kpAudio").paused);
   for (const ev of ["play", "pause", "ended"]) $("kpAudio").addEventListener(ev, karWake);
@@ -9279,7 +9377,6 @@ self.onmessage = async (e) => {
 
   // The Pi's YouTube downloads, in the upload list (whichever device started them).
   function ytRows() {
-    if (!onPi()) return [];
     return (state.youtube || []).map((j) => {
       const li = document.createElement("li"); li.className = "yt" + (j.state === "failed" ? " failed" : "");
       const name = document.createElement("span"); name.className = "q-name"; name.textContent = j.title;
@@ -9358,7 +9455,7 @@ self.onmessage = async (e) => {
 
   // Sends this device's queue: right away when it empties, otherwise at most every 2 seconds.
   function liveSoon() {
-    if (!onPi() || !configured) return;
+    if (!configured) return;
     const items = liveItems();
     if (!items.length) {
       clearTimeout(live.pending); live.pending = 0;
@@ -9389,7 +9486,7 @@ self.onmessage = async (e) => {
   // Asks the Pi every few seconds (every second while the list is open).
   async function livePoll() {
     clearTimeout(live.polling);
-    if (!onPi() || !configured) liveTake([]);
+    if (!configured) liveTake([]);
     else if (!state.offline && document.visibilityState === "visible") {
       const data = await liveFetch("GET");
       if (data) liveTake(data.devices);
@@ -9399,7 +9496,7 @@ self.onmessage = async (e) => {
 
   const liveNames = (list) => list.length < 3 ? list.join(" and ") : list.slice(0, -1).join(", ") + " and " + list[list.length - 1];
   function renderLive() {
-    const others = onPi() ? live.others : [];
+    const others = live.others;
     const items = others.flatMap((d) => d.items);
     const strip = $("liveStrip");
     strip.hidden = !items.length;
@@ -9463,7 +9560,7 @@ self.onmessage = async (e) => {
 
   // ---------- Duplicates ----------
   // Nothing goes up twice. Each video or photo gets a fingerprint (a hash of its size plus its first
-  // and last megabyte; the Pi and the Cloudflare Worker use the same recipe), and storage turns away
+  // and last megabyte; the Pi uses the same recipe), and storage turns away
   // anything it already has before a byte is sent. The same episode (or movie and year) as a different
   // file asks first: skip it, replace the old one, or keep both.
   const FP_SPAN = 1024 * 1024;
@@ -9880,7 +9977,7 @@ self.onmessage = async (e) => {
       const local = localDupe(q);
       if (local) throw dupeError(local[0], local[1]);
       let parts = null;
-      if (CHECK_EXT.test(q.file.name) && !(onPi() && state.piFixes)) { // the Pi does it better and faster
+      if (CHECK_EXT.test(q.file.name) && !state.piFixes) { // the Pi does it better and faster
         q.status = "converting"; q.prep = 0; q.prepStage = "check"; renderQueue();
         const result = await convertAndUpload(q);
         if (q.cancelled) throw new Error("cancelled");
@@ -9932,7 +10029,6 @@ self.onmessage = async (e) => {
         : q.soundLater ? `Uploaded ${prettyTitle(q.asName || q.outName || q.file.name)}. Plays on ur iPhone and Apple TV now, the website gets fixed sound in a bit.`
         : `Uploaded ${prettyTitle(q.asName || q.outName || q.file.name)}.`)
         + (q.subs && !q.picture ? " Looking for subtitles, u can alr watch it." : ""));
-      if (backend.id === "cloud") tellPhone("uploaded", q.file.name); // the Pi announces its own uploads by itself
       if (q.folder && state.meta.folders[q.folder]) changeMeta((m) => { m.place[q.key] = q.folder; }); // into the folder that was open
       if (q.replaced) carryOver(q.replaced, q.key);
       await refresh();
@@ -9978,8 +10074,7 @@ self.onmessage = async (e) => {
     }
   }
 
-  // The phone notification (ntfy, set up on the Pi): an upload failed, or a Cloudflare one finished.
-  // Pi and flash drive uploads that finish, the Pi already knows about.
+  // The phone notification (ntfy, set up on the Pi): an upload failed. Uploads that finish, the Pi already knows about.
   function tellPhone(kind, name, error) {
     if (!isUrl(BACKENDS.pi.url)) return;
     fetch(BACKENDS.pi.url + "/api/notify", {
@@ -10034,7 +10129,6 @@ self.onmessage = async (e) => {
     const videos = inFolders.filter((x) => isVideo(x.file) && !x.file.name.startsWith("."));
     const all = inFolders.map((x) => x.file);
     if (!videos.length) { if (all.length) addFiles(all); else toast("No videos in that folder."); return; }
-    if (!onPi()) { addFiles(all); return; } // only the Pi works out anime arcs
     const groups = new Map();
     for (const v of videos) {
       const key = v.path.join("/");
@@ -10469,21 +10563,20 @@ self.onmessage = async (e) => {
   $("dlClose").addEventListener("click", () => $("downloads").close());
   $("downloads").addEventListener("click", (e) => { if (e.target === $("downloads")) $("downloads").close(); });
 
-  // ---------- Pi / Cloudflare switch ----------
+  // ---------- Pi / flash drive switch ----------
   function readView() { try { return localStorage.getItem("mocloud-view-" + backend.id) || ""; } catch { return ""; } }
   function renderSource() {
     const group = document.querySelector(".source");
-    group.hidden = !isUrl(BACKENDS.cloud.url) || !isUrl(BACKENDS.pi.url); // only one storage set up: nothing to switch
+    group.hidden = !isUrl(BACKENDS.pi.url) || !isUrl(BACKENDS.flash.url); // only one storage set up: nothing to switch
     group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.source === backend.id)));
     const note = $("sourceNote");
-    note.classList.toggle("slow", onPi() && state.route === "funnel");
-    note.textContent = backend.id === "cloud" ? "Showing ur Cloudflare storage"
-      : backend.id === "flash" ? "Showing ur flash drive (locked with the pass)"
+    note.classList.toggle("slow", state.route === "funnel");
+    note.textContent = backend.id === "flash" ? "Showing ur flash drive (locked with the pass)"
       // Tailscale speed-limits its public link (Funnel). Devices with Tailscale on skip it and go straight to the Pi.
       : state.route === "funnel" ? "Slow lane: uploads to the Pi are speed-limited on this device. Turn on Tailscale here for full speed."
       : state.route === "direct" ? "Fast lane: straight to the Pi over Tailscale."
       : "";
-    document.title = backend.id === "cloud" ? "MoCloud (Cloudflare)" : backend.id === "flash" ? "MoCloud (Flash drive)" : "MoCloud";
+    document.title = backend.id === "flash" ? "MoCloud (Flash drive)" : "MoCloud";
     $("fileInput").accept = backend.id === "flash" ? "" : "video/*,image/*,.mkv,.avi,.mov,.heic"; // the flash drive takes any file
     document.querySelector("#drop b").textContent = backend.id === "flash" ? "Drop any files anywhere on this jawn." : "Drop videos or photos anywhere on this jawn.";
   }
