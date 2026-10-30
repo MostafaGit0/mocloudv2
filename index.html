@@ -4886,6 +4886,8 @@ self.onmessage = async (e) => {
 
   async function refresh() {
     const data = await api("/api/files");
+    // The passcode worked: kept under the Pi's name, so every part of the site that talks to the Pi has it
+    if (backend.id === "pi" && state.passcode) { try { localStorage.setItem("mocloud-passcode-pi", state.passcode); } catch {} }
     const all = data.files || [];
     Object.assign(state, {
       files: all.filter((f) => !isSys(f)), sysFiles: all.filter(isSys), used: data.used, limit: data.limit,
@@ -5685,7 +5687,13 @@ self.onmessage = async (e) => {
     }
     return new Error(data.error || `The Pi said no (${res.status}).`);
   }
-  function piPasscode() { try { return localStorage.getItem("mocloud-passcode-pi") || ""; } catch { return ""; } }
+  // The Pi's MoCloud passcode (developer settings, PC games and karaoke always go to the Pi). Falls back to the
+  // one this browser saved under its old name, or the one in use rn, so they never send an empty one.
+  function piPasscode() {
+    let p = "";
+    try { p = localStorage.getItem("mocloud-passcode-pi") || localStorage.getItem("stash-passcode") || ""; } catch {}
+    return p || (backend.id === "pi" ? state.passcode || "" : "");
+  }
 
   // ---------- Developer settings page ----------
   const devUI = { token: "", clean: null, goal: 0, picked: new Set(), timer: null, err: "", hist: null, link: "", speed: null, temp: null };
