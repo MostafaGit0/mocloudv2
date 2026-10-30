@@ -6974,11 +6974,12 @@ self.onmessage = async (e) => {
         const q = [first];
         const pump = () => { if (!sb.updating && q.length && ms.readyState === "open") { try { sb.appendBuffer(q.shift()); } catch (e) { q.length = 0; } } };
         sb.addEventListener("updateend", () => {
-          // Stay live: if it's fallen more than a second and a half behind, jump to now. Drop old video.
+          // Stay live: more than half a second behind, jump to now; a little behind, play a bit faster to catch up.
           const b = sb.buffered;
           if (b.length) {
-            const end = b.end(b.length - 1);
-            if (end - v.currentTime > 1.5) v.currentTime = Math.max(b.start(b.length - 1), end - 0.4);
+            const end = b.end(b.length - 1), behind = end - v.currentTime;
+            if (behind > 0.6) v.currentTime = Math.max(b.start(b.length - 1), end - 0.12);
+            else v.playbackRate = behind > 0.3 ? 1.1 : 1;
             if (v.currentTime - b.start(0) > 30 && !sb.updating) { try { sb.remove(b.start(0), v.currentTime - 10); return; } catch {} }
           }
           pump();
