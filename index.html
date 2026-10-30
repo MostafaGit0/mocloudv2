@@ -251,7 +251,7 @@
   .pc-note { color: var(--dim); font-size: 14px; }
   #pcScreen { position: fixed; inset: 0; z-index: 60; background: #000; display: grid; place-items: center; }
   #pcScreen[hidden] { display: none; }
-  #pcsVideo { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  #pcsVideo { width: 100%; height: 100%; object-fit: contain; background: #000; touch-action: none; }
   .pcs-note { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; padding: 10px 14px; border-radius: 6px; background: rgba(12,14,19,.85); color: var(--paper); }
   .pcs-top { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 12px; padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
     background: rgba(12,14,19,.85); transition: opacity .35s ease; }
@@ -7001,6 +7001,64 @@ self.onmessage = async (e) => {
     }
   }
   $("pcsVideo").addEventListener("click", () => { const v = $("pcsVideo"); v.muted = false; v.play().catch(() => {}); if ($("pcsNote").textContent === "Tap to start the sound") $("pcsNote").hidden = true; });
+  // Ur mouse, taps and keys on the PC's screen go to the PC (the helper presses them there for real).
+  // Positions are sent as 0 to 1 across the picture itself (not the black bars around it).
+  const PCI = { q: [], timer: 0, down: false, wheel: 0 };
+  function pcInSend(ev) {
+    if (ev.t === "move" && PCI.q.length && PCI.q[PCI.q.length - 1].t === "move") PCI.q[PCI.q.length - 1] = ev; else PCI.q.push(ev);
+    if (!PCI.timer) PCI.timer = setTimeout(pcInFlush, 25);
+  }
+  function pcInFlush() {
+    PCI.timer = 0;
+    if (!PCI.q.length) return;
+    const events = PCI.q; PCI.q = [];
+    fetch(BACKENDS.pi.url + "/api/pc/input", { method: "POST", keepalive: true,
+      headers: { "Content-Type": "application/json", "X-Passcode": piPasscode() }, body: JSON.stringify({ events }) }).catch(() => {});
+  }
+  function pcInAt(e) {
+    const v = $("pcsVideo"), r = v.getBoundingClientRect();
+    const vw = v.videoWidth || 16, vh = v.videoHeight || 9;
+    const scale = Math.min(r.width / vw, r.height / vh), w = vw * scale, h = vh * scale;
+    const left = r.left + (r.width - w) / 2, top = r.top + (r.height - h) / 2;
+    const x = (e.clientX - left) / w, y = (e.clientY - top) / h;
+    return x < 0 || x > 1 || y < 0 || y > 1 ? null : { x, y };
+  }
+  const pcsV = $("pcsVideo");
+  pcsV.addEventListener("pointerdown", (e) => {
+    const at = pcInAt(e); if (!at) return;
+    e.preventDefault();
+    try { pcsV.setPointerCapture(e.pointerId); } catch {}
+    PCI.down = true;
+    pcInSend({ t: "move", ...at });
+    pcInSend({ t: "down", b: e.pointerType === "mouse" ? Math.min(2, e.button) : 0, ...at });
+  });
+  pcsV.addEventListener("pointermove", (e) => {
+    if (e.pointerType !== "mouse" && !PCI.down) return;   // a finger only moves the PC's mouse while it's touching
+    const at = pcInAt(e); if (at) pcInSend({ t: "move", ...at });
+  });
+  const pcUp = (e) => {
+    if (!PCI.down) return;
+    PCI.down = false;
+    const at = pcInAt(e) || {};
+    pcInSend({ t: "up", b: e.pointerType === "mouse" ? Math.min(2, e.button) : 0, ...at });
+  };
+  pcsV.addEventListener("pointerup", pcUp);
+  pcsV.addEventListener("pointercancel", pcUp);
+  pcsV.addEventListener("contextmenu", (e) => e.preventDefault());   // right click goes to the PC
+  pcsV.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    PCI.wheel += e.deltaY;
+    const notches = Math.trunc(PCI.wheel / 100);
+    if (notches) { PCI.wheel -= notches * 100; pcInSend({ t: "wheel", dy: notches * 120 }); }
+  }, { passive: false });
+  const pcKey = (down) => (e) => {
+    if ($("pcScreen").hidden || e.metaKey || /^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName || "")) return;
+    if (e.code === "Escape" && fsElement()) return;   // Esc still leaves full screen
+    e.preventDefault();
+    pcInSend({ t: "key", code: e.code, key: e.key.length === 1 ? e.key : "", down });
+  };
+  document.addEventListener("keydown", pcKey(true));
+  document.addEventListener("keyup", pcKey(false));
   $("pcsBack").addEventListener("click", () => pcScreenClose());
   $("pcsFull").addEventListener("click", () => {
     const box = $("pcScreen");
