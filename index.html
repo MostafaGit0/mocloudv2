@@ -1743,6 +1743,7 @@
     <button type="button" class="btn ghost small" id="kpBack">&larr; Back</button>
     <div class="kp-name"><b id="kpTitle"></b><span id="kpArtist"></span></div>
     <div class="kp-acts">
+      <button type="button" class="btn ghost small kp-hab" id="kpAr" hidden title="Switch Arabic typed in English letters to Arabic letters">عربي</button>
       <button type="button" class="btn ghost small kp-hab" id="kpHab" hidden></button>
       <button type="button" class="btn ghost small kp-mo-btn" id="kpMo" aria-label="MoTime" title="MoTime">&#8943;</button>
     </div>
@@ -1874,6 +1875,12 @@
     <div class="yt-facts" id="ytFacts"></div>
     <p class="yt-where-h">Name it</p>
     <input type="text" id="ytSaveAs" aria-label="Wat to name it" autocomplete="off" maxlength="150">
+    <p class="yt-where-h">Sound</p>
+    <div class="yt-where" id="ytStyle" role="radiogroup" aria-label="How it sounds">
+      <button type="button" role="radio" data-style="" aria-checked="true">Normal</button>
+      <button type="button" role="radio" data-style="sped" aria-checked="false">Sped up</button>
+      <button type="button" role="radio" data-style="slowed" aria-checked="false">Slowed + reverb</button>
+    </div>
     <p class="yt-where-h">Save it to</p>
     <div class="yt-where" role="radiogroup" aria-label="Where to save it">
       <button type="button" role="radio" data-to="pi" aria-checked="true">The Pi</button>
@@ -6402,6 +6409,7 @@ self.onmessage = async (e) => {
     $("ytpInfo").textContent = j.done ? "I'm done. It's in ur library." :
       j.state === "queued" ? "Getting the video..." :
       j.state === "converting" ? "Putting the picture and sound together" :
+      j.state === "editing" ? `${j.style === "sped" ? "Speeding it up" : "Slowing it down + adding the reverb"}, ${pct}%` :
       j.state === "saving" ? "Saving it" : [got, j.speed ? fmtRate(j.speed) : "", eta].filter(Boolean).join(" · ") || "Downloading";
   }
   async function ytPoll() {
@@ -6436,7 +6444,7 @@ self.onmessage = async (e) => {
     setTimeout(() => $("ytUrl").focus(), 50);
   }
   function ytWhere() {
-    document.querySelectorAll(".yt-where button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.to === yt.to)));
+    document.querySelectorAll(".yt-where button[data-to]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.to === yt.to)));
   }
   async function ytLook() {
     const url = $("ytUrl").value.trim();
@@ -6447,6 +6455,7 @@ self.onmessage = async (e) => {
       $("ytThumb").src = i.thumb || ""; $("ytThumb").hidden = !i.thumb;
       $("ytName").textContent = i.title;
       $("ytSaveAs").value = i.title; // saved under this name (change it to anything)
+      ytStylePick("");               // a new link starts normal
       $("ytBy").textContent = [i.channel, i.duration ? fmtLen(i.duration) : ""].filter(Boolean).join(" · ");
       const facts = [i.height ? `${i.height}p${i.fps > 30 ? Math.round(i.fps) : ""}` : "", i.codec || "",
         i.size ? `${i.exact ? "" : "about "}${fmtSize(i.size)}` : "size unknown"].filter(Boolean);
@@ -6467,7 +6476,8 @@ self.onmessage = async (e) => {
     yt.busy = true; $("ytGo").disabled = true; $("ytGo").textContent = "Starting...";
     try {
       const name = $("ytSaveAs").value.trim();
-      const job = await ytCall(yt.to, "/api/yt/get", { url: yt.info.url, name: name && name !== yt.info.title ? name : "" });
+      const style = ($("ytStyle").querySelector('[aria-checked="true"]') || {}).dataset?.style || "";
+      const job = await ytCall(yt.to, "/api/yt/get", { url: yt.info.url, name: name && name !== yt.info.title ? name : "", style });
       yt.polls = 0;
       ytProgress(job);
       if ((yt.to === "flash") === (backend.id === "flash")) refresh().catch(() => {});
@@ -6491,7 +6501,10 @@ self.onmessage = async (e) => {
     catch (e) { toast(e.message, true); $("ytpCancel").disabled = false; }
     refresh().catch(() => {});
   });
-  document.querySelectorAll(".yt-where button").forEach((b) => b.addEventListener("click", () => { yt.to = b.dataset.to; ytWhere(); }));
+  document.querySelectorAll(".yt-where button[data-to]").forEach((b) => b.addEventListener("click", () => { yt.to = b.dataset.to; ytWhere(); }));
+  // Sped up or slowed + reverb (or normal)
+  const ytStylePick = (v) => $("ytStyle").querySelectorAll("button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.style === v)));
+  $("ytStyle").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => ytStylePick(b.dataset.style)));
 
   // ---------- File DNA ----------
   // Every file's identity on the Pi: its fingerprint, wat's inside, where it came from, wat was made
@@ -9147,8 +9160,10 @@ self.onmessage = async (e) => {
     karShowVoc();
     let wantInst = false; try { wantInst = localStorage.getItem("mocloud-kar-inst") === "1"; } catch {}
     if (wantInst && song.inst) karSwitch(true, true); // the way u had it last time
+    try { kar.arabic = localStorage.getItem("mocloud-kar-arabic-" + sg.id) === "1" && (song.lines || []).some((l) => l.ar); } catch { kar.arabic = false; }
     karBuild(song);
     karHabButton();
+    karArButton();
     $("karPlay").hidden = false;
     karMoWatch(sg.id);
     if (location.hash !== "#sing") history.pushState({ mocloudSing: 1 }, "", "#sing");
@@ -9170,6 +9185,39 @@ self.onmessage = async (e) => {
     b.hidden = !s || !karHabibi(s) || kar.offline;
     if (!b.hidden) b.textContent = s.sungTo === "her" ? "Habibi: her" : s.sungTo === "him" ? "Habibi: him" : "Who's habibi?";
   }
+  // Arabic typed in Latin letters and numbers (7 = ح, 3 = ع...): a button swaps it to Arabic letters. The Pi
+  // converts it once (Gemini) and keeps it; each word keeps its timing.
+  function karArabizi(song) {
+    const lines = (song && song.lines) || [];
+    const all = lines.map((l) => l.text || "").join(" ");
+    if (/[\u0600-\u06FF]/.test(all)) return false;
+    return lines.filter((l) => /[a-z][2356789]|[2356789][a-z]/i.test(l.text || "")).length >= 3;
+  }
+  function karArButton() {
+    const s = kar.song, b = $("kpAr");
+    b.hidden = !s || !karArabizi(s);
+    if (!b.hidden) b.textContent = kar.arabic ? "Latin" : "عربي";
+  }
+  $("kpAr").addEventListener("click", async () => {
+    const s = kar.song;
+    if (!s) return;
+    const a = $("kpAudio"), at = a.currentTime;
+    if (!kar.arabic && !(s.lines || []).some((l) => l.ar)) {
+      const b = $("kpAr"); b.disabled = true; b.textContent = "...";
+      try {
+        const song = await karApi("/api/karaoke/arabic", { id: s.id });
+        const c = await karCache();
+        if (c) await c.put(karUrl(s.id, "song.json"), new Response(JSON.stringify(song), { headers: { "Content-Type": "application/json" } }));
+        if (song.rev) { karRevs[s.id] = song.rev; karRevSave(); }
+        kar.song = song;
+      } catch (e) { toast(e.message, true); b.disabled = false; karArButton(); return; }
+      b.disabled = false;
+    }
+    kar.arabic = !kar.arabic;
+    try { localStorage.setItem("mocloud-kar-arabic-" + s.id, kar.arabic ? "1" : "0"); } catch {}
+    karBuild(kar.song); karArButton();
+    a.currentTime = at;
+  });
   $("kpHab").addEventListener("click", async () => {
     const s = kar.song;
     if (!s) return;
@@ -9371,7 +9419,7 @@ self.onmessage = async (e) => {
       panes.push(pane);
       return pane;
     };
-    const origOf = (l) => l.text || "";
+    const origOf = (l) => (kar.arabic && l.ar) || l.text || "";   // Arabizi in Arabic letters, when that's on
     const engOf = (l) => l.en || "";
     if (two) stage.replaceChildren(mkPane("English", engOf), mkPane(song.langName, origOf));
     else stage.replaceChildren(mkPane("", origOf));
@@ -9452,6 +9500,7 @@ self.onmessage = async (e) => {
       stat.textContent = j.state === "failed" ? (j.error || "Couldn't download it")
         : j.state === "queued" ? "In line to download"
         : j.state === "converting" ? "Putting the picture and sound together"
+        : j.state === "editing" ? `${j.style === "sped" ? "Speeding it up" : "Slowing it down + adding the reverb"}, ${pct}%`
         : j.state === "saving" ? "Saving it" : `Downloading, ${pct}% of ${fmtSize(j.size || 0)}${j.speed ? ", " + fmtRate(j.speed) : ""}`;
       const btn = document.createElement("button"); btn.className = "link";
       btn.textContent = j.state === "failed" ? "Dismiss" : "Cancel";
