@@ -1554,6 +1554,24 @@
   .trip-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
   .trip-prob { margin-top: 8px; font-size: 12.5px; color: var(--amber, #FB923C); }
   .trip-end { border: 0; background: none; color: var(--red); font-family: inherit; font-weight: 600; font-size: 13.5px; cursor: pointer; padding: 4px 2px; }
+
+  /* About MoCloud: every feature in a few steps */
+  .about-find { width: 100%; box-sizing: border-box; margin: 0 0 18px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--paper); font: inherit; font-size: 15px; }
+  .about-sec { margin: 0 0 8px; color: var(--dim); font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+  .about-list { background: var(--panel); border-radius: var(--r-lg); margin-bottom: 20px; overflow: hidden; }
+  .about-item + .about-item { border-top: 1px solid var(--line); }
+  .about-item summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 14px 18px; cursor: pointer; font-size: 15.5px; }
+  .about-item summary::-webkit-details-marker { display: none; }
+  .about-item summary::after { content: ""; margin-left: 8px; width: 8px; height: 8px; border-right: 2px solid var(--dim); border-bottom: 2px solid var(--dim);
+    transform: rotate(45deg); transition: transform .15s; flex: none; }
+  .about-item[open] summary::after { transform: rotate(225deg); }
+  .about-item summary b { flex: 1; font-weight: 500; }
+  .about-tag { font-size: 11.5px; color: var(--dim); background: var(--panel-2); border-radius: 6px; padding: 2px 7px; }
+  .about-item ol { margin: 0; padding: 0 18px 16px; list-style: none; counter-reset: st; }
+  .about-item li { counter-increment: st; display: flex; gap: 10px; align-items: baseline; margin: 0 0 8px; font-size: 14.5px; }
+  .about-item li::before { content: counter(st); flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--ink);
+    font-size: 12px; font-weight: 700; display: inline-grid; place-items: center; transform: translateY(-1px); }
 </style>
 </head>
 <body>
@@ -1711,6 +1729,17 @@
       <h2 id="setTitle">Settings</h2>
     </div>
     <div id="setBody"></div>
+  </div>
+</section>
+
+<section id="aboutPage" class="mode-page" hidden aria-labelledby="aboutTitle">
+  <div class="set-wrap">
+    <div class="set-top">
+      <button type="button" class="btn ghost small set-back" id="aboutBack">&larr; Back</button>
+      <h2 id="aboutTitle">About MoCloud</h2>
+    </div>
+    <input type="search" id="aboutFind" class="about-find" placeholder="Find a feature" aria-label="Find a feature" autocomplete="off">
+    <div id="aboutBody"></div>
   </div>
 </section>
 
@@ -5423,7 +5452,7 @@ self.onmessage = async (e) => {
   }
   $("setOpen").addEventListener("click", () => openSettings());
   $("setBack").addEventListener("click", () => closeSettings());
-  window.addEventListener("popstate", () => { if (!["#settings", "#dev", "#subs", "#games", "#game"].includes(location.hash)) closeSettings(true); });
+  window.addEventListener("popstate", () => { if (!["#settings", "#dev", "#subs", "#games", "#game", "#about"].includes(location.hash)) closeSettings(true); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isSettingsOpen() && !document.querySelector("dialog[open]")) closeSettings(); });
 
   async function loadSettings() {
@@ -5503,6 +5532,7 @@ self.onmessage = async (e) => {
     parts.push(stor);
 
     if (backend.id === "flash") parts.push(dropboxCard(state.dropbox));
+    parts.push(aboutCard());
     parts.push(subsCard());
     parts.push(devCard());
     parts.push(dnaCard());
@@ -5777,6 +5807,9 @@ self.onmessage = async (e) => {
   const tripDist = (m) => { const mi = m / 1609.344; return mi < 0.1 ? `${Math.max(50, Math.round(m * 3.28084 / 50) * 50)} ft` : mi < 10 ? `${mi.toFixed(1)} mi` : `${Math.round(mi)} mi`; };
   const tripDur = (s) => { const m = Math.max(1, Math.round(s / 60)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} hr ${m % 60} min`; };
   const tripClock = (e) => new Date(e * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const tripArrive = (secs) => tripClock(Date.now() / 1000 + secs);   // now + wat's left: keeps moving even while stopped
+  // The minutes' color, like Google Maps: green (clear), yellow (some traffic), red (heavy).
+  const tripColor = (t) => ({ light: "var(--green)", medium: "#FACC15", heavy: "var(--red)" })[t.traffic] || "var(--accent)";
   function tripHead(t) {
     if (t.state === "arrived") return `U made it to ${t.name}`;
     if (t.state === "waiting" || !t.next) return `Trip to ${t.name}`;
@@ -5803,7 +5836,7 @@ self.onmessage = async (e) => {
       trip.map = "";
       trip.box.innerHTML = `<button type="button" class="trip-bar" aria-label="Trip to ${tripEsc(t.name)}. Open the map.">
         <span class="trip-sign">${sign}</span><span class="trip-txt"><b>${tripEsc(tripHead(t))}</b><span>${tripEsc(tripSub(t))}</span></span>
-        ${going ? `<span class="trip-eta"><b>${tripDur(t.secs)}</b>${t.eta ? `<span>${tripClock(t.eta)}</span>` : ""}</span>` : ""}</button>`;
+        ${going ? `<span class="trip-eta"><b style="color:${tripColor(t)}">${tripDur(t.secs)}</b><span>${tripArrive(t.secs)}</span></span>` : ""}</button>`;
       trip.box.querySelector(".trip-bar").onclick = () => { if (trip.box._dragged) return; trip.open = true; tripRender(); };
       return;
     }
@@ -5829,8 +5862,11 @@ self.onmessage = async (e) => {
     c.querySelector(".trip-txt span").textContent = tripSub(t);
     c.querySelector(".trip-then").textContent = t.then ? "Then: " + t.then.text : "";
     const prob = c.querySelector(".trip-prob"); prob.hidden = !t.problem || t.state === "waiting"; prob.textContent = t.problem || "";
-    c.querySelector(".trip-foot span").textContent = going
-      ? `${tripDur(t.secs)} · ${tripDist(t.left || 0)}${t.eta ? " · there at " + tripClock(t.eta) : ""}` : `To ${t.name}`;
+    const foot = c.querySelector(".trip-foot span");
+    if (going) {
+      const m = document.createElement("b"); m.style.color = tripColor(t); m.textContent = tripDur(t.secs);
+      foot.replaceChildren(m, ` · ${tripDist(t.left || 0)} · there at ${tripArrive(t.secs)}`);
+    } else foot.textContent = `To ${t.name}`;
   }
   // Drag the bar up or down, out of the way (it stays there).
   function tripDrag(box) {
@@ -5890,11 +5926,14 @@ self.onmessage = async (e) => {
   function tripFollow(on) {
     if (!on) {
       if (trip.watch != null) { navigator.geolocation.clearWatch(trip.watch); trip.watch = null; }
+      clearInterval(trip.again); trip.last = null;
       if (!trip.t) { trip.mine = ""; try { localStorage.removeItem("mocloud-trip-mine"); } catch {} }
       return;
     }
     if (trip.watch != null || !("geolocation" in navigator)) return;
-    trip.watch = navigator.geolocation.watchPosition(tripSend, (e) => {
+    // The browser only says something when u move: the last spot's sent again every 10 seconds so the ETA stays live.
+    trip.again = setInterval(() => { if (trip.last) { trip.sentAt = 0; tripSend(trip.last); } }, 10000);
+    trip.watch = navigator.geolocation.watchPosition((p) => { trip.last = p; tripSend(p); }, (e) => {
       if (e.code === 1) { tripFollow(false); toast("MoCloud needs ur location for the trip. Allow it in the browser's settings.", true); }
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   }
@@ -6744,6 +6783,51 @@ self.onmessage = async (e) => {
   const dnaUI = { stack: [], graphStop: null };
   const fmtWhen = (secs) => secs ? new Date(secs * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "";
   async function dnaApi(path, opts) { return api(path, opts); }
+
+  // ---------- About MoCloud: every feature, and how to use it in a few steps ----------
+  const ABOUT = [["Watching", [["Watch something", "", ["Tap any poster to play it.", "Leave the app or lock ur phone, it keeps playing.", "Control it from the lock screen, Control Center, Dynamic Island or CarPlay."]], ["Shows and seasons", "", ["Tap a show.", "Pick a season up top.", "Tap an episode, or hit Play / Resume or Shuffle."]], ["Skip intro and next episode", "", ["Tap Skip Intro when it pops up.", "At the end, Next Episode counts down. Tap it to go now."]], ["Continue watching", "", ["It's the first row on Home.", "Tap In season to see where that episode is in its season.", "Hold it (app) or tap Remove from row (website) to take it off."]], ["Sections", "", ["Tap a bubble at the top: Shows, Movies, Videos, Saved from links, Photos.", "Tap All to see everything again."]], ["Search", "", ["Type in Search stuff.", "A show, an episode's name, a folder, or a word from a description all work."]], ["Subtitles", "", ["Nothing to do: MoCloud finds them by itself.", "No subtitles anywhere? The Pi writes them by listening (Whisper).", "See which ones have them: Settings, then Subtitles."]], ["Picture in picture", "app", ["Play a video.", "Swipe home. It keeps playing in a small window."]], ["Wrong poster", "app", ["Hold the show, or open it.", "Tap Wrong poster? and pick the right one."]]]], ["Ur stuff", [["Upload", "", ["App: tap +, then From Photos or From Files.", "Website: drop files anywhere, or tap Choose files.", "It goes up in the background. U get a notification when it's done."]], ["Download to watch offline", "", ["Hold a video (app) or tap Download under it (website).", "Find them in Downloads.", "Hold it again and tap Remove download to free space."]], ["Folders and moving", "", ["Tap Select.", "Tick wat u want.", "Tap Move and pick a folder (or make a new one)."]], ["Delete", "", ["Hold a video and tap Delete (app), or tap Delete under it (website).", "To delete a bunch: Select, tick them, Delete."]], ["Playlists", "", ["Hold a video, tap Add to playlist, pick one or make a new one.", "Open the playlist and hit Play or Shuffle.", "Saved links can Play on loop."]], ["Make one video out of many", "", ["Open a playlist.", "Tap Edit (app) or Select (website) and tick 2 or more.", "Tap Make one video. The sound's balanced so every part plays at the same volume."]], ["Info and File DNA", "", ["Hold a video and tap Info: where it came from, wat was made from it.", "Settings, then File DNA, for every file's fingerprint and history."]], ["Flash drive", "", ["Tap Flash drive on the storage switch (Pi / Flash drive).", "Type the pin.", "Any kind of file goes there, not just videos."]]]], ["Modes", [["Anything to MP4", "", ["Tap Anything to MP4 in Modes.", "Paste a link (YouTube, TikTok, Reels, anything).", "Name it if u want, pick the Sound (Normal, Sped up, Slowed + reverb), and save.", "It lands in Saved from links."]], ["Save straight from another app", "app", ["In TikTok, YouTube, Instagram or Safari, tap Share.", "Pick MoCloud.", "Name it and tap Save to MoCloud. U don't have to open MoCloud."]], ["Speed up or slow down a saved video", "app", ["Hold the video.", "Tap Speed up or slow down.", "Pick Sped up or Slowed + reverb. A new copy shows up next to it."]], ["Karaoke", "", ["Tap Karaoke in Modes.", "Search a song and tap it. It saves it with timed lyrics.", "Tap a line to jump there. Tap Vocals for the instrumental."]], ["Karaoke extras", "", ["Arabic in English letters? Tap عربي for Arabic letters. Arabic letters? Tap Latin.", "Tap Habibi to pick who the song's about (him or her).", "Timing off? Tap ⋯, then Fix timing with MoTime. Undo is in the same menu."]], ["Games", "", ["Tap Games in Modes and start one.", "Everyone else opens MoCloud and joins with the code.", "Their phones are the controllers."]], ["PC games", "", ["Tap PC games in Modes.", "Tap a game. Ur PC wakes up and its screen shows here.", "Play with the mouse, keyboard or touch. Tap Close the game when you're done."]], ["Sleep mode", "app", ["Tap Sleep mode in Modes.", "Pick the cartoons and how long.", "Tap Start. Tap the Sleep mode tile again to stop it."]], ["Qibla", "app", ["Tap Qibla in Modes. Precise Location has to be on.", "Hold the phone flat and turn till it goes green and buzzes.", "Want it near 99%? In the day, line the phone up with the sun or a shadow and tap the matching button."]], ["Trips (Google Maps)", "", ["App: in Google Maps, pick ur 2 places, tap Share, pick MoCloud, then go back and hit Start.", "Website: in Google Maps tap Share, then Copy. In MoCloud tap Trip and paste it.", "A bar shows the next turn and ETA on every screen. Tap it for the map, drag it out of the way, End when u want."]]]], ["Extras", [["Jarvis", "app", ["Tap the J button.", "Ask it anything: open a page, find something, the weather."]], ["Morning picks", "app", ["Every morning, athkaar shows up at the top of Home.", "On Fridays it's Surah Al-Kahf instead."]], ["Notifications", "", ["U get a ping when an upload's done or fails, or if the Pi goes down.", "Nothing while you're watching."]], ["Apple TV", "tv", ["Same library, same sections up top.", "Pick and play with the remote. Settings stay simple there."]], ["Developer settings", "", ["Settings, then Developer settings.", "Type the pass (or use Face ID).", "Smart Cleanup, where ur space is going, the speed test, MoTime, Install an update, and shutting the Pi off."]]]]];
+  const ABOUT_TAG = { app: "App only", web: "Website only", tv: "Apple TV" };
+  function aboutCard() {
+    return navCard("About MoCloud", "Every feature and how to use it, in a few steps.", openAbout, false, "");
+  }
+  function openAbout() {
+    $("aboutPage").hidden = false;
+    document.body.classList.add("no-scroll");
+    if (location.hash !== "#about") history.pushState({ mocloudAbout: 1 }, "", "#about");
+    $("aboutFind").value = "";
+    aboutRender();
+  }
+  function closeAbout(fromHistory) {
+    if ($("aboutPage").hidden) return;
+    $("aboutPage").hidden = true;
+    if (!isSettingsOpen()) document.body.classList.remove("no-scroll");
+    if (!fromHistory && location.hash === "#about") history.back();
+  }
+  function aboutRender() {
+    const q = $("aboutFind").value.trim().toLowerCase();
+    const out = [];
+    for (const [sec, items] of ABOUT) {
+      const hits = items.filter(([t, , steps]) => !q || t.toLowerCase().includes(q) || steps.some((x) => x.toLowerCase().includes(q)));
+      if (!hits.length) continue;
+      out.push(el("h3", "about-sec", sec));
+      const list = el("div", "about-list");
+      for (const [t, where, steps] of hits) {
+        const d = el("details", "about-item"); if (q) d.open = true;
+        const sum = el("summary"); sum.append(el("b", "", t));
+        if (ABOUT_TAG[where]) sum.append(el("span", "about-tag", ABOUT_TAG[where]));
+        const ol = el("ol"); for (const x of steps) ol.append(el("li", "", x));
+        d.append(sum, ol); list.append(d);
+      }
+      out.push(list);
+    }
+    if (!out.length) out.push(el("p", "sub", `Nothing matches \u201C${$("aboutFind").value.trim()}\u201D.`));
+    $("aboutBody").replaceChildren(el("p", "sub", "Every feature, in a few steps. Tap one to see how."), ...out);
+  }
+  $("aboutFind").addEventListener("input", aboutRender);
+  $("aboutBack").addEventListener("click", () => closeAbout());
+  window.addEventListener("popstate", () => { if (location.hash !== "#about") closeAbout(true); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("aboutPage").hidden && !document.querySelector("dialog[open]")) closeAbout(); });
+
   function dnaCard() {
     return navCard("File DNA", "Every file's fingerprint, where it came from, wat was made from it, its copies, and whether it's still intact.",
       () => openDna(""), state.offline, "");
