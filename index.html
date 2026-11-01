@@ -790,6 +790,8 @@
   .dlg-acts .push { margin-right: auto; display: flex; gap: 10px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px 20px; }
   .tile { min-width: 0; }
+  .tile.spot { border-radius: 14px; animation: tileSpot 2.4s ease; }
+  @keyframes tileSpot { 0%, 60% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
   .group { border-top: 1px solid var(--line); padding: 18px 0 8px; }
   .group + .group { margin-top: 20px; }
   .group summary {
@@ -1529,6 +1531,29 @@
   .sel-acts .danger { color: var(--red); }
   body.selecting #grid { padding-bottom: 120px; }
   #ytSaveAs { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); color: var(--paper); font-size: 15px; margin-bottom: 4px; }
+
+  /* Trips: ur Google Maps directions, floating over every screen */
+  .trip { position: fixed; z-index: 9998; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 24px));
+    top: calc(var(--trip-y, 12px) + env(safe-area-inset-top)); touch-action: none; user-select: none; -webkit-user-select: none; }
+  .trip-bar, .trip-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; color: var(--paper); }
+  .trip-bar { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; text-align: left; font: inherit; cursor: pointer; }
+  .trip-sign { flex: none; width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: var(--ink); display: grid; place-items: center; }
+  .trip-sign svg { width: 20px; height: 20px; }
+  .trip-card .trip-sign { width: 42px; height: 42px; }
+  .trip-txt { flex: 1; min-width: 0; }
+  .trip-txt b, .trip-txt span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trip-txt b { font-size: 15px; } .trip-txt span { font-size: 12.5px; color: var(--dim); }
+  .trip-eta { text-align: right; font-variant-numeric: tabular-nums; }
+  .trip-eta b { display: block; color: var(--accent); font-size: 15px; } .trip-eta span { font-size: 11.5px; color: var(--dim); }
+  .trip-card { padding: 12px; }
+  .trip-card .trip-head { display: flex; gap: 10px; align-items: flex-start; cursor: grab; }
+  .trip-card .trip-txt b, .trip-card .trip-txt span { white-space: normal; }
+  .trip-then { font-size: 12px; color: var(--dim); margin-top: 2px; }
+  .trip-min { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; background: var(--panel-2, #262B36); color: var(--paper); cursor: pointer; }
+  .trip-map { display: block; width: 100%; height: 230px; border: 0; border-radius: 12px; margin-top: 10px; background: var(--ink); }
+  .trip-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  .trip-prob { margin-top: 8px; font-size: 12.5px; color: var(--amber, #FB923C); }
+  .trip-end { border: 0; background: none; color: var(--red); font-family: inherit; font-weight: 600; font-size: 13.5px; cursor: pointer; padding: 4px 2px; }
 </style>
 </head>
 <body>
@@ -2865,7 +2890,7 @@ self.onmessage = async (e) => {
   }
 
   // A small "type a name" window, used for new folders and renaming.
-  function askName(title, initial) {
+  function askName(title, initial, max = 80) {
     return new Promise((resolve) => {
       const d = $("nameDlg"), input = $("nameInput");
       $("nameTitle").textContent = title;
@@ -2875,7 +2900,7 @@ self.onmessage = async (e) => {
         if (d.open) d.close();
         resolve(value);
       };
-      $("nameOk").onclick = () => { const v = input.value.trim(); if (v) finish(v.slice(0, 80)); };
+      $("nameOk").onclick = () => { const v = input.value.trim(); if (v) finish(v.slice(0, max)); };
       $("nameCancel").onclick = () => finish(null);
       input.onkeydown = (e) => { if (e.key === "Enter") $("nameOk").onclick(); };
       d.onclose = () => finish(null);
@@ -3674,12 +3699,36 @@ self.onmessage = async (e) => {
         prog.dirty = true; progSaveLocal(); scheduleProgSync(1500);
         renderLibrary();
       });
-      el.querySelector(".acts").replaceChildren(rm);
+      const acts = [];
+      if (showIdOfName(f.name)) { // an episode: to its spot in its show and season
+        const sp = document.createElement("button"); sp.className = "link"; sp.textContent = "In season";
+        sp.setAttribute("aria-label", "Show where this episode is in its season");
+        sp.addEventListener("click", () => inSeason(f));
+        acts.push(sp);
+      }
+      el.querySelector(".acts").replaceChildren(...acts, rm);
       return el;
     }));
     g.classList.add("row-grid");
     wrap.append(h, g);
     return wrap;
+  }
+
+  // Opens the episode's show on its season and points it out.
+  function inSeason(f) {
+    const sid = showIdOfName(f.name);
+    const show = groupFiles(state.files.filter((x) => isVideo(x) && showIdOfName(x.name) === sid)).shows[0];
+    if (!show) return toast("That show isn't here anymore.", true);
+    const season = show.seasons.find((s) => s.episodes.some((e) => e.file.key === f.key));
+    if (season) pickedSeason.set(show.id, season.number);
+    openShow(show);
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`.show-page [data-sel="${CSS.escape(selKey({ kind: "file", f }))}"]`);
+      if (!el) return;
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.classList.remove("spot"); void el.offsetWidth; el.classList.add("spot");
+      setTimeout(() => el.classList.remove("spot"), 2500);
+    });
   }
 
   // ---------- Playlists ----------
@@ -5702,6 +5751,176 @@ self.onmessage = async (e) => {
     return p || (backend.id === "pi" ? state.passcode || "" : "");
   }
 
+
+  // ---------- Trips: ur Google Maps directions as a mini map ----------
+  // Share directions from the Google Maps app to MoCloud on ur phone: the Pi gets Google's own route and ur
+  // phone sends it where u are. Here it's a small bar over every screen (drag it up or down); tap it for the map.
+  const trip = { t: null, open: false, box: null, map: "", timer: 0, busy: false, watch: null, sentAt: 0, sending: false,
+    mine: (() => { try { return localStorage.getItem("mocloud-trip-mine") || ""; } catch { return ""; } })() };
+  const TRIP_ICONS = {
+    left: "M14 18V11H7.8l2.6 2.6-1.4 1.4L4 10l5-5 1.4 1.4L7.8 9H16v9z",
+    right: "M10 18v-7h6.2l-2.6 2.6 1.4 1.4L20 10l-5-5-1.4 1.4L16.2 9H8v9z",
+    slightLeft: "M15 20h-2v-6.6L7.4 7.8 6 9.2V5h4.2L8.8 6.4l5.6 5.6c.4.4.6.9.6 1.4z",
+    slightRight: "M9 20h2v-6.6l5.6-5.6 1.4 1.4V5h-4.2l1.4 1.4L9.6 12c-.4.4-.6.9-.6 1.4z",
+    uturn: "M17 20h-2V9a3 3 0 0 0-6 0v6.2l2.6-2.6L13 14l-5 5-5-5 1.4-1.4L7 15.2V9a5 5 0 0 1 10 0z",
+    straight: "M11 20V7.8l-3.6 3.6L6 10l6-6 6 6-1.4 1.4L13 7.8V20z",
+    arrive: "M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z",
+    merge: "M7 20h2v-5.2l5-5V13l4-4-4-4v3.2l-5.4 5.4-.6.6z",
+    round: "M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-1.8-4.2L14 10h6V4l-2.4 2.4A8 8 0 0 0 12 4z",
+  };
+  function tripIcon(man) {
+    const k = /UTURN/.test(man) ? "uturn" : /ROUNDABOUT/.test(man) ? "round" : man === "MERGE" ? "merge" : man === "ARRIVE" ? "arrive"
+      : /SLIGHT_LEFT|RAMP_LEFT|FORK_LEFT/.test(man) ? "slightLeft" : /SLIGHT_RIGHT|RAMP_RIGHT|FORK_RIGHT/.test(man) ? "slightRight"
+      : /LEFT/.test(man) ? "left" : /RIGHT/.test(man) ? "right" : "straight";
+    return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${TRIP_ICONS[k]}"/></svg>`;
+  }
+  const tripDist = (m) => { const mi = m / 1609.344; return mi < 0.1 ? `${Math.max(50, Math.round(m * 3.28084 / 50) * 50)} ft` : mi < 10 ? `${mi.toFixed(1)} mi` : `${Math.round(mi)} mi`; };
+  const tripDur = (s) => { const m = Math.max(1, Math.round(s / 60)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} hr ${m % 60} min`; };
+  const tripClock = (e) => new Date(e * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  function tripHead(t) {
+    if (t.state === "arrived") return `U made it to ${t.name}`;
+    if (t.state === "waiting" || !t.next) return `Trip to ${t.name}`;
+    return (t.next.in != null ? tripDist(t.next.in) + " · " : "") + t.next.text;
+  }
+  const tripSub = (t) => t.state === "arrived" ? "The trip's done. MoCloud deletes it in a minute."
+    : t.state === "waiting" ? (t.problem || (t.id === trip.mine ? "Waiting for this device's GPS..." : "Waiting for GPS...")) : `To ${t.name}`;
+  const tripEsc = (x) => String(x == null ? "" : x).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  function tripRender() {
+    const t = trip.t;
+    if (!t) { if (trip.box) { trip.box.remove(); trip.box = null; trip.map = ""; } trip.open = false; return; }
+    if (!trip.box) {
+      trip.box = document.createElement("div"); trip.box.className = "trip";
+      try { trip.box.style.setProperty("--trip-y", (+localStorage.getItem("mocloud-trip-y") || 12) + "px"); } catch {}
+      tripDrag(trip.box);
+    }
+    // Over every screen: inside whichever pop-up is on top (they sit above everything else), else on the page.
+    const dlgs = [...document.querySelectorAll("dialog[open]")];
+    const host = dlgs.length ? dlgs[dlgs.length - 1] : document.body;
+    if (trip.box.parentNode !== host) host.append(trip.box);
+    const sign = tripIcon(t.state === "arrived" ? "ARRIVE" : (t.next || {}).man || "");
+    const going = t.state === "going" && t.secs != null;
+    if (!trip.open) {
+      trip.map = "";
+      trip.box.innerHTML = `<button type="button" class="trip-bar" aria-label="Trip to ${tripEsc(t.name)}. Open the map.">
+        <span class="trip-sign">${sign}</span><span class="trip-txt"><b>${tripEsc(tripHead(t))}</b><span>${tripEsc(tripSub(t))}</span></span>
+        ${going ? `<span class="trip-eta"><b>${tripDur(t.secs)}</b>${t.eta ? `<span>${tripClock(t.eta)}</span>` : ""}</span>` : ""}</button>`;
+      trip.box.querySelector(".trip-bar").onclick = () => { if (trip.box._dragged) return; trip.open = true; tripRender(); };
+      return;
+    }
+    const url = `${BACKENDS.pi.url}/api/trip/map?k=${encodeURIComponent(t.token || "")}`;
+    if (!trip.box.querySelector(".trip-card") || trip.map !== url) {
+      trip.map = url;
+      trip.box.innerHTML = `<div class="trip-card"><div class="trip-head"><span class="trip-sign"></span><span class="trip-txt"><b></b><span></span><div class="trip-then"></div></span>
+        <button type="button" class="trip-min" aria-label="Make it small">⌃</button></div>
+        <iframe class="trip-map" title="Map of the trip" allow="geolocation 'none'"></iframe><div class="trip-prob" hidden></div>
+        <div class="trip-foot"><span></span><button type="button" class="trip-end">End</button></div></div>`;
+      trip.box.querySelector(".trip-map").src = url;
+      trip.box.querySelector(".trip-min").onclick = () => { trip.open = false; tripRender(); };
+      trip.box.querySelector(".trip-end").onclick = async () => {
+        const v = await askChoice("End this trip in MoCloud? Google Maps keeps going, MoCloud just stops following.", [["end", "End trip"]]);
+        if (v !== "end") return;
+        trip.t = null; tripFollow(false); tripRender();
+        try { await fetch(BACKENDS.pi.url + "/api/trip/end", { method: "POST", headers: { "X-Passcode": piPasscode(), "Content-Type": "application/json" }, body: "{}" }); } catch {}
+      };
+    }
+    const c = trip.box.querySelector(".trip-card");
+    c.querySelector(".trip-sign").innerHTML = sign;
+    c.querySelector(".trip-txt b").textContent = tripHead(t);
+    c.querySelector(".trip-txt span").textContent = tripSub(t);
+    c.querySelector(".trip-then").textContent = t.then ? "Then: " + t.then.text : "";
+    const prob = c.querySelector(".trip-prob"); prob.hidden = !t.problem || t.state === "waiting"; prob.textContent = t.problem || "";
+    c.querySelector(".trip-foot span").textContent = going
+      ? `${tripDur(t.secs)} · ${tripDist(t.left || 0)}${t.eta ? " · there at " + tripClock(t.eta) : ""}` : `To ${t.name}`;
+  }
+  // Drag the bar up or down, out of the way (it stays there).
+  function tripDrag(box) {
+    let start = null;
+    box.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("iframe, .trip-end, .trip-min")) return;
+      start = { y: e.clientY, top: parseFloat(getComputedStyle(box).getPropertyValue("--trip-y")) || 12, id: e.pointerId };
+      box._dragged = false;
+    });
+    box.addEventListener("pointermove", (e) => {
+      if (!start || e.pointerId !== start.id) return;
+      const dy = e.clientY - start.y;
+      if (!box._dragged && Math.abs(dy) < 6) return;
+      if (!box._dragged) { box._dragged = true; try { box.setPointerCapture(e.pointerId); } catch {} }
+      const max = window.innerHeight - box.offsetHeight - 8;
+      box.style.setProperty("--trip-y", Math.max(0, Math.min(max, start.top + dy)) + "px");
+    });
+    const stop = () => {
+      if (!start) return;
+      start = null;
+      try { localStorage.setItem("mocloud-trip-y", parseFloat(box.style.getPropertyValue("--trip-y")) || 12); } catch {}
+      setTimeout(() => { box._dragged = false; }, 0);
+    };
+    box.addEventListener("pointerup", stop); box.addEventListener("pointercancel", stop);
+  }
+  async function tripPoll() {
+    clearTimeout(trip.timer);
+    if (document.visibilityState === "visible" && isUrl(BACKENDS.pi.url) && piPasscode() && !trip.busy) {
+      trip.busy = true;
+      try {
+        const r = await fetch(BACKENDS.pi.url + "/api/trip", { headers: { "X-Passcode": piPasscode() }, cache: "no-store" });
+        if (r.ok) { const d = await r.json(); trip.t = d.trip || null; tripFollow(!!trip.t && trip.t.id === trip.mine); tripRender(); }
+      } catch {}
+      trip.busy = false;
+    }
+    trip.timer = setTimeout(tripPoll, trip.t ? 4000 : 20000);
+  }
+  // Starting a trip here: paste the link from Google Maps' Share (directions or a place). This browser then sends
+  // the Pi where it is (like the phone app does), while MoCloud's open.
+  async function tripNew() {
+    if (!isUrl(BACKENDS.pi.url) || !piPasscode()) return toast("Open MoCloud on the Pi first.", true);
+    if (!("geolocation" in navigator)) return toast("This browser can't tell where u are, so it can't follow a trip.", true);
+    const link = await askName("Paste ur Google Maps link (Share in Google Maps, then Copy)", "", 2000);
+    if (!link) return;
+    try {
+      const r = await fetch(BACKENDS.pi.url + "/api/trip/start", { method: "POST", headers: { "X-Passcode": piPasscode(), "Content-Type": "application/json" },
+        body: JSON.stringify({ link, device: liveId }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) return toast(d.error || "Couldn't start the trip.", true);
+      trip.t = d.trip || null;
+      trip.mine = trip.t ? trip.t.id : "";
+      try { localStorage.setItem("mocloud-trip-mine", trip.mine); } catch {}
+      tripFollow(!!trip.t); tripRender(); tripPoll();
+    } catch { toast("Couldn't reach MoCloud rn.", true); }
+  }
+  // This browser's GPS, sent to the Pi while it's the one on the trip.
+  function tripFollow(on) {
+    if (!on) {
+      if (trip.watch != null) { navigator.geolocation.clearWatch(trip.watch); trip.watch = null; }
+      if (!trip.t) { trip.mine = ""; try { localStorage.removeItem("mocloud-trip-mine"); } catch {} }
+      return;
+    }
+    if (trip.watch != null || !("geolocation" in navigator)) return;
+    trip.watch = navigator.geolocation.watchPosition(tripSend, (e) => {
+      if (e.code === 1) { tripFollow(false); toast("MoCloud needs ur location for the trip. Allow it in the browser's settings.", true); }
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+  }
+  async function tripSend(p) {
+    if (trip.sending || Date.now() - trip.sentAt < 2500 || !trip.t) return;
+    trip.sending = true; trip.sentAt = Date.now();
+    const c = p.coords;
+    try {
+      const r = await fetch(BACKENDS.pi.url + "/api/trip/pos", { method: "POST", headers: { "X-Passcode": piPasscode(), "Content-Type": "application/json" },
+        body: JSON.stringify({ lat: c.latitude, lon: c.longitude, acc: c.accuracy || 20, heading: c.heading == null || isNaN(c.heading) ? null : c.heading,
+          speed: c.speed == null || isNaN(c.speed) ? null : c.speed, device: liveId }) });
+      if (r.ok) {
+        const d = await r.json();
+        if (d.follower === false) { trip.mine = ""; tripFollow(false); }   // another device is on this trip
+        trip.t = d.trip || null;
+        if (!trip.t) tripFollow(false);
+        tripRender();
+      }
+    } catch {}
+    trip.sending = false;
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") tripPoll(); });
+  // A pop-up opening or closing: the bar moves with it so it's always on top.
+  new MutationObserver(() => { if (trip.t) tripRender(); }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["open"] });
+  setTimeout(tripPoll, 1500);
+
   // ---------- Developer settings page ----------
   const devUI = { token: "", clean: null, goal: 0, picked: new Set(), timer: null, err: "", hist: null, link: "", speed: null, temp: null };
   function isDevOpen() { return !$("devPage").hidden; }
@@ -6814,6 +7033,7 @@ self.onmessage = async (e) => {
   const YT_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#E8C07A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>';
   const MIC_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E8C07A" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg>';
   const GAME_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E8C07A" d="M7 6h10a5 5 0 0 1 4.9 6l-1 5a3 3 0 0 1-5.1 1.5L13.6 16h-3.2l-2.2 2.5A3 3 0 0 1 3.1 17l-1-5A5 5 0 0 1 7 6zm1 3v2H6v2h2v2h2v-2h2v-2h-2V9zm7.5 1a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm2.5 2.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5z"/></svg>';
+  const TRIP_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#E8C07A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/></svg>';
   const PC_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#E8C07A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" d="M3 5h18v11H3zM8 20h8M12 16v4"/></svg>';
   function modeTile(icon, title, text, go) {
     const b = el("button", "mode-tile"); b.type = "button";
@@ -6832,7 +7052,8 @@ self.onmessage = async (e) => {
       modeTile(YT_ICON, "Anything to MP4", "Save a video from a link", openYT),
       modeTile(MIC_ICON, "Karaoke", "Sing along", openKaraoke),
       modeTile(GAME_ICON, "Games", "Phones are the controllers", () => openGames()),
-      modeTile(PC_ICON, "PC games", "Play from ur PC", openPcGames));
+      modeTile(PC_ICON, "PC games", "Play from ur PC", openPcGames),
+      modeTile(TRIP_ICON, "Trip", "Follow ur Google Maps directions", tripNew));
     wrap.append(h, row);
     return wrap;
   }
@@ -9160,7 +9381,7 @@ self.onmessage = async (e) => {
     karShowVoc();
     let wantInst = false; try { wantInst = localStorage.getItem("mocloud-kar-inst") === "1"; } catch {}
     if (wantInst && song.inst) karSwitch(true, true); // the way u had it last time
-    try { kar.arabic = localStorage.getItem("mocloud-kar-arabic-" + sg.id) === "1" && (song.lines || []).some((l) => l.ar); } catch { kar.arabic = false; }
+    try { kar.arabic = localStorage.getItem("mocloud-kar-arabic-" + sg.id) === "1" && karHasSwap(song); } catch { kar.arabic = false; }
     karBuild(song);
     karHabButton();
     karArButton();
@@ -9193,16 +9414,25 @@ self.onmessage = async (e) => {
     if (/[\u0600-\u06FF]/.test(all)) return false;
     return lines.filter((l) => /[a-z][2356789]|[2356789][a-z]/i.test(l.text || "")).length >= 3;
   }
+  // ...and the other way: Arabic letters to Arabizi ("lat" on each line).
+  function karArScript(song) {
+    return ((song && song.lines) || []).filter((l) => /[\u0600-\u06FF]/.test(l.text || "")).length >= 3;
+  }
+  const karSwapOf = (song, l) => (karArabizi(song) ? l.ar : l.lat) || "";
+  const karHasSwap = (song) => ((song && song.lines) || []).some((l) => karSwapOf(song, l));
   function karArButton() {
     const s = kar.song, b = $("kpAr");
-    b.hidden = !s || !karArabizi(s);
-    if (!b.hidden) b.textContent = kar.arabic ? "Latin" : "عربي";
+    b.hidden = !s || !(karArabizi(s) || karArScript(s));
+    if (!b.hidden) {
+      b.textContent = (kar.arabic !== karArScript(s)) ? "Latin" : "عربي";
+      b.title = karArScript(s) ? "Switch the Arabic letters to Arabizi (English letters)" : "Switch Arabic typed in English letters to Arabic letters";
+    }
   }
   $("kpAr").addEventListener("click", async () => {
     const s = kar.song;
     if (!s) return;
     const a = $("kpAudio"), at = a.currentTime;
-    if (!kar.arabic && !(s.lines || []).some((l) => l.ar)) {
+    if (!kar.arabic && !karHasSwap(s)) {
       const b = $("kpAr"); b.disabled = true; b.textContent = "...";
       try {
         const song = await karApi("/api/karaoke/arabic", { id: s.id });
@@ -9419,7 +9649,7 @@ self.onmessage = async (e) => {
       panes.push(pane);
       return pane;
     };
-    const origOf = (l) => (kar.arabic && l.ar) || l.text || "";   // Arabizi in Arabic letters, when that's on
+    const origOf = (l) => (kar.arabic && karSwapOf(song, l)) || l.text || "";   // Arabizi in Arabic letters (or the other way), when that's on
     const engOf = (l) => l.en || "";
     if (two) stage.replaceChildren(mkPane("English", engOf), mkPane(song.langName, origOf));
     else stage.replaceChildren(mkPane("", origOf));
