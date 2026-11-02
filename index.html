@@ -5934,8 +5934,8 @@ self.onmessage = async (e) => {
   const tripArrive = (secs) => tripClock(Date.now() / 1000 + secs);   // now + wat's left: keeps moving even while stopped
   // The minutes' color, like Google Maps: green (clear), yellow (some traffic), red (heavy).
   const tripColor = (t) => ({ light: "var(--green)", medium: "#FACC15", heavy: "var(--red)" })[t.traffic] || "var(--accent)";
-  // On a phone or tablet, this page sends its own GPS for any trip (even one shared from the Google Maps app), so
-  // MoMaps works without opening the MoCloud app. If the app's sending, it's the one that counts.
+  // On a phone or tablet (or anywhere location's allowed), this page sends its own GPS for any trip (even one shared
+  // from the Google Maps app), so MoMaps works without opening the MoCloud app. If the app's sending, it's the one that counts.
   const tripPhone = matchMedia("(pointer: coarse)").matches;
   function tripHead(t) {
     if (t.state === "arrived") return `U made it to ${t.name}`;
@@ -6168,7 +6168,9 @@ self.onmessage = async (e) => {
       trip.busy = true;
       try {
         const r = await fetch(BACKENDS.pi.url + "/api/trip", { headers: { "X-Passcode": piPasscode() }, cache: "no-store" });
-        if (r.ok) { const d = await r.json(); trip.t = d.trip || null; tripFollow(!!trip.t && (trip.t.id === trip.mine || tripPhone)); tripRender(); }
+        // This browser sends its GPS for the trip if it started it, it's a phone or tablet, or location's allowed here.
+        // If the app (or another device) is already sending, the Pi tells this one to hold off.
+        if (r.ok) { const d = await r.json(); trip.t = d.trip || null; tripFollow(!!trip.t && (trip.t.id === trip.mine || tripPhone || loc.state === "granted")); tripRender(); }
       } catch {}
       trip.busy = false;
     }
