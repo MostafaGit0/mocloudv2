@@ -308,7 +308,8 @@
   .kar-row span { display: block; color: var(--dim); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .kar-row > div { min-width: 0; }
   .kar-row span.kar-more { white-space: normal; }
-  .kar-row span.kar-tag { overflow: visible; text-overflow: clip; }
+  .kar-row span.kar-tag { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .kar-row .kar-tags { min-width: 0; overflow: hidden; }
   .kar-row span.kar-by { color: var(--paper); opacity: .85; font-size: 14px; }
   .kar-row .kar-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
   .kar-sing { width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--accent); display: grid; place-items: center; flex: none; cursor: pointer; }
@@ -516,6 +517,12 @@
   .set-stat b { color: var(--paper); font-weight: 600; }
   .set-stat.live { color: var(--accent-2); }
   .set-note { font-size: 13px; color: var(--dim); margin-top: 10px; }
+  .loc-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-weight: 600; }
+  .loc-light { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--dim); }
+  .loc-light.on { background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .loc-light.ask { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .loc-light.off { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .loc-acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
   .pi-off { background: #E5212F; color: #fff; border-color: #E5212F; width: 100%; }
   .fan-now { font-size: 14px; color: var(--dim); margin: 4px 0 6px; }
   .fan-val { display: block; font-size: 22px; margin-bottom: 6px; }
@@ -1567,6 +1574,19 @@
   .trip { position: fixed; z-index: 9998; left: 12px; top: 12px; width: min(440px, calc(100vw - 24px)); touch-action: none;
     user-select: none; -webkit-user-select: none; transition: left .25s ease, top .25s ease; }
   .trip.dragging { transition: none; }
+  /* The bar's other shapes, so it fits wherever there's empty space: shorter, or a tall narrow box for a side. */
+  .trip.compact { width: min(310px, calc(100vw - 24px)); }
+  .trip.compact .trip-bar { gap: 9px; padding: 8px 10px; }
+  .trip.compact .trip-sign { width: 34px; height: 34px; } .trip.compact .trip-sign svg { width: 21px; height: 21px; }
+  .trip.compact .trip-txt b { font-size: 15px; } .trip.compact .trip-txt span { font-size: 12.5px; }
+  .trip.compact .trip-eta b { font-size: 16px; } .trip.compact .trip-eta span { font-size: 12px; }
+  .trip.tall { width: 172px; }
+  .trip.tall .trip-bar { position: relative; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px; }
+  .trip.tall .trip-txt { width: 100%; }
+  .trip.tall .trip-txt b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; font-size: 16px; line-height: 1.25; }
+  .trip.tall .trip-txt span { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 13px; margin-top: 4px; }
+  .trip.tall .trip-eta { text-align: left; border-top: 1px solid var(--line); padding-top: 8px; width: 100%; }
+  .trip.tall .trip-min { position: absolute; top: 12px; right: 12px; }
   .trip-bar, .trip-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; color: var(--paper); }
   .trip-bar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; text-align: left; font: inherit; cursor: pointer; }
   .trip-sign { flex: none; width: 42px; height: 42px; border-radius: 10px; background: var(--accent); color: var(--ink); display: grid; place-items: center; }
@@ -1583,7 +1603,8 @@
   .trip-card .trip-txt b, .trip-card .trip-txt span { white-space: normal; }
   .trip-then { font-size: 13.5px; color: var(--dim); margin-top: 3px; }
   .trip-min { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--panel-2); color: var(--paper);
-    cursor: pointer; font-size: 16px; line-height: 1; display: grid; place-items: center; }
+    cursor: pointer; padding: 0; display: grid; place-items: center; }
+  .trip-min svg { width: 18px; height: 18px; display: block; }
   .trip-bar .trip-min { width: 28px; height: 28px; }
   .trip-map { display: block; width: 100%; height: 250px; border: 0; border-radius: 12px; margin-top: 12px; background: var(--ink); }
   .trip-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -5898,6 +5919,9 @@ self.onmessage = async (e) => {
     merge: "M7 20h2v-5.2l5-5V13l4-4-4-4v3.2l-5.4 5.4-.6.6z",
     round: "M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-1.8-4.2L14 10h6V4l-2.4 2.4A8 8 0 0 0 12 4z",
   };
+  // The card's two little buttons, drawn (not letters) so they sit dead centre in their circles.
+  const TRIP_MINUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  const TRIP_UP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function tripIcon(man) {
     const k = /UTURN/.test(man) ? "uturn" : /ROUNDABOUT/.test(man) ? "round" : man === "MERGE" ? "merge" : man === "ARRIVE" ? "arrive"
       : /SLIGHT_LEFT|RAMP_LEFT|FORK_LEFT/.test(man) ? "slightLeft" : /SLIGHT_RIGHT|RAMP_RIGHT|FORK_RIGHT/.test(man) ? "slightRight"
@@ -5967,7 +5991,7 @@ self.onmessage = async (e) => {
       trip.box.innerHTML = `<button type="button" class="trip-bar" aria-label="MoMaps to ${tripEsc(t.name)}. Open the map.">
         <span class="trip-sign">${sign}</span><span class="trip-txt"><b>${tripEsc(tripHead(t))}</b><span>${tripEsc(tripSub(t))}</span></span>
         ${going ? `<span class="trip-eta"><b style="color:${tripColor(t)}">${tripDur(t.secs)}</b><span>${tripArrive(t.secs)}</span></span>` : ""}
-        <span class="trip-min" role="button" aria-label="Shrink MoMaps to a dot" data-mini>&minus;</span></button>`;
+        <span class="trip-min" role="button" aria-label="Shrink MoMaps to a dot" data-mini>${TRIP_MINUS}</span></button>`;
       trip.box.querySelector(".trip-bar").onclick = (e) => {
         if (trip.box._dragged) return;
         if (e.target.closest("[data-mini]")) return tripMini(true);
@@ -5980,8 +6004,8 @@ self.onmessage = async (e) => {
     if (!trip.box.querySelector(".trip-card") || trip.map !== url) {
       trip.map = url;
       trip.box.innerHTML = `<div class="trip-card"><div class="trip-head"><span class="trip-sign"></span><span class="trip-txt"><b></b><span></span><div class="trip-then"></div></span>
-        <button type="button" class="trip-min" data-mini aria-label="Shrink MoMaps to a dot">&minus;</button>
-        <button type="button" class="trip-min" data-small aria-label="Make it small">&#8963;</button></div>
+        <button type="button" class="trip-min" data-small aria-label="Make it small">${TRIP_UP}</button>
+        <button type="button" class="trip-min" data-mini aria-label="Shrink MoMaps to a dot">${TRIP_MINUS}</button></div>
         <iframe class="trip-map" title="MoMaps" allow="geolocation 'none'"></iframe><div class="trip-prob" hidden></div>
         <div class="trip-foot"><span></span><span class="acts"><button type="button" class="trip-auto">Auto spot</button><button type="button" class="trip-end">End</button></span></div></div>`;
       trip.box.querySelector(".trip-map").src = url;
@@ -6017,35 +6041,94 @@ self.onmessage = async (e) => {
     if (v) all[ctx] = v; else delete all[ctx];
     try { localStorage.setItem("mocloud-momaps-spots", JSON.stringify(all)); } catch {}
   }
-  // How much is under a spot: words, pictures, buttons and players count; empty background doesn't.
-  function tripCovers(x, y, w, h) {
-    let score = 0;
-    for (let i = 0; i < 7; i++) for (let j = 0; j < 4; j++) {
-      const px = x + 6 + (w - 12) * i / 6, py = y + 6 + (h - 12) * j / 3;
-      const el = document.elementsFromPoint(px, py).find((e) => !trip.box.contains(e) && e !== trip.dot);
-      if (!el || el === document.body || el === document.documentElement) continue;
-      const tag = el.tagName;
-      if (/^(VIDEO|IMG|CANVAS|IFRAME|svg|path|BUTTON|INPUT|SELECT|TEXTAREA|A|LABEL)$/i.test(tag) || el.closest("button, a, input")) score += 3;
-      else if ([...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) score += 2;
-      else if (getComputedStyle(el).backgroundImage !== "none") score += 1;
-      else score += 0.3;   // a box or a border: some stuff, but better than covering words
+  // Everything worth seeing on screen rn, as boxes: buttons, pictures and players (3), each run of words (2), picture
+  // backgrounds (1), cards and bordered boxes (0.3). Plain page background isn't on the list, so it counts as free.
+  // Only wat's actually showing counts (not a page hidden under the one that's open).
+  function tripItems() {
+    const W = innerWidth, H = innerHeight, out = [];
+    const mine = (e) => (trip.box && trip.box.contains(e)) || e === trip.dot;
+    const seen = (e, r) => {
+      if (r.width < 2 || r.height < 2 || r.right < 0 || r.bottom < 0 || r.left > W || r.top > H) return false;
+      const cx = Math.min(W - 1, Math.max(0, r.left + r.width / 2)), cy = Math.min(H - 1, Math.max(0, r.top + r.height / 2));
+      const top = document.elementsFromPoint(cx, cy).find((x) => !mine(x));
+      return !!top && (top === e || e.contains(top) || top.contains(e));
+    };
+    const root = tripHost();
+    for (const e of root.querySelectorAll("img, video, canvas, iframe, svg, button, a, input, select, textarea, label, [style*='background-image']")) {
+      if (mine(e) || e.closest("svg") !== e && e.closest("svg")) continue;
+      const r = e.getBoundingClientRect();
+      if (seen(e, r)) out.push({ r, w: 3 });
     }
-    return score;
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => n.textContent.trim() && !mine(n.parentElement) ? 1 : 3 });
+    let n, count = 0;
+    while ((n = walk.nextNode()) && count < 3000) {
+      const range = document.createRange(); range.selectNodeContents(n);
+      for (const r of range.getClientRects()) if (seen(n.parentElement, r)) { out.push({ r, w: 2 }); count++; }
+    }
+    for (const e of root.querySelectorAll("div, section, article, li, header, nav, aside, p, span")) {
+      if (mine(e)) continue;
+      const r = e.getBoundingClientRect();
+      if (r.width * r.height > W * H * 0.5 || r.width < 8 || r.height < 8) continue;   // a whole page or column: its background is free
+      const cs = getComputedStyle(e);
+      const pic = cs.backgroundImage !== "none";
+      const filled = pic || !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(cs.backgroundColor) || parseFloat(cs.borderTopWidth) > 0;
+      if (filled && seen(e, r)) out.push({ r, w: pic ? 1 : 0.3 });
+    }
+    return out;
+  }
+  // How bad a spot is: how much of it is over things (by how much they matter), plus a big cost for each word,
+  // button or picture it touches at all, so even clipping the end of a word counts.
+  function tripCovers(x, y, w, h, items) {
+    let cost = 0;
+    for (const { r, w: wt } of items) {
+      const ox = Math.min(x + w, r.right) - Math.max(x, r.left), oy = Math.min(y + h, r.bottom) - Math.max(y, r.top);
+      if (ox <= 0 || oy <= 0) continue;
+      cost += wt * (ox * oy) / (w * h) + (wt >= 2 ? 0.5 : wt >= 1 ? 0.15 : 0.02);
+    }
+    return cost;
   }
   // Where the bar goes: where u put it on this screen; otherwise the spot that covers the least.
   function tripPlace(force) {
     const box = trip.box; if (!box || trip.mini) return;
     const ctx = tripCtx(); if (!force && ctx === trip.ctx) return;
     trip.ctx = ctx;
-    const W = innerWidth, H = innerHeight, w = box.offsetWidth, h = box.offsetHeight;
-    const put = (x, y) => { box.style.left = Math.max(0, Math.min(W - w, x)) + "px"; box.style.top = Math.max(0, Math.min(H - h, y)) + "px"; };
+    const W = innerWidth, H = innerHeight;
+    const shape = (s) => { box.classList.toggle("compact", s === "compact"); box.classList.toggle("tall", s === "tall"); };
+    const put = (x, y) => {
+      box.style.left = Math.max(0, Math.min(W - box.offsetWidth, x)) + "px"; box.style.top = Math.max(0, Math.min(H - box.offsetHeight, y)) + "px";
+    };
+    if (trip.open) shape("");   // the opened-up map is always the full card
     const mine = tripSaved(ctx);
-    if (mine) return put(mine.x * W, mine.y * H);
+    if (mine) { if (!trip.open) shape(mine.shape || ""); return put(mine.x * W, mine.y * H); }
+    if (trip.open) return tripSpot(box, W, H, put, tripItems());
+    // Each shape (the full bar, a shorter one, a tall narrow box) in each spot: the one that covers the least
+    // wins. A bigger one only loses if it covers more, so it stays the full bar when there's room for it.
+    const items = tripItems();
+    let best = null;
+    // When more than one fits cleanly: the full bar, then the tall box (it shows every word), then the short bar (it cuts the words off).
+    for (const [s, extra] of [["", 0], ["tall", 0.08], ["compact", 0.15]]) {
+      shape(s);
+      const w = box.offsetWidth, h = box.offsetHeight;
+      if (w > W - 8 && s) continue;
+      const xs = [12, (W - w) / 2, W - w - 12], ys = s === "tall" ? [12, (H - h) * 0.25, (H - h) * 0.5, (H - h) * 0.75, H - h - 12]
+        : [12, (H - h) * 0.33, (H - h) * 0.66, H - h - 12];
+      for (const y of ys) for (const x of xs) {
+        if (x < 0 || y < 0) continue;
+        const side = s === "tall" ? (x === xs[2] ? 0 : x === xs[0] ? 0.01 : 0.03) : 0;   // the tall box leans right, then left
+        const sc = tripCovers(x, y, w, h, items) + extra + side + (y === 12 ? 0 : y === ys[ys.length - 1] ? 0.02 : 0.05);   // a tie: the top
+        if (!best || sc < best.sc) best = { x, y, sc, s };
+      }
+    }
+    if (!best) { shape(""); return put(12, 12); }
+    shape(best.s); put(best.x, best.y);
+  }
+  function tripSpot(box, W, H, put, items) {   // the opened-up card: the emptiest spot for it
+    const w = box.offsetWidth, h = box.offsetHeight;
     const xs = [12, (W - w) / 2, W - w - 12], ys = [12, (H - h) * 0.33, (H - h) * 0.66, H - h - 12];
     let best = null;
     for (const y of ys) for (const x of xs) {
       if (x < 0 || y < 0) continue;
-      const sc = tripCovers(x, y, w, h) + (y === 12 ? 0 : y === ys[3] ? 0.2 : 0.6);   // a tie goes to the top, then the bottom
+      const sc = tripCovers(x, y, w, h, items) + (y === 12 ? 0 : y === ys[3] ? 0.02 : 0.05);
       if (!best || sc < best.sc) best = { x, y, sc };
     }
     if (best) put(best.x, best.y); else put(12, 12);
@@ -6069,7 +6152,11 @@ self.onmessage = async (e) => {
     const stop = () => {
       if (!start) return;
       start = null;
-      if (box._dragged) { box.classList.remove("dragging"); tripSaved(tripCtx(), { x: box.offsetLeft / innerWidth, y: box.offsetTop / innerHeight }); }
+      if (box._dragged) {
+        box.classList.remove("dragging");
+        tripSaved(tripCtx(), { x: box.offsetLeft / innerWidth, y: box.offsetTop / innerHeight,
+          shape: box.classList.contains("tall") ? "tall" : box.classList.contains("compact") ? "compact" : "" });
+      }
       setTimeout(() => { box._dragged = false; }, 0);
     };
     box.addEventListener("pointerup", stop); box.addEventListener("pointercancel", stop);
@@ -6147,6 +6234,66 @@ self.onmessage = async (e) => {
     .observe(document.body, { subtree: true, attributes: true, attributeFilter: ["open", "hidden"] });
   setTimeout(tripPoll, 1500);
 
+  // ---------- Location: asked for every time MoCloud opens, so MoMaps (and anything else) can use it right away ----------
+  // The browser keeps the answer itself (a website can't store a permission). MoCloud asks on every visit so the
+  // browser's prompt (if it needs one) comes up straight away, and keeps the last spot it got on this device.
+  const loc = { state: "unknown", last: (() => { try { return JSON.parse(localStorage.getItem("mocloud-loc-last")) || null; } catch { return null; } })() };
+  async function locCheck() {
+    if (!("geolocation" in navigator)) { loc.state = "none"; return loc.state; }
+    try {
+      const p = await navigator.permissions.query({ name: "geolocation" });
+      loc.state = p.state;   // granted, prompt or denied
+      if (!loc.watching) { loc.watching = true; p.onchange = () => { loc.state = p.state; if (!$("devPage").hidden) renderDev(); }; }
+    } catch { loc.state = loc.last && Date.now() - loc.last.at < 864e5 ? "granted" : "prompt"; }   // browsers that won't say
+    return loc.state;
+  }
+  function locAsk(quiet) {
+    return new Promise((done) => {
+      if (!("geolocation" in navigator)) { loc.state = "none"; return done(false); }
+      navigator.geolocation.getCurrentPosition((p) => {
+        loc.state = "granted";
+        loc.last = { lat: p.coords.latitude, lon: p.coords.longitude, acc: Math.round(p.coords.accuracy || 0), at: Date.now() };
+        try { localStorage.setItem("mocloud-loc-last", JSON.stringify(loc.last)); } catch {}
+        done(true);
+      }, (e) => {
+        if (e.code === 1) loc.state = "denied";
+        if (!quiet && e.code !== 1) toast("Couldn't get ur location rn. Try again in a sec.", true);
+        done(false);
+      }, { enableHighAccuracy: true, maximumAge: 60000, timeout: 20000 });
+    });
+  }
+  setTimeout(async () => { if ((await locCheck()) !== "denied") locAsk(true); }, 1200);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && loc.state === "granted") locAsk(true); });
+  function locCard() {
+    const c = card("Location", "MoCloud asks for ur location every time it opens, so MoMaps works right away. The browser remembers ur answer.");
+    const light = el("span", "loc-light"), text = el("span", "");
+    const row = el("div", "loc-row"); row.append(light, text);
+    const how = el("p", "set-note", "");
+    const paint = () => {
+      const st = loc.state;
+      light.className = "loc-light " + (st === "granted" ? "on" : st === "denied" ? "off" : st === "none" ? "" : "ask");
+      text.textContent = st === "granted" ? "Location is allowed" : st === "denied" ? "Location is blocked" : st === "none" ? "This browser can't do location" : "Not allowed yet";
+      how.textContent = st === "granted" ? (loc.last ? `Last spot: ${new Date(loc.last.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}, accurate to about ${Math.round(loc.last.acc * 3.28084)} ft.` : "")
+        : st === "denied" ? "The browser won't ask again by itself. iPhone or iPad: tap aA in the address bar, then Website Settings, then Location: Allow (and check Settings, Privacy & Security, Location Services, Safari Websites: While Using the App). Chrome: tap the icon left of the address, then Location: Allow. Then come back and tap Check again."
+        : "Tap Ask for location and pick Allow.";
+    };
+    const ask = el("button", "btn small", "Ask for location"); ask.type = "button";
+    ask.addEventListener("click", async () => {
+      ask.disabled = true; ask.textContent = "Asking...";
+      const ok = await locAsk(false);
+      await locCheck(); if (ok) loc.state = "granted";
+      ask.disabled = false; ask.textContent = "Ask for location"; paint();
+      if (ok) toast("Location's on.");
+    });
+    const again = el("button", "btn ghost small", "Check again"); again.type = "button";
+    again.addEventListener("click", async () => { await locCheck(); if (loc.state !== "denied") await locAsk(true); paint(); });
+    const acts = el("div", "loc-acts"); acts.append(ask, again);
+    c.append(row, how, acts);
+    paint();
+    locCheck().then(paint);
+    return c;
+  }
+
   // ---------- Developer settings page ----------
   const devUI = { token: "", clean: null, goal: 0, picked: new Set(), timer: null, err: "", hist: null, link: "", speed: null, temp: null };
   function isDevOpen() { return !$("devPage").hidden; }
@@ -6212,7 +6359,7 @@ self.onmessage = async (e) => {
   }
 
   function renderDev() {
-    const parts = [speedCard(), fanCard(), offCard(), claudeCard()];
+    const parts = [locCard(), speedCard(), fanCard(), offCard(), claudeCard()];
     const C = devUI.clean;
     if (!C) parts.push(card(devUI.err ? "Couldn't load it" : "Loading", devUI.err || "ii calm one sec"));
     else {
@@ -7024,7 +7171,7 @@ self.onmessage = async (e) => {
   });
 
   // ---------- About MoCloud: every feature, and how to use it in a few steps ----------
-  const ABOUT = [["Watching", [["Watch something", "", ["Tap any poster to play it.", "Leave the app or lock ur phone, it keeps playing.", "Control it from the lock screen, Control Center, Dynamic Island or CarPlay."]], ["Shows and seasons", "", ["Tap a show.", "Pick a season up top.", "Tap an episode, or hit Play / Resume or Shuffle."]], ["Skip intro and next episode", "", ["Tap Skip Intro when it pops up.", "At the end, Next Episode counts down. Tap it to go now."]], ["Continue watching", "", ["It's the first row on Home.", "Tap In season to see where that episode is in its season.", "Hold it (app) or tap Remove from row (website) to take it off."]], ["Sections", "", ["Tap a bubble at the top: Shows, Movies, Videos, Saved from links, Photos.", "Tap All to see everything again."]], ["Search", "", ["Type in Search stuff.", "A show, an episode's name, a folder, or a word from a description all work."]], ["Subtitles", "", ["Nothing to do: MoCloud finds them by itself.", "No subtitles anywhere? The Pi writes them by listening (Whisper).", "See which ones have them: Settings, then Subtitles."]], ["Picture in picture", "app", ["Play a video.", "Swipe home. It keeps playing in a small window."]], ["Wrong poster", "app", ["Hold the show, or open it.", "Tap Wrong poster? and pick the right one."]]]], ["Ur stuff", [["Upload", "", ["App: tap +, then From Photos or From Files.", "Website: drop files anywhere, or tap Choose files.", "It goes up in the background. U get a notification when it's done."]], ["Download to watch offline", "", ["Hold a video (app) or tap Download under it (website).", "Find them in Downloads.", "Hold it again and tap Remove download to free space."]], ["Folders and moving", "", ["Tap Select.", "Tick wat u want.", "Tap Move and pick a folder (or make a new one)."]], ["Delete", "", ["Hold a video and tap Delete (app), or tap Delete under it (website).", "To delete a bunch: Select, tick them, Delete."]], ["Playlists", "", ["Hold a video, tap Add to playlist, pick one or make a new one.", "Open the playlist and hit Play or Shuffle.", "Saved links can Play on loop."]], ["Make one video out of many", "", ["Open a playlist.", "Tap Edit (app) or Select (website) and tick 2 or more.", "Tap Make one video. The sound's balanced so every part plays at the same volume."]], ["Info and File DNA", "", ["Hold a video and tap Info: where it came from, wat was made from it.", "Settings, then File DNA, for every file's fingerprint and history."]], ["Flash drive", "", ["Tap Flash drive on the storage switch (Pi / Flash drive).", "Type the pin.", "Any kind of file goes there, not just videos."]]]], ["Modes", [["Anything to MP4", "", ["Tap Anything to MP4 in Modes.", "Paste a link (YouTube, TikTok, Reels, anything).", "Name it if u want, pick the Sound (Normal, Sped up, Slowed + reverb), and save.", "It lands in Saved from links."]], ["Save straight from another app", "app", ["In TikTok, YouTube, Instagram or Safari, tap Share.", "Pick MoCloud.", "Name it and tap Save to MoCloud. U don't have to open MoCloud."]], ["Speed up or slow down a saved video", "app", ["Hold the video.", "Tap Speed up or slow down.", "Pick Sped up or Slowed + reverb. A new copy shows up next to it."]], ["Karaoke", "", ["Tap Karaoke in Modes.", "Type in the search box: ur songs narrow down as u type. For a new song, tap Find new and pick it.", "Tap a language (English, Arabic...) to see only those songs, or change how they're sorted.", "Tap a line to jump there."]], ["Karaoke extras", "", ["The buttons over the slider: Vocals or Instrumental, Speed (the pitch stays the same), Repeat, English on or off, and Text size.", "Arabic in English letters? Tap عربي for Arabic letters. Arabic letters? Tap Latin letters. Habibi picks who the song's about.", "The buttons next to −10 and +10 jump back or ahead a line. Timing off? Tap ⋯, then Fix timing with MoTime (Undo's there too)."]], ["Games", "", ["Tap Games in Modes and start one.", "Everyone else opens MoCloud and joins with the code.", "Their phones are the controllers."]], ["PC games", "", ["Tap PC games in Modes.", "Tap a game. Ur PC wakes up and its screen shows here.", "Play with the mouse, keyboard or touch. Tap Close the game when you're done."]], ["Sleep mode", "app", ["Tap Sleep mode in Modes.", "Pick the cartoons and how long.", "Tap Start. Tap the Sleep mode tile again to stop it."]], ["Qibla", "app", ["Tap Qibla in Modes. Precise Location has to be on.", "Hold the phone flat and turn till it goes green and buzzes.", "Want it near 99%? In the day, line the phone up with the sun or a shadow and tap the matching button."]], ["MoMaps (Google Maps)", "", ["In Google Maps, pick where ur going (add stops if u want), tap Share, then MoCloud. U don't have to start navigation in Google Maps.", "Then open the MoCloud app or the website on ur phone: either one follows ur GPS. On a computer: Share, Copy, then tap MoMaps in MoCloud and paste it.", "The bar shows ur next turn, ur next stop and the ETA on every screen. Miss a turn and it finds a new way in a couple of seconds.", "Tap it for the map (the way ur going is always up). Drag the bar anywhere, tap − to shrink it to a dot, End to stop."]], ["My projects", "", ["Tap My projects in Modes.", "Tap one: it opens right inside MoCloud.", "Back (or ← Projects) takes u back to the list."]]]], ["Extras", [["Jarvis", "app", ["Tap the J button.", "Ask it anything: open a page, find something, the weather."]], ["Morning picks", "app", ["Every morning, athkaar shows up at the top of Home.", "On Fridays it's Surah Al-Kahf instead."]], ["Notifications", "", ["U get a ping when an upload's done or fails, or if the Pi goes down.", "Nothing while you're watching."]], ["Apple TV", "tv", ["Same library, same sections up top.", "Pick and play with the remote. Settings stay simple there."]], ["Developer settings", "", ["Settings, then Developer settings.", "Type the pass (or use Face ID).", "Smart Cleanup, where ur space is going, the speed test, MoTime, Install an update, and shutting the Pi off."]]]]];
+  const ABOUT = [["Watching", [["Watch something", "", ["Tap any poster to play it.", "Leave the app or lock ur phone, it keeps playing.", "Control it from the lock screen, Control Center, Dynamic Island or CarPlay."]], ["Shows and seasons", "", ["Tap a show.", "Pick a season up top.", "Tap an episode, or hit Play / Resume or Shuffle."]], ["Skip intro and next episode", "", ["Tap Skip Intro when it pops up.", "At the end, Next Episode counts down. Tap it to go now."]], ["Continue watching", "", ["It's the first row on Home.", "Tap In season to see where that episode is in its season.", "Hold it (app) or tap Remove from row (website) to take it off."]], ["Sections", "", ["Tap a bubble at the top: Shows, Movies, Videos, Saved from links, Photos.", "Tap All to see everything again."]], ["Search", "", ["Type in Search stuff.", "A show, an episode's name, a folder, or a word from a description all work."]], ["Subtitles", "", ["Nothing to do: MoCloud finds them by itself.", "No subtitles anywhere? The Pi writes them by listening (Whisper).", "See which ones have them: Settings, then Subtitles."]], ["Picture in picture", "app", ["Play a video.", "Swipe home. It keeps playing in a small window."]], ["Wrong poster", "app", ["Hold the show, or open it.", "Tap Wrong poster? and pick the right one."]]]], ["Ur stuff", [["Upload", "", ["App: tap +, then From Photos or From Files.", "Website: drop files anywhere, or tap Choose files.", "It goes up in the background. U get a notification when it's done."]], ["Download to watch offline", "", ["Hold a video (app) or tap Download under it (website).", "Find them in Downloads.", "Hold it again and tap Remove download to free space."]], ["Folders and moving", "", ["Tap Select.", "Tick wat u want.", "Tap Move and pick a folder (or make a new one)."]], ["Delete", "", ["Hold a video and tap Delete (app), or tap Delete under it (website).", "To delete a bunch: Select, tick them, Delete."]], ["Playlists", "", ["Hold a video, tap Add to playlist, pick one or make a new one.", "Open the playlist and hit Play or Shuffle.", "Saved links can Play on loop."]], ["Make one video out of many", "", ["Open a playlist.", "Tap Edit (app) or Select (website) and tick 2 or more.", "Tap Make one video. The sound's balanced so every part plays at the same volume."]], ["Info and File DNA", "", ["Hold a video and tap Info: where it came from, wat was made from it.", "Settings, then File DNA, for every file's fingerprint and history."]], ["Flash drive", "", ["Tap Flash drive on the storage switch (Pi / Flash drive).", "Type the pin.", "Any kind of file goes there, not just videos."]]]], ["Modes", [["Anything to MP4", "", ["Tap Anything to MP4 in Modes.", "Paste a link (YouTube, TikTok, Reels, anything).", "Name it if u want, pick the Sound (Normal, Sped up, Slowed + reverb), and save.", "It lands in Saved from links."]], ["Save straight from another app", "app", ["In TikTok, YouTube, Instagram or Safari, tap Share.", "Pick MoCloud.", "Name it and tap Save to MoCloud. U don't have to open MoCloud."]], ["Speed up or slow down a saved video", "app", ["Hold the video.", "Tap Speed up or slow down.", "Pick Sped up or Slowed + reverb. A new copy shows up next to it."]], ["Karaoke", "", ["Tap Karaoke in Modes.", "Type in the search box: ur songs narrow down as u type. For a new song, tap Find new and pick it.", "Tap a language (English, Arabic...) to see only those songs, or change how they're sorted.", "Tap a line to jump there."]], ["Karaoke extras", "", ["The buttons over the slider: Vocals or Instrumental, Speed (the pitch stays the same), Repeat, English on or off, and Text size.", "Arabic in English letters? Tap عربي for Arabic letters. Arabic letters? Tap Latin letters. Habibi picks who the song's about.", "The buttons next to −10 and +10 jump back or ahead a line. Timing off? Tap ⋯, then Fix timing with MoTime (Undo's there too)."]], ["Games", "", ["Tap Games in Modes and start one.", "Everyone else opens MoCloud and joins with the code.", "Their phones are the controllers."]], ["PC games", "", ["Tap PC games in Modes.", "Tap a game. Ur PC wakes up and its screen shows here.", "Play with the mouse, keyboard or touch. Tap Close the game when you're done."]], ["Sleep mode", "app", ["Tap Sleep mode in Modes.", "Pick the cartoons and how long.", "Tap Start. Tap the Sleep mode tile again to stop it."]], ["Qibla", "app", ["Tap Qibla in Modes. Precise Location has to be on.", "Hold the phone flat and turn till it goes green and buzzes.", "Want it near 99%? In the day, line the phone up with the sun or a shadow and tap the matching button."]], ["MoMaps (Google Maps)", "", ["In Google Maps, pick where ur going (add stops if u want), tap Share, then MoCloud. U don't have to start navigation in Google Maps.", "Then open the MoCloud app or the website on ur phone: either one follows ur GPS. On a computer: Share, Copy, then tap MoMaps in MoCloud and paste it.", "The bar shows ur next turn, ur next stop and the ETA on every screen. Miss a turn and it finds a new way in a couple of seconds.", "Tap it for the map (the way ur going is always up). Drag the bar anywhere, tap − to shrink it to a dot, End to stop."]], ["My projects", "", ["Tap My projects in Modes.", "Tap one: it opens right inside MoCloud.", "Back (or ← Projects) takes u back to the list."]]]], ["Extras", [["Jarvis", "app", ["Tap the J button.", "Ask it anything: open a page, find something, the weather."]], ["Morning picks", "app", ["Every morning, athkaar shows up at the top of Home.", "On Fridays it's Surah Al-Kahf instead."]], ["Notifications", "", ["U get a ping when an upload's done or fails, or if the Pi goes down.", "Nothing while you're watching."]], ["Apple TV", "tv", ["Same library, same sections up top.", "Pick and play with the remote. Settings stay simple there."]], ["Developer settings", "", ["Settings, then Developer settings.", "Type the pass (or use Face ID).", "Location (a green light means it's allowed, with a button to ask), Smart Cleanup, where ur space is going, the speed test, MoTime, Install an update, and shutting the Pi off."]]]]];
   const ABOUT_TAG = { app: "App only", web: "Website only", tv: "Apple TV" };
   function aboutCard() {
     return navCard("About MoCloud", "Every feature and how to use it, in a few steps.", openAbout, false, "");
