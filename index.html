@@ -286,6 +286,15 @@
   .nav-go svg { width: 22px; height: 22px; color: var(--dim); display: block; }
   /* Modes: a row of tiles at the top of the home screen (like the apps) */
   .modes { margin-bottom: 26px; }
+  .modes-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .modes-edit { font-size: 14px; }
+  .modes.editing .mode-tile { position: relative; outline: 1.5px dashed var(--accent); outline-offset: -1.5px; cursor: default; }
+  .mode-move { position: absolute; right: 8px; top: 8px; display: flex; gap: 6px; }
+  .mode-arrow { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center;
+    cursor: pointer; user-select: none; }
+  .mode-tile .mode-arrow svg { width: 18px; height: 18px; display: block; }
+  .modes.editing .mode-tile > svg { opacity: .5; }
+  .mode-arrow.off { opacity: .25; pointer-events: none; }
   .modes-row { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
   .modes-row::-webkit-scrollbar { display: none; }
   .mode-tile { flex: none; width: 150px; height: 118px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; padding: 13px;
@@ -1571,20 +1580,20 @@
   #ytSaveAs { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--ink); color: var(--paper); font-size: 15px; margin-bottom: 4px; }
 
   /* MoMaps: ur Google Maps directions, floating over every screen (drag it anywhere, or shrink it to a dot) */
-  .trip { position: fixed; z-index: 9998; left: 12px; top: 12px; width: min(440px, calc(100vw - 24px)); touch-action: none;
+  .trip { position: fixed; z-index: 9998; left: 12px; top: 12px; width: min(480px, calc(100vw - 24px)); touch-action: none;
     user-select: none; -webkit-user-select: none; transition: left .25s ease, top .25s ease; }
   .trip.dragging { transition: none; }
   /* The bar's other shapes, so it fits wherever there's empty space: shorter, or a tall narrow box for a side. */
-  .trip.compact { width: min(310px, calc(100vw - 24px)); }
+  .trip.compact { width: min(340px, calc(100vw - 24px)); }
   .trip.compact .trip-bar { gap: 9px; padding: 8px 10px; }
   .trip.compact .trip-sign { width: 34px; height: 34px; } .trip.compact .trip-sign svg { width: 21px; height: 21px; }
-  .trip.compact .trip-txt b { font-size: 15px; } .trip.compact .trip-txt span { font-size: 12.5px; }
-  .trip.compact .trip-eta b { font-size: 16px; } .trip.compact .trip-eta span { font-size: 12px; }
-  .trip.tall { width: 172px; }
+  .trip.compact .trip-txt b { font-size: 16.5px; } .trip.compact .trip-txt span { font-size: 14px; }
+  .trip.compact .trip-eta b { font-size: 17.5px; } .trip.compact .trip-eta span { font-size: 13px; }
+  .trip.tall { width: 188px; }
   .trip.tall .trip-bar { position: relative; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px; }
   .trip.tall .trip-txt { width: 100%; }
-  .trip.tall .trip-txt b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; font-size: 16px; line-height: 1.25; }
-  .trip.tall .trip-txt span { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 13px; margin-top: 4px; }
+  .trip.tall .trip-txt b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; font-size: 17.5px; line-height: 1.25; }
+  .trip.tall .trip-txt span { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14.5px; margin-top: 4px; }
   .trip.tall .trip-eta { text-align: left; border-top: 1px solid var(--line); padding-top: 8px; width: 100%; }
   .trip.tall .trip-min { position: absolute; top: 12px; right: 12px; }
   .trip-bar, .trip-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; color: var(--paper); }
@@ -1594,24 +1603,35 @@
   .trip-card .trip-sign { width: 48px; height: 48px; }
   .trip-txt { flex: 1; min-width: 0; }
   .trip-txt b, .trip-txt span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .trip-txt b { font-size: 17px; } .trip-txt span { font-size: 14px; color: var(--dim); margin-top: 1px; }
+  .trip-txt b { font-size: 19px; } .trip-txt span { font-size: 15.5px; color: var(--dim); margin-top: 1px; }
   .trip-eta { text-align: right; font-variant-numeric: tabular-nums; }
-  .trip-eta b { display: block; color: var(--accent); font-size: 18px; } .trip-eta span { font-size: 13px; color: var(--dim); }
+  .trip-eta b { display: block; color: var(--accent); font-size: 20px; } .trip-eta span { font-size: 14.5px; color: var(--dim); }
+  .trip-eta[hidden] { display: none; }
   .trip-card { padding: 14px; }
   .trip-card .trip-head { display: flex; gap: 12px; align-items: flex-start; cursor: grab; }
-  .trip-card .trip-txt b { font-size: 18px; } .trip-card .trip-txt span { font-size: 14.5px; }
-  .trip-card .trip-txt b, .trip-card .trip-txt span { white-space: normal; }
-  .trip-then { font-size: 13.5px; color: var(--dim); margin-top: 3px; }
+  .trip-card .trip-txt b { font-size: 20px; } .trip-card .trip-txt span { font-size: 16px; }
+  /* A long turn (a long exit or street name) gets cut off with "..." so the map and the bottom line always fit */
+  .trip-card .trip-txt b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
+  .trip-card .trip-txt span { white-space: nowrap; }
+  .trip-then { font-size: 15px; color: var(--dim); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .trip-min { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--panel-2); color: var(--paper);
     cursor: pointer; padding: 0; display: grid; place-items: center; }
-  .trip-min svg { width: 18px; height: 18px; display: block; }
-  .trip-bar .trip-min { width: 28px; height: 28px; }
-  .trip-map { display: block; width: 100%; height: 250px; border: 0; border-radius: 12px; margin-top: 12px; background: var(--ink); }
-  .trip-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .trip-min svg { width: 22px; height: 22px; display: block; pointer-events: none; }
+  .trip-card .trip-min { width: 46px; height: 46px; }
+  .trip-bar .trip-min { width: 40px; height: 40px; }
+  .trip-min:active { transform: scale(.92); background: var(--line); }
+  .trip-map { display: block; width: 100%; height: clamp(200px, calc(100vh - 250px), 330px); border: 0; border-radius: 12px; margin-top: 12px; background: var(--ink); }
+  .trip-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 16.5px; font-variant-numeric: tabular-nums; }
   .trip-foot .acts { display: flex; gap: 14px; align-items: center; }
-  .trip-prob { margin-top: 8px; font-size: 13.5px; color: var(--amber); }
-  .trip-end, .trip-auto { border: 0; background: none; font-family: inherit; font-weight: 600; font-size: 15px; cursor: pointer; padding: 4px 2px; }
+  .trip-foot > span:first-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trip-prob { margin-top: 8px; font-size: 15px; color: var(--amber); }
+  .trip-end, .trip-auto { border: 0; background: none; font-family: inherit; font-weight: 600; font-size: 16.5px; cursor: pointer; padding: 6px 2px; white-space: nowrap; }
   .trip-end { color: var(--red); } .trip-auto { color: var(--dim); }
+  .trip-full { position: fixed; inset: 0; z-index: 10000; background: #111318; }
+  .trip-full iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .trip-full-x { position: absolute; left: 12px; top: calc(12px + env(safe-area-inset-top)); width: 44px; height: 44px; border-radius: 50%; border: 0;
+    background: rgba(28,32,41,.94); color: var(--paper); display: grid; place-items: center; padding: 0; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.45); }
+  .trip-full-x svg { width: 22px; height: 22px; display: block; }
   .trip-dot { position: fixed; z-index: 9998; left: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); width: 54px; height: 54px; border-radius: 50%;
     border: 0; background: var(--accent); color: var(--ink); display: grid; place-items: center; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.45); }
   .trip-dot svg { width: 26px; height: 26px; }
@@ -3422,13 +3442,17 @@ self.onmessage = async (e) => {
   // The player's buttons (title, Close, screen size, subtitles) fade out 2.5 seconds after u stop touching
   // the screen while it plays, full screen or not. Move the mouse or touch anywhere and they're back.
   function autoHide(root, playing, ms = 2500) {
-    let t = 0;
+    let t = 0, mouse = false;
+    // A finger leaves the controls "hovered" after a tap (touch screens never un-hover), so hovering only keeps them
+    // up for a real mouse. Otherwise they go a moment after any tap: the slider, play, a button, a lyric.
+    root.addEventListener("pointerdown", (e) => { mouse = e.pointerType === "mouse"; }, { passive: true, capture: true });
+    root.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") mouse = true; }, { passive: true, capture: true });
     const wake = () => {
       root.classList.remove("ui-idle");
       clearTimeout(t);
       t = setTimeout(() => {
         if (root.hidden || (root.tagName === "DIALOG" && !root.open) || !playing()) return;
-        if (root.querySelector("select:focus, .p-foot:hover, .kp-bar:hover, .kp-top:hover")) return wake();
+        if (root.querySelector("select:focus") || (mouse && root.querySelector(".p-foot:hover, .kp-bar:hover, .kp-top:hover"))) return wake();
         root.classList.add("ui-idle");
       }, ms);
     };
@@ -5952,7 +5976,22 @@ self.onmessage = async (e) => {
     try { localStorage.setItem("mocloud-momaps-mini", on ? "1" : "0"); } catch {}
     tripRender(); if (!on) tripPlace(true);
   }
+  // Full screen: the map big, with a panel of everything worth knowing while driving (the Pi's map page does both).
+  function tripFull() {
+    const t = trip.t; if (!t || document.querySelector(".trip-full")) return;
+    const wrap = document.createElement("div"); wrap.className = "trip-full";
+    wrap.innerHTML = `<iframe title="MoMaps full screen"></iframe><button type="button" class="trip-full-x" aria-label="Close full screen">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>`;
+    wrap.querySelector("iframe").src = `${BACKENDS.pi.url}/api/trip/map?k=${encodeURIComponent(t.token || "")}&full=1`;
+    const close = () => { wrap.remove(); removeEventListener("keydown", esc); };
+    const esc = (e) => { if (e.key === "Escape") close(); };
+    wrap.querySelector(".trip-full-x").onclick = close;
+    addEventListener("keydown", esc);
+    tripHost().append(wrap);
+    trip.fullClose = close;
+  }
   async function tripEnd() {
+    if (trip.fullClose) { trip.fullClose(); trip.fullClose = null; }
     trip.t = null; tripFollow(false); tripRender();   // no question: End ends it, and the Pi deletes it
     try { await fetch(BACKENDS.pi.url + "/api/trip/end", { method: "POST", headers: { "X-Passcode": piPasscode(), "Content-Type": "application/json" }, body: "{}" }); } catch {}
   }
@@ -5963,6 +6002,7 @@ self.onmessage = async (e) => {
   function tripRender() {
     const t = trip.t;
     if (!t) {
+      if (trip.fullClose) { trip.fullClose(); trip.fullClose = null; }   // the trip's over: full screen closes too
       if (trip.box) { trip.box.remove(); trip.box = null; trip.map = ""; }
       if (trip.dot) { trip.dot.remove(); trip.dot = null; }
       trip.open = false; return;
@@ -5987,16 +6027,28 @@ self.onmessage = async (e) => {
     if (trip.box.parentNode !== host) { host.append(trip.box); fresh = true; }
     if (!trip.open) {
       trip.map = "";
-      const wasBar = !!trip.box.querySelector(".trip-bar");
-      trip.box.innerHTML = `<button type="button" class="trip-bar" aria-label="MoMaps to ${tripEsc(t.name)}. Open the map.">
-        <span class="trip-sign">${sign}</span><span class="trip-txt"><b>${tripEsc(tripHead(t))}</b><span>${tripEsc(tripSub(t))}</span></span>
-        ${going ? `<span class="trip-eta"><b style="color:${tripColor(t)}">${tripDur(t.secs)}</b><span>${tripArrive(t.secs)}</span></span>` : ""}
-        <span class="trip-min" role="button" aria-label="Shrink MoMaps to a dot" data-mini>${TRIP_MINUS}</span></button>`;
-      trip.box.querySelector(".trip-bar").onclick = (e) => {
-        if (trip.box._dragged) return;
-        if (e.target.closest("[data-mini]")) return tripMini(true);
-        trip.open = true; tripRender(); tripPlace(true);
-      };
+      // Built once, then only its words change: rebuilding it every update could swallow a tap that landed mid-update.
+      let bar = trip.box.querySelector(".trip-bar");
+      const wasBar = !!bar;
+      if (!bar) {
+        trip.box.innerHTML = `<button type="button" class="trip-bar">
+          <span class="trip-sign"></span><span class="trip-txt"><b></b><span></span></span>
+          <span class="trip-eta"><b></b><span></span></span>
+          <span class="trip-min" role="button" aria-label="Shrink MoMaps to a dot" data-mini>${TRIP_MINUS}</span></button>`;
+        bar = trip.box.querySelector(".trip-bar");
+        bar.onclick = (e) => {
+          if (trip.box._dragged) return;
+          if (e.target.closest("[data-mini]")) return tripMini(true);
+          trip.open = true; tripRender(); tripPlace(true);
+        };
+      }
+      bar.setAttribute("aria-label", `MoMaps to ${t.name}. Open the map.`);
+      if (bar._sign !== sign) { bar.querySelector(".trip-sign").innerHTML = sign; bar._sign = sign; }
+      bar.querySelector(".trip-txt b").textContent = tripHead(t);
+      bar.querySelector(".trip-txt span").textContent = tripSub(t);
+      const eta = bar.querySelector(".trip-eta");
+      eta.hidden = !going;
+      if (going) { eta.querySelector("b").textContent = tripDur(t.secs); eta.querySelector("b").style.color = tripColor(t); eta.querySelector("span").textContent = tripArrive(t.secs); }
       if (fresh || !wasBar) tripPlace(true);
       return;
     }
@@ -6007,11 +6059,12 @@ self.onmessage = async (e) => {
         <button type="button" class="trip-min" data-small aria-label="Make it small">${TRIP_UP}</button>
         <button type="button" class="trip-min" data-mini aria-label="Shrink MoMaps to a dot">${TRIP_MINUS}</button></div>
         <iframe class="trip-map" title="MoMaps" allow="geolocation 'none'"></iframe><div class="trip-prob" hidden></div>
-        <div class="trip-foot"><span></span><span class="acts"><button type="button" class="trip-auto">Auto spot</button><button type="button" class="trip-end">End</button></span></div></div>`;
+        <div class="trip-foot"><span></span><span class="acts"><button type="button" class="trip-auto">Full screen</button><button type="button" class="trip-auto" data-auto>Auto spot</button><button type="button" class="trip-end">End</button></span></div></div>`;
       trip.box.querySelector(".trip-map").src = url;
       trip.box.querySelector("[data-small]").onclick = () => { trip.open = false; tripRender(); tripPlace(true); };
       trip.box.querySelector("[data-mini]").onclick = () => tripMini(true);
-      trip.box.querySelector(".trip-auto").onclick = () => { tripSaved(trip.ctx, null); tripPlace(true); };
+      trip.box.querySelector(".trip-auto[data-auto]").onclick = () => { tripSaved(trip.ctx, null); tripPlace(true); };
+      trip.box.querySelector(".trip-auto:not([data-auto])").onclick = tripFull;
       trip.box.querySelector(".trip-end").onclick = tripEnd;
       fresh = true;
     }
@@ -6035,11 +6088,11 @@ self.onmessage = async (e) => {
     const page = [...document.querySelectorAll("body > section[id]")].find((x) => !x.hidden && getComputedStyle(x).position === "fixed");
     return page ? "page:" + page.id : "home";
   }
+  // Where u dragged it: only for this screen, till u go to another one (then it finds an empty spot by itself again).
+  try { localStorage.removeItem("mocloud-momaps-spots"); } catch {}   // spots used to be kept for good: gone
   function tripSaved(ctx, v) {
-    let all = {}; try { all = JSON.parse(localStorage.getItem("mocloud-momaps-spots") || "{}"); } catch {}
-    if (v === undefined) return all[ctx] || null;
-    if (v) all[ctx] = v; else delete all[ctx];
-    try { localStorage.setItem("mocloud-momaps-spots", JSON.stringify(all)); } catch {}
+    if (v === undefined) return trip.dragged && trip.dragged.ctx === ctx ? trip.dragged : null;
+    trip.dragged = v ? Object.assign({ ctx }, v) : null;
   }
   // Everything worth seeing on screen rn, as boxes: buttons, pictures and players (3), each run of words (2), picture
   // backgrounds (1), cards and bordered boxes (0.3). Plain page background isn't on the list, so it counts as free.
@@ -6083,7 +6136,7 @@ self.onmessage = async (e) => {
     for (const { r, w: wt } of items) {
       const ox = Math.min(x + w, r.right) - Math.max(x, r.left), oy = Math.min(y + h, r.bottom) - Math.max(y, r.top);
       if (ox <= 0 || oy <= 0) continue;
-      cost += wt * (ox * oy) / (w * h) + (wt >= 2 ? 0.5 : wt >= 1 ? 0.15 : 0.02);
+      cost += wt * (ox * oy) / (w * h) + (wt >= 2 ? 0.5 : wt >= 1 ? 0.15 : 0.1);   // even clipping a card's edge looks off
     }
     return cost;
   }
@@ -6091,6 +6144,13 @@ self.onmessage = async (e) => {
   function tripPlace(force) {
     const box = trip.box; if (!box || trip.mini) return;
     const ctx = tripCtx(); if (!force && ctx === trip.ctx) return;
+    if (ctx !== trip.ctx) {
+      // A new screen: a fresh spot here, then another look once its stuff has loaded in (lists and pictures come in late).
+      if (trip.dragged && trip.dragged.ctx !== ctx) trip.dragged = null;
+      clearTimeout(trip.settle1); clearTimeout(trip.settle2);
+      const again = () => { if (!trip.dragged && trip.ctx === ctx && !(trip.box && trip.box.classList.contains("dragging"))) tripPlace(true); };
+      trip.settle1 = setTimeout(again, 450); trip.settle2 = setTimeout(again, 1400);
+    }
     trip.ctx = ctx;
     const W = innerWidth, H = innerHeight;
     const shape = (s) => { box.classList.toggle("compact", s === "compact"); box.classList.toggle("tall", s === "tall"); };
@@ -6115,7 +6175,8 @@ self.onmessage = async (e) => {
       for (const y of ys) for (const x of xs) {
         if (x < 0 || y < 0) continue;
         const side = s === "tall" ? (x === xs[2] ? 0 : x === xs[0] ? 0.01 : 0.03) : 0;   // the tall box leans right, then left
-        const sc = tripCovers(x, y, w, h, items) + extra + side + (y === 12 ? 0 : y === ys[ys.length - 1] ? 0.02 : 0.05);   // a tie: the top
+        // A tie: the top, then the bottom; a gap in the middle of the page only when the edges are busy.
+        const sc = tripCovers(x, y, w, h, items) + extra + side + (y === 12 ? 0 : y === ys[ys.length - 1] ? 0.02 : 0.12);
         if (!best || sc < best.sc) best = { x, y, sc, s };
       }
     }
@@ -6144,7 +6205,7 @@ self.onmessage = async (e) => {
     box.addEventListener("pointermove", (e) => {
       if (!start || e.pointerId !== start.id) return;
       const dx = e.clientX - start.x, dy = e.clientY - start.y;
-      if (!box._dragged && Math.hypot(dx, dy) < 6) return;
+      if (!box._dragged && Math.hypot(dx, dy) < 12) return;   // a tap that wobbles a bit is still a tap
       if (!box._dragged) { box._dragged = true; box.classList.add("dragging"); try { box.setPointerCapture(e.pointerId); } catch {} }
       box.style.left = Math.max(0, Math.min(innerWidth - box.offsetWidth, start.left + dx)) + "px";
       box.style.top = Math.max(0, Math.min(innerHeight - box.offsetHeight, start.top + dy)) + "px";
@@ -7173,7 +7234,7 @@ self.onmessage = async (e) => {
   });
 
   // ---------- About MoCloud: every feature, and how to use it in a few steps ----------
-  const ABOUT = [["Watching", [["Watch something", "", ["Tap any poster to play it.", "Leave the app or lock ur phone, it keeps playing.", "Control it from the lock screen, Control Center, Dynamic Island or CarPlay."]], ["Shows and seasons", "", ["Tap a show.", "Pick a season up top.", "Tap an episode, or hit Play / Resume or Shuffle."]], ["Skip intro and next episode", "", ["Tap Skip Intro when it pops up.", "At the end, Next Episode counts down. Tap it to go now."]], ["Continue watching", "", ["It's the first row on Home.", "Tap In season to see where that episode is in its season.", "Hold it (app) or tap Remove from row (website) to take it off."]], ["Sections", "", ["Tap a bubble at the top: Shows, Movies, Videos, Saved from links, Photos.", "Tap All to see everything again."]], ["Search", "", ["Type in Search stuff.", "A show, an episode's name, a folder, or a word from a description all work."]], ["Subtitles", "", ["Nothing to do: MoCloud finds them by itself.", "No subtitles anywhere? The Pi writes them by listening (Whisper).", "See which ones have them: Settings, then Subtitles."]], ["Picture in picture", "app", ["Play a video.", "Swipe home. It keeps playing in a small window."]], ["Wrong poster", "app", ["Hold the show, or open it.", "Tap Wrong poster? and pick the right one."]]]], ["Ur stuff", [["Upload", "", ["App: tap +, then From Photos or From Files.", "Website: drop files anywhere, or tap Choose files.", "It goes up in the background. U get a notification when it's done."]], ["Download to watch offline", "", ["Hold a video (app) or tap Download under it (website).", "Find them in Downloads.", "Hold it again and tap Remove download to free space."]], ["Folders and moving", "", ["Tap Select.", "Tick wat u want.", "Tap Move and pick a folder (or make a new one)."]], ["Delete", "", ["Hold a video and tap Delete (app), or tap Delete under it (website).", "To delete a bunch: Select, tick them, Delete."]], ["Playlists", "", ["Hold a video, tap Add to playlist, pick one or make a new one.", "Open the playlist and hit Play or Shuffle.", "Saved links can Play on loop."]], ["Make one video out of many", "", ["Open a playlist.", "Tap Edit (app) or Select (website) and tick 2 or more.", "Tap Make one video. The sound's balanced so every part plays at the same volume."]], ["Info and File DNA", "", ["Hold a video and tap Info: where it came from, wat was made from it.", "Settings, then File DNA, for every file's fingerprint and history."]], ["Flash drive", "", ["Tap Flash drive on the storage switch (Pi / Flash drive).", "Type the pin.", "Any kind of file goes there, not just videos."]]]], ["Modes", [["Anything to MP4", "", ["Tap Anything to MP4 in Modes.", "Paste a link (YouTube, TikTok, Reels, anything).", "Name it if u want, pick the Sound (Normal, Sped up, Slowed + reverb), and save.", "It lands in Saved from links."]], ["Save straight from another app", "app", ["In TikTok, YouTube, Instagram or Safari, tap Share.", "Pick MoCloud.", "Name it and tap Save to MoCloud. U don't have to open MoCloud."]], ["Speed up or slow down a saved video", "app", ["Hold the video.", "Tap Speed up or slow down.", "Pick Sped up or Slowed + reverb. A new copy shows up next to it."]], ["Karaoke", "", ["Tap Karaoke in Modes.", "Type in the search box: ur songs narrow down as u type. For a new song, tap Find new and pick it.", "Tap a language (English, Arabic...) to see only those songs, or change how they're sorted.", "Tap a line to jump there."]], ["Karaoke extras", "", ["The buttons over the slider: Vocals or Instrumental, Speed (the pitch stays the same), Repeat, English on or off, and Text size.", "Arabic in English letters? Tap عربي for Arabic letters. Arabic letters? Tap Latin letters. Habibi picks who the song's about.", "The buttons next to −10 and +10 jump back or ahead a line. Timing off? Tap ⋯, then Fix timing with MoTime (Undo's there too)."]], ["Games", "", ["Tap Games in Modes and start one.", "Everyone else opens MoCloud and joins with the code.", "Their phones are the controllers."]], ["PC games", "", ["Tap PC games in Modes.", "Tap a game. Ur PC wakes up and its screen shows here.", "Play with the mouse, keyboard or touch. Tap Close the game when you're done."]], ["Sleep mode", "app", ["Tap Sleep mode in Modes.", "Pick the cartoons and how long.", "Tap Start. Tap the Sleep mode tile again to stop it."]], ["Qibla", "app", ["Tap Qibla in Modes. Precise Location has to be on.", "Hold the phone flat and turn till it goes green and buzzes.", "Want it near 99%? In the day, line the phone up with the sun or a shadow and tap the matching button."]], ["MoMaps (Google Maps)", "", ["In Google Maps, pick where ur going (add stops if u want), tap Share, then MoCloud. U don't have to start navigation in Google Maps.", "Then open the MoCloud app or the website on ur phone: either one follows ur GPS. On a computer: Share, Copy, then tap MoMaps in MoCloud and paste it.", "The bar shows ur next turn, ur next stop and the ETA on every screen. Miss a turn and it finds a new way in a couple of seconds.", "Tap it for the map (the way ur going is always up). Drag the bar anywhere, tap − to shrink it to a dot, End to stop."]], ["My projects", "", ["Tap My projects in Modes.", "Tap one: it opens right inside MoCloud.", "Back (or ← Projects) takes u back to the list."]]]], ["Extras", [["Jarvis", "app", ["Tap the J button.", "Ask it anything: open a page, find something, the weather."]], ["Morning picks", "app", ["Every morning, athkaar shows up at the top of Home.", "On Fridays it's Surah Al-Kahf instead."]], ["Notifications", "", ["U get a ping when an upload's done or fails, or if the Pi goes down.", "Nothing while you're watching."]], ["Apple TV", "tv", ["Same library, same sections up top.", "Pick and play with the remote. Settings stay simple there."]], ["Developer settings", "", ["Settings, then Developer settings.", "Type the pass (or use Face ID).", "Location (a green light means it's allowed, with a button to ask), Smart Cleanup, where ur space is going, the speed test, MoTime, Install an update, and shutting the Pi off."]]]]];
+  const ABOUT = [["Watching", [["Watch something", "", ["Tap any poster to play it.", "Leave the app or lock ur phone, it keeps playing.", "Control it from the lock screen, Control Center, Dynamic Island or CarPlay."]], ["Shows and seasons", "", ["Tap a show.", "Pick a season up top.", "Tap an episode, or hit Play / Resume or Shuffle."]], ["Skip intro and next episode", "", ["Tap Skip Intro when it pops up.", "At the end, Next Episode counts down. Tap it to go now."]], ["Continue watching", "", ["It's the first row on Home.", "Tap In season to see where that episode is in its season.", "Hold it (app) or tap Remove from row (website) to take it off."]], ["Sections", "", ["Tap a bubble at the top: Shows, Movies, Videos, Saved from links, Photos.", "Tap All to see everything again."]], ["Search", "", ["Type in Search stuff.", "A show, an episode's name, a folder, or a word from a description all work."]], ["Subtitles", "", ["Nothing to do: MoCloud finds them by itself.", "No subtitles anywhere? The Pi writes them by listening (Whisper).", "See which ones have them: Settings, then Subtitles."]], ["Picture in picture", "app", ["Play a video.", "Swipe home. It keeps playing in a small window."]], ["Wrong poster", "app", ["Hold the show, or open it.", "Tap Wrong poster? and pick the right one."]]]], ["Ur stuff", [["Upload", "", ["App: tap +, then From Photos or From Files.", "Website: drop files anywhere, or tap Choose files.", "It goes up in the background. U get a notification when it's done."]], ["Download to watch offline", "", ["Hold a video (app) or tap Download under it (website).", "Find them in Downloads.", "Hold it again and tap Remove download to free space."]], ["Folders and moving", "", ["Tap Select.", "Tick wat u want.", "Tap Move and pick a folder (or make a new one)."]], ["Delete", "", ["Hold a video and tap Delete (app), or tap Delete under it (website).", "To delete a bunch: Select, tick them, Delete."]], ["Playlists", "", ["Hold a video, tap Add to playlist, pick one or make a new one.", "Open the playlist and hit Play or Shuffle.", "Saved links can Play on loop."]], ["Make one video out of many", "", ["Open a playlist.", "Tap Edit (app) or Select (website) and tick 2 or more.", "Tap Make one video. The sound's balanced so every part plays at the same volume."]], ["Info and File DNA", "", ["Hold a video and tap Info: where it came from, wat was made from it.", "Settings, then File DNA, for every file's fingerprint and history."]], ["Flash drive", "", ["Tap Flash drive on the storage switch (Pi / Flash drive).", "Type the pin.", "Any kind of file goes there, not just videos."]]]], ["Modes", [["Anything to MP4", "", ["Tap Anything to MP4 in Modes.", "Paste a link (YouTube, TikTok, Reels, anything).", "Name it if u want, pick the Sound (Normal, Sped up, Slowed + reverb), and save.", "It lands in Saved from links."]], ["Save straight from another app", "app", ["In TikTok, YouTube, Instagram or Safari, tap Share.", "Pick MoCloud.", "Name it and tap Save to MoCloud. U don't have to open MoCloud."]], ["Speed up or slow down a saved video", "app", ["Hold the video.", "Tap Speed up or slow down.", "Pick Sped up or Slowed + reverb. A new copy shows up next to it."]], ["Karaoke", "", ["Tap Karaoke in Modes.", "Type in the search box: ur songs narrow down as u type. For a new song, tap Find new and pick it.", "Tap a language (English, Arabic...) to see only those songs, or change how they're sorted.", "Tap a line to jump there."]], ["Karaoke extras", "", ["The buttons over the slider: Vocals or Instrumental, Speed (the pitch stays the same), Repeat, English on or off, and Text size.", "Arabic in English letters? Tap عربي for Arabic letters. Arabic letters? Tap Arabizi. Habibi picks who the song's about.", "The buttons next to −10 and +10 jump back or ahead a line. Timing off? Tap ⋯, then Fix timing with MoTime (Undo's there too)."]], ["Games", "", ["Tap Games in Modes and start one.", "Everyone else opens MoCloud and joins with the code.", "Their phones are the controllers."]], ["PC games", "", ["Tap PC games in Modes.", "Tap a game. Ur PC wakes up and its screen shows here.", "Play with the mouse, keyboard or touch. Tap Close the game when you're done."]], ["Sleep mode", "app", ["Tap Sleep mode in Modes.", "Pick the cartoons and how long.", "Tap Start. Tap the Sleep mode tile again to stop it."]], ["Qibla", "app", ["Tap Qibla in Modes. Precise Location has to be on.", "Hold the phone flat and turn till it goes green and buzzes.", "Want it near 99%? In the day, line the phone up with the sun or a shadow and tap the matching button."]], ["MoMaps (Google Maps)", "", ["In Google Maps, pick where ur going (add stops if u want), tap Share, then MoCloud. U don't have to start navigation in Google Maps.", "Then open the MoCloud app or the website on ur phone: either one follows ur GPS. On a computer: Share, Copy, then tap MoMaps in MoCloud and paste it.", "The bar shows ur next turn, ur next stop and the ETA on every screen. Miss a turn and it finds a new way in a couple of seconds.", "Tap it for the map (the way ur going is always up; drag it any way to look around, Follow me snaps back). Full screen shows it big with ur speed, traffic, stops and ETA. Tap − to shrink it to a dot, End to stop."]], ["My projects", "", ["Tap My projects in Modes.", "Tap one: it opens right inside MoCloud.", "Back (or ← Projects) takes u back to the list."]]]], ["Extras", [["Jarvis", "app", ["Tap the J button.", "Ask it anything: open a page, find something, the weather."]], ["Morning picks", "app", ["Every morning, athkaar shows up at the top of Home.", "On Fridays it's Surah Al-Kahf instead."]], ["Notifications", "", ["U get a ping when an upload's done or fails, or if the Pi goes down.", "Nothing while you're watching."]], ["Apple TV", "tv", ["Same library, same sections up top.", "Pick and play with the remote. Settings stay simple there."]], ["Developer settings", "", ["Settings, then Developer settings.", "Type the pass (or use Face ID).", "Location (a green light means it's allowed, with a button to ask), Smart Cleanup, where ur space is going, the speed test, MoTime, Install an update, and shutting the Pi off."]]]]];
   const ABOUT_TAG = { app: "App only", web: "Website only", tv: "Apple TV" };
   function aboutCard() {
     return navCard("About MoCloud", "Every feature and how to use it, in a few steps.", openAbout, false, "");
@@ -7517,18 +7578,59 @@ self.onmessage = async (e) => {
     b.addEventListener("click", go);
     return b;
   }
+  // The modes, in the order u put them (Reorder, then the arrows on each one; it's remembered on this device).
+  const MODES = [
+    ["mp4", YT_ICON, "Anything to MP4", "Save a video from a link", () => openYT()],
+    ["karaoke", MIC_ICON, "Karaoke", "Sing along", () => openKaraoke()],
+    ["games", GAME_ICON, "Games", "Phones are the controllers", () => openGames()],
+    ["pc", PC_ICON, "PC games", "Play from ur PC", () => openPcGames()],
+    ["momaps", TRIP_ICON, "MoMaps", "Follow ur Google Maps directions", () => tripNew()],
+    ["projects", PROJ_ICON, "My projects", "My other apps, in here", () => openProjects()],
+  ];
+  let modesEditing = false;
+  function modesOrder() {
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem("mocloud-modes-order")) || []; } catch {}
+    const ids = MODES.map((m) => m[0]);
+    return [...saved.filter((id) => ids.includes(id)), ...ids.filter((id) => !saved.includes(id))];   // new modes go at the end
+  }
   function modesRow() {
-    const wrap = el("section", "modes");
+    const wrap = el("section", "modes" + (modesEditing ? " editing" : ""));
+    const head = el("div", "modes-head");
     const h = el("h3", "row-title", "Modes");
+    const edit = el("button", "link modes-edit", modesEditing ? "Done" : "Reorder"); edit.type = "button";
+    edit.addEventListener("click", () => { modesEditing = !modesEditing; wrap.replaceWith(modesRow()); });
+    head.append(h, edit);
     const row = el("div", "modes-row");
-    row.append(
-      modeTile(YT_ICON, "Anything to MP4", "Save a video from a link", openYT),
-      modeTile(MIC_ICON, "Karaoke", "Sing along", openKaraoke),
-      modeTile(GAME_ICON, "Games", "Phones are the controllers", () => openGames()),
-      modeTile(PC_ICON, "PC games", "Play from ur PC", openPcGames),
-      modeTile(TRIP_ICON, "MoMaps", "Follow ur Google Maps directions", tripNew),
-      modeTile(PROJ_ICON, "My projects", "My other apps, in here", openProjects));
-    wrap.append(h, row);
+    const order = modesOrder();
+    order.forEach((id, k) => {
+      const [, icon, title, text, go] = MODES.find((m) => m[0] === id);
+      const t = modeTile(icon, title, text, () => { if (!modesEditing) go(); });
+      if (modesEditing) {
+        const move = (by) => {
+          const o = modesOrder(), i = o.indexOf(id), j = i + by;
+          if (j < 0 || j >= o.length) return;
+          [o[i], o[j]] = [o[j], o[i]];
+          try { localStorage.setItem("mocloud-modes-order", JSON.stringify(o)); } catch {}
+          const fresh = modesRow(); wrap.replaceWith(fresh);
+          const again = fresh.querySelector(`[data-mode="${id}"] [data-by="${by}"]`); if (again && !again.disabled) again.focus();
+        };
+        const arrows = el("div", "mode-move");
+        for (const [by, label, d] of [[-1, `Move ${title} left`, "M14.5 6.5 9 12l5.5 5.5"], [1, `Move ${title} right`, "M9.5 6.5 15 12l-5.5 5.5"]]) {
+          const b = el("span", "mode-arrow");
+          b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`; b.setAttribute("role", "button"); b.tabIndex = 0; b.dataset.by = String(by);
+          b.setAttribute("aria-label", label);
+          if ((by < 0 && k === 0) || (by > 0 && k === order.length - 1)) b.classList.add("off");
+          const act = (e) => { e.stopPropagation(); e.preventDefault(); move(by); };
+          b.addEventListener("click", act); b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") act(e); });
+          arrows.append(b);
+        }
+        t.append(arrows);
+      }
+      t.dataset.mode = id;
+      row.append(t);
+    });
+    wrap.append(head, row);
     return wrap;
   }
 
@@ -9946,7 +10048,7 @@ self.onmessage = async (e) => {
     const s = kar.song, b = $("kpAr");
     b.hidden = !s || !(karArabizi(s) || karArScript(s));
     if (!b.hidden) {
-      b.textContent = (kar.arabic !== karArScript(s)) ? "Latin" : "عربي";
+      b.textContent = (kar.arabic !== karArScript(s)) ? "Arabizi" : "عربي";
       b.title = karArScript(s) ? "Switch the Arabic letters to Arabizi (English letters)" : "Switch Arabic typed in English letters to Arabic letters";
     }
   }
@@ -10066,7 +10168,7 @@ self.onmessage = async (e) => {
       } catch (e) { toast(e.message, true); }
     }
   });
-  const karWake = autoHide($("karPlay"), () => !$("kpAudio").paused);
+  const karWake = autoHide($("karPlay"), () => !$("kpAudio").paused, 1800);   // gone about 2 seconds after u touch anything
   for (const ev of ["play", "pause", "ended"]) $("kpAudio").addEventListener(ev, karWake);
   // Vocals or instrumental. The instrumental can start a little earlier or later than the song, so
   // the spot you're at carries over and the lyrics shift with it.
@@ -10175,7 +10277,7 @@ self.onmessage = async (e) => {
     };
     const origOf = (l) => (kar.arabic && karSwapOf(song, l)) || l.text || "";   // Arabizi in Arabic letters (or the other way), when that's on
     const engOf = (l) => l.en || "";
-    if (two) stage.replaceChildren(mkPane("English", engOf), mkPane(song.langName, origOf));
+    if (two) stage.replaceChildren(mkPane(song.langName, origOf), mkPane("English", engOf));   // the original on the left, English on the right
     else stage.replaceChildren(mkPane("", origOf));
     kar.panes = panes;
     kar.times = song.synced ? karTimes(song.lines, song.duration) : [];
@@ -10235,7 +10337,7 @@ self.onmessage = async (e) => {
   }
   $("kpPlay").addEventListener("click", () => { const a = $("kpAudio"); if (a.paused) a.play().catch(() => {}); else a.pause(); });
   $("kpSeek").addEventListener("input", () => { kar.seeking = true; $("kpAudio").currentTime = parseFloat($("kpSeek").value) || 0; kar.hold = 0; });
-  $("kpSeek").addEventListener("change", () => { kar.seeking = false; });
+  $("kpSeek").addEventListener("change", () => { kar.seeking = false; karWake(); });
   // ----- The controls row: how u sing it (each one's remembered on this device) -----
   const KAR_SPEEDS = [0.75, 0.85, 1, 1.1, 1.25];
   const KAR_SIZES = [["small", 0.8], ["medium", 1], ["large", 1.22], ["huge", 1.45]];
