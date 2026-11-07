@@ -1889,7 +1889,20 @@
   .trip.tall .trip-txt b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; font-size: 17.5px; line-height: 1.25; }
   .trip.tall .trip-txt span { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14.5px; margin-top: 4px; }
   .trip.tall .trip-eta { text-align: left; border-top: 1px solid var(--line); padding-top: 8px; width: 100%; }
-  .trip.tall .trip-min { position: absolute; top: 12px; right: 12px; }
+  .trip.tall .trip-min { position: absolute; top: 12px; right: 10px; width: 30px; height: 30px; }
+  .trip.tall .trip-min svg { width: 18px; height: 18px; }
+  .trip.tall .trip-min[data-auto] { right: 44px; }
+  /* Slim: one line (the turn and how far), the minutes on the right. Chip: just the turn sign and the minutes. */
+  .trip.t-slim .trip-bar, .trip.t-chip .trip-bar { gap: 7px; padding: 7px 8px; }
+  .trip.t-slim .trip-sign, .trip.t-chip .trip-sign { width: 32px; height: 32px; } .trip.t-slim .trip-sign svg, .trip.t-chip .trip-sign svg { width: 20px; height: 20px; }
+  .trip.t-slim .trip-txt b { font-size: 15px; } .trip.t-slim .trip-txt span, .trip.t-slim .trip-eta span, .trip.t-slim .trip-toll { display: none; }
+  .trip.t-slim .trip-eta b { font-size: 15px; }
+  .trip.t-chip .trip-txt, .trip.t-chip .trip-eta span, .trip.t-chip .trip-toll { display: none; }
+  .trip.t-chip .trip-eta { flex: 1; text-align: left; } .trip.t-chip .trip-eta b { font-size: 16px; }
+  .trip.t-slim .trip-eta b, .trip.t-chip .trip-eta b { white-space: nowrap; }
+  .trip.t-slim .trip-min, .trip.t-chip .trip-min { flex: none; }
+  .trip.t-slim .trip-bar, .trip.t-chip .trip-bar, .trip.tall .trip-bar { overflow: hidden; }
+  .trip.t-slim .trip-bar .trip-min, .trip.t-chip .trip-bar .trip-min { width: 30px; height: 30px; } .trip.t-slim .trip-min svg, .trip.t-chip .trip-min svg { width: 18px; height: 18px; }
   .trip-bar, .trip-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; color: var(--paper); }
   .trip-bar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; text-align: left; font: inherit; cursor: pointer; }
   .trip-sign { flex: none; width: 42px; height: 42px; border-radius: 10px; background: var(--accent); color: var(--ink); display: grid; place-items: center; }
@@ -6590,6 +6603,7 @@ self.onmessage = async (e) => {
   };
   // The card's two little buttons, drawn (not letters) so they sit dead centre in their circles.
   const TRIP_MINUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  const TRIP_AUTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="12" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M18.5 3.5v4M16.5 5.5h4M19.5 12.5v3M18 14h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
   const TRIP_UP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function tripIcon(man) {
     const k = /UTURN/.test(man) ? "uturn" : /ROUNDABOUT/.test(man) ? "round" : man === "MERGE" ? "merge" : man === "ARRIVE" ? "arrive"
@@ -6681,11 +6695,13 @@ self.onmessage = async (e) => {
         trip.box.innerHTML = `<button type="button" class="trip-bar">
           <span class="trip-sign"></span><span class="trip-txt"><b></b><span></span></span>
           <span class="trip-eta"><b></b><span></span><i class="trip-toll" hidden></i></span>
+          <span class="trip-min" role="button" aria-label="Move MoMaps to an empty spot" title="Find an empty spot" data-auto>${TRIP_AUTO}</span>
           <span class="trip-min" role="button" aria-label="Shrink MoMaps to a dot" data-mini>${TRIP_MINUS}</span></button>`;
         bar = trip.box.querySelector(".trip-bar");
         bar.onclick = (e) => {
           if (trip.box._dragged) return;
           if (e.target.closest("[data-mini]")) return tripMini(true);
+          if (e.target.closest("[data-auto]")) { tripSaved(trip.ctx, null); return tripPlace(true); }   // got it wrong: look again
           trip.open = true; tripRender(); tripPlace(true);
         };
       }
@@ -6808,41 +6824,82 @@ self.onmessage = async (e) => {
     if (ctx !== trip.ctx) {
       // A new screen: a fresh spot here, then another look once its stuff has loaded in (lists and pictures come in late).
       if (trip.dragged && trip.dragged.ctx !== ctx) trip.dragged = null;
-      clearTimeout(trip.settle1); clearTimeout(trip.settle2);
+      clearTimeout(trip.settle1); clearTimeout(trip.settle2); clearTimeout(trip.settle3);
       const again = () => { if (!trip.dragged && trip.ctx === ctx && !(trip.box && trip.box.classList.contains("dragging"))) tripPlace(true); };
-      trip.settle1 = setTimeout(again, 450); trip.settle2 = setTimeout(again, 1400);
+      trip.settle1 = setTimeout(again, 150); trip.settle2 = setTimeout(again, 700); trip.settle3 = setTimeout(again, 1600);
     }
     trip.ctx = ctx;
     const W = innerWidth, H = innerHeight;
-    const shape = (s) => { box.classList.toggle("compact", s === "compact"); box.classList.toggle("tall", s === "tall"); };
+    const shape = (s) => { for (const c of ["compact", "tall", "t-slim", "t-chip"]) box.classList.toggle(c, s === c); };
     const put = (x, y) => {
       box.style.left = Math.max(0, Math.min(W - box.offsetWidth, x)) + "px"; box.style.top = Math.max(0, Math.min(H - box.offsetHeight, y)) + "px";
     };
-    if (trip.open) shape("");   // the opened-up map is always the full card
+    if (trip.open) { shape(""); box.style.width = ""; }   // the opened-up map is always the full card
+    tripWatchScreen();
     const mine = tripSaved(ctx);
-    if (mine) { if (!trip.open) shape(mine.shape || ""); return put(mine.x * W, mine.y * H); }
+    if (mine) { if (!trip.open) { shape(mine.shape || ""); box.style.width = mine.w ? mine.w + "px" : ""; } return put(mine.x * W, mine.y * H); }
     if (trip.open) return tripSpot(box, W, H, put, tripItems());
-    // Each shape (the full bar, a shorter one, a tall narrow box) in each spot: the one that covers the least
-    // wins. A bigger one only loses if it covers more, so it stays the full bar when there's room for it.
-    const items = tripItems();
+    const best = tripBest(box, W, H, tripItems());
+    shape(best.s); box.style.width = best.w + "px"; put(best.x, best.y);
+    trip.cost = best.sc;
+  }
+  // Every shape the bar comes in, at whatever width fits (full bar, shorter bar, tall narrow box, one-line strip,
+  // just the sign and minutes), tried all over the screen: the one that covers the least wins. Bigger and fuller
+  // ones win ties, so it's the full bar whenever there's room for it.
+  const TRIP_SHAPES = [["", 480, 0], ["", 420, 0.01], ["", 360, 0.02], ["compact", 340, 0.1], ["compact", 320, 0.12], ["tall", 200, 0.08],
+    ["tall", 160, 0.1], ["tall", 130, 0.13], ["t-slim", 300, 0.18], ["t-slim", 264, 0.2], ["t-chip", 200, 0.28]];
+  function tripBest(box, W, H, items) {
+    const shape = (s) => { for (const c of ["compact", "tall", "t-slim", "t-chip"]) box.classList.toggle(c, s === c); };
     let best = null;
-    // When more than one fits cleanly: the full bar, then the tall box (it shows every word), then the short bar (it cuts the words off).
-    for (const [s, extra] of [["", 0], ["tall", 0.08], ["compact", 0.15]]) {
-      shape(s);
-      const w = box.offsetWidth, h = box.offsetHeight;
-      if (w > W - 8 && s) continue;
-      const xs = [12, (W - w) / 2, W - w - 12], ys = s === "tall" ? [12, (H - h) * 0.25, (H - h) * 0.5, (H - h) * 0.75, H - h - 12]
-        : [12, (H - h) * 0.33, (H - h) * 0.66, H - h - 12];
+    const step = Math.max(16, Math.round(Math.min(W, H) / 22));
+    for (const [s, wantW, extra] of TRIP_SHAPES) {
+      const w = Math.min(wantW, W - 16);
+      if (w < wantW * 0.85 && s === "") continue;
+      shape(s); box.style.width = w + "px";
+      const h = box.offsetHeight;
+      if (h > H - 16) continue;
+      const xs = new Set([8, Math.round((W - w) / 2), W - w - 8]), ys = new Set([8, H - h - 8]);
+      for (let x = 8; x <= W - w - 8; x += step) xs.add(x);
+      for (let y = 8; y <= H - h - 8; y += step) ys.add(y);
       for (const y of ys) for (const x of xs) {
         if (x < 0 || y < 0) continue;
-        const side = s === "tall" ? (x === xs[2] ? 0 : x === xs[0] ? 0.01 : 0.03) : 0;   // the tall box leans right, then left
-        // A tie: the top, then the bottom; a gap in the middle of the page only when the edges are busy.
-        const sc = tripCovers(x, y, w, h, items) + extra + side + (y === 12 ? 0 : y === ys[ys.length - 1] ? 0.02 : 0.12);
-        if (!best || sc < best.sc) best = { x, y, sc, s };
+        // A tie: the top, then the bottom, then the sides; the middle of the page only when the edges are busy.
+        const edge = y <= 12 ? 0 : y >= H - h - 12 ? 0.02 : 0.08 + 0.04 * Math.min(1, Math.min(y, H - h - y) / (H / 3));
+        const side = x <= 12 || x >= W - w - 12 ? 0 : 0.01;
+        const sc = tripCovers(x, y, w, h, items) + extra + edge + side;
+        if (!best || sc < best.sc) best = { x, y, sc, s, w };
       }
     }
-    if (!best) { shape(""); return put(12, 12); }
-    shape(best.s); put(best.x, best.y);
+    return best || { x: 12, y: 12, sc: 9, s: "", w: Math.min(480, W - 24) };
+  }
+  // Anything on the screen changing (a page opening, a list loading in, scrolling): once it settles, if the bar's
+  // now over stuff and there's a clearly better spot, it moves there.
+  function tripWatchScreen() {
+    if (trip.watching) return;
+    trip.watching = true;
+    let t = 0;
+    const look = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        const box = trip.box;
+        if (!box || trip.mini || box.classList.contains("dragging")) return;
+        const ctx = tripCtx();
+        if (ctx !== trip.ctx) return tripPlace(true);   // a new screen: straight to a spot
+        if (trip.open || tripSaved(ctx)) return;
+        const items = tripItems(), W = innerWidth, H = innerHeight;
+        const now = tripCovers(box.offsetLeft, box.offsetTop, box.offsetWidth, box.offsetHeight, items);
+        if (now < 0.05) return;   // still in a clear spot
+        const keep = { cls: box.className, w: box.style.width };
+        const best = tripBest(box, W, H, items);
+        box.className = keep.cls; box.style.width = keep.w;
+        if (best.sc + 0.1 < now + (TRIP_SHAPES.find((x) => box.classList.contains(x[0]) && x[0])?.[2] || 0)) tripPlace(true);
+      }, 160);
+    };
+    new MutationObserver((list) => {
+      if (list.every((m) => trip.box && (trip.box.contains(m.target) || m.target === trip.box))) return;   // just the bar's own words updating
+      look();
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "open", "class", "style"] });
+    addEventListener("scroll", look, { capture: true, passive: true });
   }
   function tripSpot(box, W, H, put, items) {   // the opened-up card: the emptiest spot for it
     const w = box.offsetWidth, h = box.offsetHeight;
@@ -6859,7 +6916,7 @@ self.onmessage = async (e) => {
   function tripDrag(box) {
     let start = null;
     box.addEventListener("pointerdown", (e) => {
-      if (e.target.closest("iframe, .trip-end, .trip-auto, [data-mini], [data-small]")) return;
+      if (e.target.closest("iframe, .trip-end, .trip-auto, [data-mini], [data-small], [data-auto]")) return;
       start = { x: e.clientX, y: e.clientY, left: box.offsetLeft, top: box.offsetTop, id: e.pointerId };
       box._dragged = false;
     });
@@ -6877,7 +6934,7 @@ self.onmessage = async (e) => {
       if (box._dragged) {
         box.classList.remove("dragging");
         tripSaved(tripCtx(), { x: box.offsetLeft / innerWidth, y: box.offsetTop / innerHeight,
-          shape: box.classList.contains("tall") ? "tall" : box.classList.contains("compact") ? "compact" : "" });
+          shape: ["tall", "compact", "t-slim", "t-chip"].find((c) => box.classList.contains(c)) || "", w: trip.open ? 0 : box.offsetWidth });
       }
       setTimeout(() => { box._dragged = false; }, 0);
     };
