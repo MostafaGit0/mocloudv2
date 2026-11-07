@@ -249,6 +249,24 @@
   /* ---------- Modes and karaoke ---------- */
   .mode-page { position: fixed; inset: 0; z-index: 41; background: var(--ink); overflow-y: auto; overscroll-behavior: contain; }
   .mode-page[hidden] { display: none; }
+  /* MoMaps: search where u're going, pick the toll or no-toll way, go */
+  .mm-search { display: flex; gap: 8px; margin: 6px 0 12px; }
+  .mm-search input { flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--paper); }
+  .mm-search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .mm-note { color: var(--dim); margin: 0 0 10px; } .mm-note.bad { color: var(--red); }
+  .mm-list { display: grid; gap: 8px; }
+  .mm-place { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; text-align: left; font: inherit; color: var(--paper); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; }
+  .mm-place:hover, .mm-place:focus-visible { border-color: var(--accent); }
+  .mm-place b { font-size: 16px; } .mm-place span { color: var(--dim); font-size: 13px; grid-column: 1; } .mm-place i { font-style: normal; color: var(--dim); font-size: 13px; grid-row: 1 / span 2; grid-column: 2; align-self: center; }
+  .mm-ways { display: grid; gap: 10px; }
+  .mm-ways h3 { margin: 4px 0 0; font-size: 18px; } .mm-ways > span { color: var(--dim); font-size: 14px; }
+  .mm-way { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .mm-way b { font-size: 22px; font-variant-numeric: tabular-nums; } .mm-way .mm-sub { color: var(--dim); font-size: 14px; grid-column: 1; }
+  .mm-way .mm-toll { font-weight: 700; color: var(--accent); } .mm-way .mm-free { font-weight: 700; color: var(--green); }
+  .mm-way .btn { grid-row: 1 / span 2; grid-column: 2; }
+  .mm-now { background: var(--panel); border: 1px solid rgba(232,192,122,.35); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .mm-now b { flex: 1 1 200px; }
+  .mm-link { margin-top: 18px; }
   /* My projects: Mo's other web apps, opened inside MoCloud */
   .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-top: 8px; }
   .proj-card { text-align: left; background: var(--panel); border: 1px solid rgba(232,192,122,.18); border-radius: 16px; padding: 16px;
@@ -1415,6 +1433,8 @@
   .btn.tt-yes { background: #30A46C; border-color: #30A46C; color: #fff; }
   .lo-mod.last { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); }
   .tt-make { text-align: left; }
+  .lo-end .tt-keep { justify-self: stretch; }
+  .tt-kept { display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: center; align-items: baseline; color: var(--green); font-size: 14px; }
   .tt-make small { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px; }
   .tt-make.bad p { color: var(--red); }
   .tt-make.ready h2 { color: var(--accent); }
@@ -1881,6 +1901,10 @@
   .trip-eta { text-align: right; font-variant-numeric: tabular-nums; }
   .trip-eta b { display: block; color: var(--accent); font-size: 20px; } .trip-eta span { font-size: 14.5px; color: var(--dim); }
   .trip-eta[hidden] { display: none; }
+  .trip-toll { display: block; font-style: normal; font-size: 13px; font-weight: 700; color: var(--accent); }
+  .trip-toll[hidden] { display: none; }
+  .trip-tollb { color: var(--accent); }
+  .trip-toll.free, .trip-tollb.free { color: var(--green); }
   .trip-card { padding: 14px; }
   .trip-card .trip-head { display: flex; gap: 12px; align-items: flex-start; cursor: grab; }
   .trip-card .trip-txt b { font-size: 20px; } .trip-card .trip-txt span { font-size: 16px; }
@@ -2097,6 +2121,24 @@
     </div>
     <input type="search" id="aboutFind" class="about-find" placeholder="Find a feature" aria-label="Find a feature" autocomplete="off">
     <div id="aboutBody"></div>
+  </div>
+</section>
+
+<section id="mmPage" class="mode-page" hidden aria-labelledby="mmTitle">
+  <div class="set-wrap">
+    <div class="set-top">
+      <button type="button" class="btn ghost small set-back" id="mmBack">&larr; Back</button>
+      <h2 id="mmTitle">MoMaps</h2>
+    </div>
+    <div id="mmNow" class="mm-now" hidden></div>
+    <form id="mmForm" class="mm-search" autocomplete="off">
+      <input id="mmQ" type="search" placeholder="Where u going?" aria-label="Where u going?" enterkeyhint="search" maxlength="200">
+      <button type="submit" class="btn">Search</button>
+    </form>
+    <p id="mmNote" class="mm-note" hidden></p>
+    <div id="mmList" class="mm-list"></div>
+    <div id="mmWays" class="mm-ways" hidden></div>
+    <button type="button" class="link mm-link" id="mmLink">Got a Google Maps link? Paste it</button>
   </div>
 </section>
 
@@ -5871,7 +5913,7 @@ self.onmessage = async (e) => {
   // the Pi's clock: this page lines up its time with the Pi's, then nudges the video a hair faster or slower to
   // stay on it (it only jumps if it's way off). Play, pause and skipping here move the sound on the phone too,
   // and a tap on the AirPods pauses the video here.
-  const MS = { s: null, ver: 0, gen: 0, off: 0, card: null, v: null, loop: 0, self: 0, stall: 0, stalled: false, bar: null };
+  const MS = { s: null, ver: 0, gen: 0, off: 0, go: 0, card: null, v: null, loop: 0, self: 0, stall: 0, stalled: false, bar: null, fix: 0, wasOn: false, done: new Set() };
   function holdMenu(tile, f) {
     let timer = null, x0 = 0, y0 = 0;
     const stop = () => { clearTimeout(timer); timer = null; tile.classList.remove("holding"); };
@@ -5914,13 +5956,49 @@ self.onmessage = async (e) => {
   async function msStart(f) {
     msEnd(true);
     let s;
-    try { s = await api("/api/mosync/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: f.key, title: titleOf(f), device: liveId }) }); }
+    const p = getProg(f.key);
+    try { s = await api("/api/mosync/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: f.key, title: titleOf(f), device: liveId, pos: p && p.t > 10 ? p.t : 0 }) }); }
     catch (e) { return toast(e.message, true); }
-    MS.s = s; MS.f = f; MS.ver = s.ver;
+    msBegin(s, f);
+  }
+  // A MoSync starts (from here, or from the phone for this screen): the video gets ready right away (paused),
+  // so it's good to go the moment u Confirm.
+  function msBegin(s, f) {
+    MS.s = s; MS.f = f; MS.ver = s.ver; MS.wasOn = false;
     msClock();
+    openPlayer(f);
     msCard();
     msPoll(++MS.gen);
   }
+  // ---- This browser as the screen for a MoSync started on the phone ----
+  const msScreen = { gen: 0, act: Date.now() / 1000 };
+  ["pointerdown", "keydown"].forEach((t) => addEventListener(t, () => { msScreen.act = Date.now() / 1000; }, { passive: true, capture: true }));
+  const msScreenName = () => {
+    const ua = navigator.userAgent;
+    if (/Tesla/i.test(ua)) return "Tesla";
+    const b = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
+    return `${b} on ${liveLabel}`;
+  };
+  async function msScreenLoop() {
+    const gen = ++msScreen.gen;
+    let v = 0, fails = 0;
+    while (gen === msScreen.gen) {
+      if (document.visibilityState !== "visible" || state.offline || backend.id !== "pi" || !BACKENDS.pi.url) { await sleep(3000); continue; }
+      try {
+        const r = await api(`/api/mosync/screen?device=${encodeURIComponent(liveId)}&name=${encodeURIComponent(msScreenName())}&act=${msScreen.act}&v=${v}&wait=1`, { timeout: 40000 });
+        if (gen !== msScreen.gen) return;
+        fails = 0; v = r.ver;
+        const s = r.session;
+        if (s && !MS.done.has(s.id) && (!MS.s || MS.s.id !== s.id)) {
+          const f = state.files.find((x) => x.key === s.key) || { key: s.key, name: s.title, type: "video/mp4" };
+          msEnd(false);
+          msBegin(s, f);
+        }
+      } catch { if (gen !== msScreen.gen) return; await sleep(Math.min(10000, 1000 * ++fails)); }
+    }
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") msScreenLoop(); });
+  setTimeout(msScreenLoop, 2500);
   async function msPoll(gen) {
     let fails = 0;
     while (gen === MS.gen && MS.s) {
@@ -5929,6 +6007,7 @@ self.onmessage = async (e) => {
         if (gen !== MS.gen) return;
         fails = 0; MS.ver = s.ver; MS.s = s;
         if (s.state === "ended") { msEnd(false, s.endedBy === "phone" ? "MoSync ended on ur phone." : ""); return; }
+        if (s.state === "on") MS.wasOn = true;
         msCard(); msBar();
       } catch (e) {
         if (gen !== MS.gen) return;
@@ -5940,21 +6019,23 @@ self.onmessage = async (e) => {
   function msCard() {
     const s = MS.s;
     if (!s || s.state !== "asking") { if (MS.card) { MS.card.remove(); MS.card = null; } return; }
-    if (!MS.card) { MS.card = el("div", "ms-card"); MS.card.setAttribute("role", "status"); document.body.append(MS.card); }
+    if (!MS.card) { MS.card = el("div", "ms-card"); MS.card.setAttribute("role", "status"); }
+    const home = $("player").open ? $("player") : document.body;   // over the video (it's getting ready behind)
+    if (MS.card.parentNode !== home) home.append(MS.card);
     const ph = s.phone;
     const parts = [el("small", "", `MoSync · ${s.title}`)];
-    if (!ph || !ph.here) parts.push(el("b", "", "Checking ur phone..."), el("span", "", "Open MoCloud on ur phone (the app). It checks by itself."));
+    if (s.by === "phone") parts.push(el("b", "", "Confirm on ur phone"), el("span", "", "The video plays here, the sound on ur phone."));
+    else if (!ph || !ph.here) parts.push(el("b", "", "Checking ur phone..."), el("span", "", "Open MoCloud on ur phone (the app). It checks by itself."));
     else if (!ph.headphones) parts.push(el("b", "", `${ph.name} isn't on Bluetooth headphones`), el("span", "", "Connect ur AirPods to ur phone. It checks again by itself."));
     else {
       const row = el("div", "ms-good");
       const ok = el("button", "btn ms-yes", "Confirm"); ok.type = "button";
       ok.addEventListener("click", async () => {
         ok.disabled = true;
-        const p = getProg(MS.f.key);
-        try { MS.s = await api(`/api/mosync/${s.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "confirm", pos: p && p.t > 10 ? p.t : 0 }) }); }
+        try { MS.s = await api(`/api/mosync/${s.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "confirm" }) }); }
         catch (e) { ok.disabled = false; return toast(e.message, true); }
-        msCard();
-        openPlayer(MS.f);
+        msCard(); msBar();
+        if (!MS.v) openPlayer(MS.f);
       });
       row.append(el("b", "", "MoSync jawn is good"), ok);
       parts.push(row, el("span", "", `${ph.route || "Bluetooth headphones"} on ${ph.name}`));
@@ -5978,10 +6059,10 @@ self.onmessage = async (e) => {
     v.addEventListener("seeked", () => { if (mine() && MS.s && Math.abs(v.currentTime - msTarget()) > 1) msSend({ action: "seek", pos: v.currentTime }); });
     v.addEventListener("waiting", () => {   // the video's buffering: the sound waits for it
       clearTimeout(MS.stall);
-      MS.stall = setTimeout(() => { if (MS.s && MS.s.clock.playing && v.readyState < 3) { MS.stalled = true; msSend({ action: "pause", pos: v.currentTime }); } }, 900);
+      MS.stall = setTimeout(() => { if (MS.s && MS.s.clock.playing && v.readyState < 3) { MS.stalled = true; msSend({ action: "pause", pos: v.currentTime }); } }, 2000);
     });
-    const back = () => { clearTimeout(MS.stall); if (MS.stalled) { MS.stalled = false; msSend({ action: "play", pos: v.currentTime }); } };
-    v.addEventListener("canplaythrough", back); v.addEventListener("playing", back);
+    const back = () => { clearTimeout(MS.stall); if (MS.stalled && v.readyState >= 4) { MS.stalled = false; msSend({ action: "play", pos: v.currentTime }); } };
+    v.addEventListener("canplaythrough", back); v.addEventListener("playing", () => clearTimeout(MS.stall)); v.addEventListener("progress", back);
     clearInterval(MS.loop);
     MS.loop = setInterval(msFollow, 200);
     msBar();
@@ -5993,17 +6074,30 @@ self.onmessage = async (e) => {
   function msFollow() {
     const v = MS.v, s = MS.s;
     if (!v || !v.isConnected || !s) { clearInterval(MS.loop); return; }
-    if (s.state !== "on" || MS.stalled || v.readyState < 2) { if (!v.paused && s.state !== "on") { MS.self = Date.now(); v.pause(); } return; }
+    if (s.state !== "on" || MS.stalled || v.readyState < 2) {
+      if (!v.paused && s.state !== "on") { MS.self = Date.now(); v.pause(); }
+      if (s.state !== "on" && v.readyState >= 1 && !v.seeking && Math.abs(v.currentTime - s.clock.pos) > 0.3) { MS.self = Date.now(); v.currentTime = s.clock.pos; }
+      return;
+    }
     const c = s.clock, t = msNow(), target = msTarget(), diff = target - v.currentTime;
     if (!c.playing || t < c.at) {
       if (!v.paused) { MS.self = Date.now(); v.pause(); }
-      if (Math.abs(diff) > 0.15) { MS.self = Date.now(); v.currentTime = target; }
-      v.playbackRate = 1;
+      if (c.playing && c.at - t < 0.25 && !MS.go) {   // starts right on the Pi's beat, not up to a moment late
+        MS.go = setTimeout(() => { MS.go = 0; if (MS.v === v && MS.s && MS.s.clock.playing) { MS.self = Date.now(); v.currentTime = msTarget(); v.play().catch(() => {}); } }, Math.max(0, (c.at - t) * 1000));
+      }
+      if (Math.abs(diff) > 0.15 && !v.seeking) { MS.self = Date.now(); v.currentTime = target; }
+      if (v.playbackRate !== 1) v.playbackRate = 1;
       return;
     }
     if (v.paused) { MS.self = Date.now(); v.play().catch(() => {}); }
-    if (Math.abs(diff) > 0.7) { MS.self = Date.now(); v.currentTime = target + 0.08; v.playbackRate = 1; }
-    else v.playbackRate = Math.abs(diff) < 0.03 ? 1 : 1 + Math.max(-0.06, Math.min(0.06, diff * 0.5));
+    // Small drifts are left alone; bigger ones are fixed by playing a steady 4% faster or slower until it's
+    // back on time (changing the speed every moment is wat made it choppy). Way off: it jumps.
+    const ad = Math.abs(diff);
+    let r = 1;
+    if (ad > 0.8) { MS.self = Date.now(); v.currentTime = target + 0.1; MS.fix = 0; }
+    else if (MS.fix ? ad > 0.03 : ad > 0.12) { MS.fix = diff > 0 ? 1 : -1; r = 1 + 0.04 * MS.fix; }
+    else MS.fix = 0;
+    if (v.playbackRate !== r) v.playbackRate = r;
   }
   async function msSend(body) {
     if (!MS.s) return;
@@ -6026,13 +6120,16 @@ self.onmessage = async (e) => {
   }
   function msEnd(tell, note) {
     const s = MS.s;
+    if (s) MS.done.add(s.id);
     MS.gen++;
     clearInterval(MS.loop); clearTimeout(MS.stall);
     if (tell && s && s.state !== "ended") api(`/api/mosync/${s.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "end", by: "browser" }) }).catch(() => {});
     if (MS.card) { MS.card.remove(); MS.card = null; }
     if (MS.bar) { MS.bar.remove(); MS.bar = null; }
-    if (MS.v) { MS.v.playbackRate = 1; if (!tell) { MS.v.pause(); } }
-    MS.s = null; MS.v = null; MS.stalled = false;
+    const v = MS.v, never = s && !MS.wasOn;
+    if (v) { v.playbackRate = 1; if (!tell) { v.pause(); } }
+    MS.s = null; MS.v = null; MS.stalled = false; MS.fix = 0;
+    if (v && never && $("player").open) $("player").close();   // it never started: the video it got ready goes away too
     if (note) toast(note);
   }
 
@@ -6143,7 +6240,7 @@ self.onmessage = async (e) => {
   }
   $("setOpen").addEventListener("click", () => openSettings());
   $("setBack").addEventListener("click", () => closeSettings());
-  window.addEventListener("popstate", () => { if (!["#settings", "#dev", "#subs", "#games", "#game", "#about", "#projects", "#project"].includes(location.hash)) closeSettings(true); });
+  window.addEventListener("popstate", () => { if (!["#settings", "#dev", "#subs", "#games", "#game", "#about", "#projects", "#project", "#momaps"].includes(location.hash)) closeSettings(true); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isSettingsOpen() && !document.querySelector("dialog[open]")) closeSettings(); });
 
   async function loadSettings() {
@@ -6549,7 +6646,9 @@ self.onmessage = async (e) => {
   }
   function tripRender() {
     const t = trip.t;
+    voiceCheck(t);
     if (!t) {
+      trip.route = null; trip.last = null;   // the trip's over: its route and ur last spot go from this browser too
       if (trip.fullClose) { trip.fullClose(); trip.fullClose = null; }   // the trip's over: full screen closes too
       if (trip.box) { trip.box.remove(); trip.box = null; trip.map = ""; }
       if (trip.dot) { trip.dot.remove(); trip.dot = null; }
@@ -6581,7 +6680,7 @@ self.onmessage = async (e) => {
       if (!bar) {
         trip.box.innerHTML = `<button type="button" class="trip-bar">
           <span class="trip-sign"></span><span class="trip-txt"><b></b><span></span></span>
-          <span class="trip-eta"><b></b><span></span></span>
+          <span class="trip-eta"><b></b><span></span><i class="trip-toll" hidden></i></span>
           <span class="trip-min" role="button" aria-label="Shrink MoMaps to a dot" data-mini>${TRIP_MINUS}</span></button>`;
         bar = trip.box.querySelector(".trip-bar");
         bar.onclick = (e) => {
@@ -6597,6 +6696,10 @@ self.onmessage = async (e) => {
       const eta = bar.querySelector(".trip-eta");
       eta.hidden = !going;
       if (going) { eta.querySelector("b").textContent = tripDur(t.secs); eta.querySelector("b").style.color = tripColor(t); eta.querySelector("span").textContent = tripArrive(t.secs); }
+      const toll = eta.querySelector(".trip-toll");   // tolls on the way: a $ and about how much
+      // Driving: always says if it's a toll way or not
+      toll.hidden = !(going && t.mode === "DRIVE"); toll.textContent = t.toll ? (t.toll.price ? `Tolls ${t.toll.price}` : "Tolls $") : "No tolls";
+      toll.classList.toggle("free", !t.toll);
       if (fresh || !wasBar) tripPlace(true);
       return;
     }
@@ -6607,12 +6710,18 @@ self.onmessage = async (e) => {
         <button type="button" class="trip-min" data-small aria-label="Make it small">${TRIP_UP}</button>
         <button type="button" class="trip-min" data-mini aria-label="Shrink MoMaps to a dot">${TRIP_MINUS}</button></div>
         <iframe class="trip-map" title="MoMaps" allow="geolocation 'none'"></iframe><div class="trip-prob" hidden></div>
-        <div class="trip-foot"><span></span><span class="acts"><button type="button" class="trip-auto">Full screen</button><button type="button" class="trip-auto" data-auto>Auto spot</button><button type="button" class="trip-end">End</button></span></div></div>`;
+        <div class="trip-foot"><span></span><span class="acts"><button type="button" class="trip-auto" data-tolls hidden></button><button type="button" class="trip-auto">Full screen</button><button type="button" class="trip-auto" data-auto>Auto spot</button><button type="button" class="trip-end">End</button></span></div></div>`;
       trip.box.querySelector(".trip-map").src = url;
       trip.box.querySelector("[data-small]").onclick = () => { trip.open = false; tripRender(); tripPlace(true); };
       trip.box.querySelector("[data-mini]").onclick = () => tripMini(true);
       trip.box.querySelector(".trip-auto[data-auto]").onclick = () => { tripSaved(trip.ctx, null); tripPlace(true); };
-      trip.box.querySelector(".trip-auto:not([data-auto])").onclick = tripFull;
+      trip.box.querySelector(".trip-auto:not([data-auto]):not([data-tolls])").onclick = tripFull;
+      trip.box.querySelector("[data-tolls]").onclick = async () => {   // the no-toll way (or tolls OK again)
+        try {
+          const r = await fetch(BACKENDS.pi.url + "/api/trip/tolls", { method: "POST", headers: { "X-Passcode": piPasscode(), "Content-Type": "application/json" }, body: JSON.stringify({ avoid: !(trip.t && trip.t.avoidTolls) }) });
+          const d = await r.json(); if (d.trip) { trip.t = d.trip; tripRender(); }
+        } catch { toast("Couldn't reach the Pi rn.", true); }
+      };
       trip.box.querySelector(".trip-end").onclick = tripEnd;
       fresh = true;
     }
@@ -6621,11 +6730,15 @@ self.onmessage = async (e) => {
     c.querySelector(".trip-txt b").textContent = tripHead(t);
     c.querySelector(".trip-txt span").textContent = tripSub(t);
     c.querySelector(".trip-then").textContent = t.then ? "Then: " + t.then.text : "";
+    const tb = c.querySelector("[data-tolls]");
+    tb.hidden = t.mode !== "DRIVE" || !(t.toll || t.avoidTolls); tb.textContent = t.avoidTolls ? "Allow tolls" : "No tolls";
     const prob = c.querySelector(".trip-prob"); prob.hidden = !t.problem || t.state === "waiting"; prob.textContent = t.problem || "";
     const foot = c.querySelector(".trip-foot > span");
     if (going) {
       const m = document.createElement("b"); m.style.color = tripColor(t); m.textContent = tripDur(t.secs);
       foot.replaceChildren(m, ` · ${tripDist(t.left || 0)} · there at ${tripArrive(t.secs)}`);
+      if (t.toll) { const tl = document.createElement("b"); tl.className = "trip-tollb"; tl.textContent = t.toll.price ? ` · Tolls ${t.toll.price}` : " · Tolls $"; foot.append(tl); }
+      else if (t.mode === "DRIVE") { const tl = document.createElement("b"); tl.className = "trip-tollb free"; tl.textContent = " · No tolls"; foot.append(tl); }
     } else foot.textContent = `To ${t.name}`;
     if (fresh) tripPlace(true);
   }
@@ -6779,7 +6892,7 @@ self.onmessage = async (e) => {
         const r = await fetch(BACKENDS.pi.url + "/api/trip", { headers: { "X-Passcode": piPasscode() }, cache: "no-store" });
         // This browser sends its GPS for the trip if it started it, it's a phone or tablet, or location's allowed here.
         // If the app (or another device) is already sending, the Pi tells this one to hold off.
-        if (r.ok) { const d = await r.json(); trip.t = d.trip || null; tripFollow(!!trip.t && (trip.t.id === trip.mine || tripPhone || loc.state === "granted")); tripRender(); }
+        if (r.ok) { const d = await r.json(); trip.t = d.trip || null; trip.good = Date.now(); if (trip.t) { voiceLoad(); tripKeepRoute(); } tripFollow(!!trip.t && (trip.t.id === trip.mine || tripPhone || loc.state === "granted")); tripRender(); }
       } catch {}
       trip.busy = false;
     }
@@ -6813,8 +6926,8 @@ self.onmessage = async (e) => {
     }
     if (trip.watch != null || !("geolocation" in navigator)) return;
     // The browser only says something when u move: the last spot's sent again every 2 seconds so the ETA stays live.
-    trip.again = setInterval(() => { if (trip.last && Date.now() - trip.sentAt > 2000) tripSend(trip.last); }, 2000);
-    trip.watch = navigator.geolocation.watchPosition((p) => { trip.last = p; tripSend(p); }, (e) => {
+    trip.again = setInterval(() => { if (trip.last && Date.now() - trip.sentAt > 2000) tripSend(trip.last); if (trip.last) tripOffline(trip.last); }, 2000);
+    trip.watch = navigator.geolocation.watchPosition((p) => { trip.last = p; tripSend(p); tripOffline(p); }, (e) => {
       if (e.code === 1) { tripFollow(false); toast("MoMaps needs ur location. Allow it in the browser's settings.", true); }
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   }
@@ -6829,7 +6942,7 @@ self.onmessage = async (e) => {
       if (r.ok) {
         const d = await r.json();
         if (d.follower === false) trip.yieldTill = Date.now() + 6000;   // the app (or another device) is sending: it counts, this one checks back
-        trip.t = d.trip || null;
+        trip.t = d.trip || null; trip.good = Date.now(); tripKeepRoute();
         if (!trip.t) tripFollow(false);
         tripRender();
       }
@@ -6837,6 +6950,227 @@ self.onmessage = async (e) => {
     trip.sending = false;
   }
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") tripPoll(); });
+
+  // ---------- No signal: MoMaps keeps going on the route it has ----------
+  // This browser keeps the whole route (every turn and the road's shape). If the Pi can't be reached for a few
+  // seconds while this one's driving, it works out where u are on the route from its own GPS: the next turn, wat's
+  // left, the ETA and ur voice clips keep going, and the map's car keeps moving. Only a new way needs signal.
+  async function tripKeepRoute() {
+    const t = trip.t;
+    if (!t || !t.rid || (trip.route && trip.route.rid === t.rid) || trip.routeBusy) return;
+    trip.routeBusy = true;
+    try {
+      const r = await fetch(BACKENDS.pi.url + "/api/trip/route", { headers: { "X-Passcode": piPasscode() }, cache: "no-store" });
+      const d = await r.json();
+      if (d.route && trip.t && d.route.rid === trip.t.rid) trip.route = d.route;
+    } catch {}
+    trip.routeBusy = false;
+  }
+  function tripOffline(p) {
+    const t = trip.t, r = trip.route;
+    if (!t || !r || r.rid !== t.rid || Date.now() - (trip.good || Date.now()) < 3500 || Date.now() < (trip.yieldTill || 0) || t.state === "arrived") return;
+    const c = p.coords, here = [c.latitude, c.longitude];
+    const kx = 111320 * Math.cos(here[0] * Math.PI / 180), ky = 110540;
+    let best = null;
+    for (let i = 0; i < r.pts.length - 1; i++) {   // the nearest bit of the route (not a jump far ahead or back)
+      const a = r.pts[i], b = r.pts[i + 1];
+      const ax = (a[1] - here[1]) * kx, ay = (a[0] - here[0]) * ky, bx = (b[1] - here[1]) * kx, by = (b[0] - here[0]) * ky;
+      const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+      const f = L ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)) : 0;
+      const dist = Math.hypot(ax + f * dx, ay + f * dy), along = r.cum[i] + f * (r.cum[i + 1] - r.cum[i]);
+      const score = dist + (t.along != null && (along < t.along - 40 || along > t.along + 800) ? 20 : 0);
+      if (!best || score < best.score) best = { dist, along, score };
+    }
+    if (!best) return;
+    const along = best.along, left = Math.max(0, r.len - along), steps = r.steps;
+    const end = r.pts[r.pts.length - 1];
+    const arrived = left < 30 || Math.hypot((end[1] - here[1]) * kx, (end[0] - here[0]) * ky) < 35;
+    let i = steps.findIndex((x) => x.end > along + 1); if (i < 0) i = steps.length - 1;
+    const nx = steps[i + 1], af = steps[i + 2];
+    const turnId = (x) => x.pt ? `${x.man || "STEP"}@${x.pt[0].toFixed(4)},${x.pt[1].toFixed(4)}` : null;
+    const next = arrived || !nx ? { text: `U'll be at ${t.name}`, man: "ARRIVE", in: Math.round(left), id: "ARRIVE" }
+      : { text: nx.text, man: nx.man, in: Math.round(Math.max(0, steps[i].end - along)), id: turnId(nx) };
+    const then = !arrived && nx && af && nx.end - steps[i].end < 150 ? { text: af.text, man: af.man } : null;
+    const secs = r.len > 0 ? r.dur * left / r.len : 0;
+    const via = (r.via || []).filter((v) => v.end - 40 > along);
+    const local = Object.assign({}, t, {
+      state: arrived ? "arrived" : "going", next, then, left: Math.round(left), secs: Math.round(secs), eta: Math.round(Date.now() / 1000 + secs),
+      along: Math.round(along * 10) / 10, off: Math.round(best.dist), rerouting: false, offline: true,
+      stop: via.length ? { name: via[0].name, left: Math.round(via[0].end - along), secs: Math.round(secs * (via[0].end - along) / (left || 1)), count: via.length } : null,
+      pos: { lat: here[0], lng: here[1], heading: c.heading == null || isNaN(c.heading) ? null : c.heading, speed: c.speed == null || isNaN(c.speed) ? null : c.speed, at: Date.now() / 1000 },
+      problem: best.dist > 50 ? "No signal, so MoMaps can't find a new way till it's back." : "No signal: MoMaps is following the route it has.",
+    });
+    if (!local.then) delete local.then;
+    trip.t = local;
+    tripRender();
+    document.querySelectorAll(".trip-map, .trip-full iframe").forEach((f) => { try { f.contentWindow.postMessage({ moLocal: local }, "*"); } catch {} });
+  }
+
+  // ---------- MoMaps on its own: search where u're going, then go (no Google Maps app needed) ----------
+  // It starts from where u are, the fastest way there with traffic (like Google Maps). If that way has tolls, the
+  // no-toll way's right under it, with how much longer it takes, so u pick.
+  const mm = { places: [], pick: null, here: null, busy: false };
+  const mmNote = (text, bad) => { const n = $("mmNote"); n.hidden = !text; n.textContent = text || ""; n.classList.toggle("bad", !!bad); };
+  function openMoMaps() {
+    if (!isUrl(BACKENDS.pi.url) || !piPasscode()) return toast("Open MoCloud on the Pi first.", true);
+    $("mmPage").hidden = false;
+    document.body.classList.add("no-scroll");
+    if (location.hash !== "#momaps") history.pushState({ mocloudMaps: 1 }, "", "#momaps");
+    mmNow();
+    if (!mm.pick) setTimeout(() => $("mmQ").focus(), 50);
+    mmWhere();   // where u are, ready for when u pick a place
+  }
+  function closeMoMaps(fromHistory) {
+    if ($("mmPage").hidden) return;
+    $("mmPage").hidden = true;
+    if (!isSettingsOpen()) document.body.classList.remove("no-scroll");
+    if (!fromHistory && location.hash === "#momaps") history.back();
+  }
+  $("mmBack").addEventListener("click", () => closeMoMaps());
+  window.addEventListener("popstate", () => { if (location.hash !== "#momaps") closeMoMaps(true); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("mmPage").hidden && !document.querySelector("dialog[open]")) closeMoMaps(); });
+  $("mmLink").addEventListener("click", () => { closeMoMaps(); tripNew(); });
+  function mmNow() {   // a trip going already: it's right at the top
+    const box = $("mmNow"), t = trip.t;
+    box.hidden = !t;
+    if (!t) return;
+    const full = el("button", "btn small", "Full screen"); full.type = "button"; full.onclick = () => { closeMoMaps(); tripFull(); };
+    const end = el("button", "btn ghost small", "End"); end.type = "button"; end.onclick = async () => { await tripEnd(); mmNow(); };
+    box.replaceChildren(el("b", "", t.state === "arrived" ? `U made it to ${t.name}` : `On ur way to ${t.name}`), full, end);
+  }
+  function mmWhere() {
+    return new Promise((done) => {
+      if (!("geolocation" in navigator)) return done(null);
+      navigator.geolocation.getCurrentPosition((p) => { mm.here = { lat: p.coords.latitude, lon: p.coords.longitude }; done(mm.here); },
+        (e) => { if (e.code === 1) mmNote("MoMaps needs ur location. Allow it in the browser's settings.", true); done(mm.here); },
+        { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 });
+    });
+  }
+  async function mmPost(path, body) {
+    const r = await fetch(BACKENDS.pi.url + path, { method: "POST", headers: { "X-Passcode": piPasscode(), "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || "Couldn't reach the Pi rn.");
+    return d;
+  }
+  $("mmForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const q = $("mmQ").value.trim(); if (!q || mm.busy) return;
+    mm.busy = true; mm.pick = null; $("mmWays").hidden = true; mmNote("Searching...");
+    try {
+      const here = mm.here || await mmWhere();
+      const d = await mmPost("/api/trip/search", Object.assign({ q }, here || {}));
+      mm.places = d.places || [];
+      mmNote(mm.places.length ? "" : "Nothing found. Try the full name or the address.");
+      mmList();
+    } catch (err) { mmNote(err.message, true); }
+    mm.busy = false;
+  });
+  function mmList() {
+    $("mmList").hidden = false;
+    $("mmList").replaceChildren(...mm.places.map((p) => {
+      const b = el("button", "mm-place"); b.type = "button";
+      b.append(el("b", "", p.name), el("span", "", p.address), el("i", "", p.away != null ? tripDist(p.away) : ""));
+      b.onclick = () => mmChoose(p);
+      return b;
+    }));
+  }
+  async function mmChoose(p) {
+    if (mm.busy) return;
+    mm.busy = true; mm.pick = p;
+    $("mmList").hidden = true;
+    const box = $("mmWays"); box.hidden = false;
+    box.replaceChildren(el("h3", "", p.name), el("span", "", "Finding the fastest way from where u are..."));
+    try {
+      const here = await mmWhere();
+      if (!here) throw new Error("MoMaps needs ur location to find the way. Allow it in the browser's settings.");
+      const d = await mmPost("/api/trip/preview", { lat: here.lat, lon: here.lon, place: p });
+      mmWays(p, d.ways || []);
+    } catch (err) {
+      box.replaceChildren(el("h3", "", p.name), el("span", "", err.message));
+    }
+    const back = el("button", "link", "Pick a different place"); back.type = "button";
+    back.onclick = () => { mm.pick = null; box.hidden = true; $("mmList").hidden = false; };
+    box.append(back);
+    mm.busy = false;
+  }
+  function mmWays(p, ways) {
+    const box = $("mmWays");
+    const rows = ways.map((w, k) => {
+      const row = el("div", "mm-way");
+      const m = el("b", "", tripDur(w.secs)); m.style.color = tripColor(w);
+      const sub = el("span", "mm-sub");
+      sub.append(w.toll ? el("span", "mm-toll", w.toll.price ? `Tolls ${w.toll.price}` : "Has tolls") : el("span", "mm-free", "No tolls"),
+        `${k === 0 ? " · Fastest" : ""} · ${tripDist(w.meters)} · there at ${tripArrive(w.secs)}`);
+      if (k > 0) sub.append(` · ${tripDur(Math.max(60, w.secs - ways[0].secs))} longer`);
+      const go = el("button", "btn", "Go"); go.type = "button";
+      go.onclick = () => mmGo(p, w.avoidTolls);
+      row.append(m, go, sub);
+      return row;
+    });
+    box.replaceChildren(el("h3", "", p.name), el("span", "", p.address), ...rows);
+  }
+  async function mmGo(p, avoidTolls) {
+    if (mm.busy) return;
+    mm.busy = true;
+    try {
+      const here = await mmWhere();
+      const d = await mmPost("/api/trip/start", Object.assign({ place: p, avoidTolls, device: liveId }, here ? { lat: here.lat, lon: here.lon } : {}));
+      trip.t = d.trip || null;
+      trip.mine = trip.t ? trip.t.id : "";
+      try { localStorage.setItem("mocloud-trip-mine", trip.mine); } catch {}
+      tripFollow(!!trip.t); tripRender(); tripPoll();
+      voiceLoad();
+      mm.pick = null; $("mmWays").hidden = true; $("mmList").replaceChildren(); $("mmQ").value = "";
+      closeMoMaps();
+      if (trip.t) tripFull();   // straight to the directions, big
+    } catch (err) { toast(err.message, true); }
+    mm.busy = false;
+  }
+
+  // ---------- MoMaps voice: ur own recordings, played right before each turn (recorded in the app's developer settings) ----------
+  // Only on the device that's driving (the one sending its GPS). A turn without a recording stays quiet.
+  const voice = { urls: {}, ver: -1, loaded: 0, done: new Set(), started: "", arrived: "", audio: null };
+  async function voiceLoad() {
+    if (!isUrl(BACKENDS.pi.url) || !piPasscode() || Date.now() - voice.loaded < 60000) return;
+    voice.loaded = Date.now();
+    try {
+      const r = await fetch(BACKENDS.pi.url + "/api/trip/voice", { headers: { "X-Passcode": piPasscode() }, cache: "no-store" });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.ver === voice.ver) return;
+      voice.ver = d.ver;
+      const urls = {};
+      for (const k of d.kinds || []) {
+        if (!k.clip) continue;
+        try {
+          const a = await fetch(`${BACKENDS.pi.url}/api/trip/voice/${k.kind}.m4a?v=${k.clip.v}`, { headers: { "X-Passcode": piPasscode() } });
+          if (a.ok) urls[k.kind] = URL.createObjectURL(await a.blob());
+        } catch {}
+      }
+      Object.values(voice.urls).forEach((u) => URL.revokeObjectURL(u));
+      voice.urls = urls;
+    } catch {}
+  }
+  function voicePlay(kind) {
+    const u = voice.urls[kind]; if (!u) return;
+    if (!voice.audio) voice.audio = new Audio();
+    voice.audio.src = u; voice.audio.currentTime = 0;
+    voice.audio.play().catch(() => {});
+  }
+  function voiceCheck(t) {
+    if (!t || trip.watch == null || Date.now() < (trip.yieldTill || 0)) return;   // another device is the one driving
+    if (!voice.loaded) voiceLoad();
+    if (t.state === "going" && voice.started !== t.id) { voice.started = t.id; voice.done.clear(); return voicePlay("START"); }
+    if (t.state === "arrived" && voice.arrived !== t.id) { voice.arrived = t.id; return voicePlay("ARRIVE"); }
+    const n = t.next;
+    if (t.state !== "going" || t.rerouting || !n || !n.id || n.man === "ARRIVE" || n.in == null) return;
+    const key = t.id + "|" + n.id;
+    if (voice.done.has(key)) return;
+    // About 8 seconds before the turn at ur speed (closer when u're slow, never more than a quarter mile out).
+    const v = t.pos && t.pos.speed > 0 ? t.pos.speed : 0;
+    const lead = t.mode === "DRIVE" ? Math.max(70, Math.min(400, v * 8)) : 25;
+    if (n.in <= lead) { voice.done.add(key); voicePlay(n.man); }
+  }
   // A pop-up or page opening or closing: the bar moves with it (so it's always on top) and finds its spot there.
   new MutationObserver((recs) => {
     if (!trip.t || recs.every((r) => (trip.box && trip.box.contains(r.target)) || r.target === trip.dot)) return;   // not its own changes
@@ -7867,7 +8201,7 @@ self.onmessage = async (e) => {
   });
 
   // ---------- About MoCloud: every feature, and how to use it in a few steps ----------
-  const ABOUT = [["Watching", [["Watch something", "", ["Tap any poster to play it.", "Leave the app or lock ur phone, it keeps playing.", "Control it from the lock screen, Control Center, Dynamic Island or CarPlay."]], ["Shows and seasons", "", ["Tap a show.", "Pick a season up top.", "Tap an episode, or hit Play / Resume or Shuffle."]], ["Skip intro and next episode", "", ["Tap Skip Intro when it pops up.", "At the end, Next Episode counts down. Tap it to go now."]], ["Continue watching", "", ["It's the first row on Home.", "Tap In season to see where that episode is in its season.", "Hold it (app) or tap Remove from row (website) to take it off."]], ["Sections", "", ["Tap a bubble at the top: Shows, Movies, Videos, Saved from links, Photos.", "Tap All to see everything again."]], ["Search", "", ["Type in Search stuff.", "A show, an episode's name, a folder, or a word from a description all work."]], ["Subtitles", "", ["Nothing to do: MoCloud finds them by itself.", "No subtitles anywhere? The Pi writes them by listening (Whisper).", "See which ones have them: Settings, then Subtitles."]], ["Picture in picture", "app", ["Play a video.", "Swipe home. It keeps playing in a small window."]], ["Wrong poster", "app", ["Hold the show, or open it.", "Tap Wrong poster? and pick the right one."]]]], ["Ur stuff", [["Upload", "", ["App: tap +, then From Photos or From Files.", "Website: drop files anywhere, or tap Choose files.", "It goes up in the background. U get a notification when it's done."]], ["Download to watch offline", "", ["Hold a video (app) or tap Download under it (website).", "Find them in Downloads.", "Hold it again and tap Remove download to free space."]], ["Folders and moving", "", ["Tap Select.", "Tick wat u want.", "Tap Move and pick a folder (or make a new one)."]], ["Delete", "", ["Hold a video and tap Delete (app), or tap Delete under it (website).", "To delete a bunch: Select, tick them, Delete."]], ["Playlists", "", ["Hold a video, tap Add to playlist, pick one or make a new one.", "Open the playlist and hit Play or Shuffle.", "Saved links can Play on loop."]], ["Make one video out of many", "", ["Open a playlist.", "Tap Edit (app) or Select (website) and tick 2 or more.", "Tap Make one video. The sound's balanced so every part plays at the same volume."]], ["Info and File DNA", "", ["Hold a video and tap Info: where it came from, wat was made from it.", "Settings, then File DNA, for every file's fingerprint and history."]], ["Flash drive", "", ["Tap Flash drive on the storage switch (Pi / Flash drive).", "Type the pin.", "Any kind of file goes there, not just videos."]]]], ["Modes", [["Anything to MP4", "", ["Tap Anything to MP4 in Modes.", "Paste a link (YouTube, TikTok, Reels, anything), or tap Search YouTube, type anything and tap the video u want.", "Name it if u want, pick the Sound (Normal, Sped up, Slowed + reverb), and save.", "It lands in Saved from links."]], ["Save straight from another app", "app", ["In TikTok, YouTube, Instagram or Safari, tap Share.", "Pick MoCloud.", "Name it and tap Save to MoCloud. U don't have to open MoCloud."]], ["Speed up or slow down a saved video", "app", ["Hold the video.", "Tap Speed up or slow down.", "Pick Sped up or Slowed + reverb. A new copy shows up next to it."]], ["Karaoke", "", ["Tap Karaoke in Modes.", "Type in the search box: ur songs narrow down as u type. For a new song, tap Find new and pick it.", "Tap a language (English, Arabic...) to see only those songs, or change how they're sorted.", "Tap a line to jump there."]], ["Karaoke extras", "", ["The buttons over the slider: Vocals or Instrumental, Speed (the pitch stays the same), Repeat, English on or off, and Text size.", "Arabic in English letters? Tap عربي for Arabic letters. Arabic letters? Tap Arabizi. Habibi picks who the song's about.", "The buttons next to −10 and +10 jump back or ahead a line. Timing off? Tap ⋯, then Fix timing with MoTime (Undo's there too)."]], ["Games", "", ["Tap Games in Modes and start one.", "Everyone else opens MoCloud and joins with the code.", "Their phones are the controllers."]], ["Play with someone far away", "", ["Start a game, then tap Play with someone far away in the lobby.", "Send them the link. It opens the game for them on MoCloud's website, no pass needed.", "They pick one device or two, a player and a name, then the tutorial (Skip's right there).", "Nobody has to be the board: tap Board up top to see the table."]], ["PC games", "", ["Tap PC games in Modes.", "Tap a game. Ur PC wakes up and its screen shows here.", "Play with the mouse, keyboard or touch. Tap Close the game when you're done."]], ["Sleep mode", "app", ["Tap Sleep mode in Modes.", "Pick the cartoons and how long.", "Tap Start. Tap the Sleep mode tile again to stop it."]], ["Qibla", "app", ["Tap Qibla in Modes. Precise Location has to be on.", "Hold the phone flat and turn till it goes green and buzzes.", "Want it near 99%? In the day, line the phone up with the sun or a shadow and tap the matching button."]], ["MoMaps (Google Maps)", "", ["In Google Maps, pick where ur going (add stops if u want), tap Share, then MoCloud. U don't have to start navigation in Google Maps.", "Then open the MoCloud app or the website on ur phone: either one follows ur GPS. On a computer: Share, Copy, then tap MoMaps in MoCloud and paste it.", "The bar shows ur next turn, ur next stop and the ETA on every screen. Miss a turn and it finds a new way in a couple of seconds.", "Tap it for the map (the way ur going is always up; drag it any way to look around, Follow me snaps back). Full screen shows it big with ur speed, traffic, stops and ETA. Tap − to shrink it to a dot, End to stop."]], ["My projects", "", ["Tap My projects in Modes.", "Tap one: it opens right inside MoCloud.", "Back (or ← Projects) takes u back to the list."]]]], ["Extras", [["Jarvis", "app", ["Tap the J button.", "Ask it anything: open a page, find something, the weather."]], ["Morning picks", "", ["Every morning, athkaar shows up at the top of Home.", "On Fridays it's Surah Al-Kahf instead."]], ["Notifications", "", ["U get a ping when an upload's done or fails, or if the Pi goes down.", "Nothing while you're watching."]], ["Apple TV", "tv", ["Same library, same sections up top.", "Pick and play with the remote. Settings stay simple there."]], ["Developer settings", "", ["Settings, then Developer settings.", "Type the pass (or use Face ID).", "Location (a green light means it's allowed, with a button to ask), Smart Cleanup, where ur space is going, the speed test, MoTime, Install an update, and shutting the Pi off."]]]]];
+  const ABOUT = [["Watching", [["Watch something", "", ["Tap any poster to play it.", "Leave the app or lock ur phone, it keeps playing.", "Control it from the lock screen, Control Center, Dynamic Island or CarPlay."]], ["Shows and seasons", "", ["Tap a show.", "Pick a season up top.", "Tap an episode, or hit Play / Resume or Shuffle."]], ["Skip intro and next episode", "", ["Tap Skip Intro when it pops up.", "At the end, Next Episode counts down. Tap it to go now."]], ["Continue watching", "", ["It's the first row on Home.", "Tap In season to see where that episode is in its season.", "Hold it (app) or tap Remove from row (website) to take it off."]], ["Sections", "", ["Tap a bubble at the top: Shows, Movies, Videos, Saved from links, Photos.", "Tap All to see everything again."]], ["Search", "", ["Type in Search stuff.", "A show, an episode's name, a folder, or a word from a description all work."]], ["Subtitles", "", ["Nothing to do: MoCloud finds them by itself.", "No subtitles anywhere? The Pi writes them by listening (Whisper).", "See which ones have them: Settings, then Subtitles."]], ["Picture in picture", "app", ["Play a video.", "Swipe home. It keeps playing in a small window."]], ["Wrong poster", "app", ["Hold the show, or open it.", "Tap Wrong poster? and pick the right one."]]]], ["Ur stuff", [["Upload", "", ["App: tap +, then From Photos or From Files.", "Website: drop files anywhere, or tap Choose files.", "It goes up in the background. U get a notification when it's done."]], ["Download to watch offline", "", ["Hold a video (app) or tap Download under it (website).", "It downloads on ur other MoClouds too (the app and the website). Find them in Downloads.", "Remove a download and it's removed everywhere."]], ["Folders and moving", "", ["Tap Select.", "Tick wat u want.", "Tap Move and pick a folder (or make a new one)."]], ["Delete", "", ["Hold a video and tap Delete (app), or tap Delete under it (website).", "To delete a bunch: Select, tick them, Delete."]], ["Playlists", "", ["Hold a video, tap Add to playlist, pick one or make a new one.", "Open the playlist and hit Play or Shuffle.", "Saved links can Play on loop."]], ["Make one video out of many", "", ["Open a playlist.", "Tap Edit (app) or Select (website) and tick 2 or more.", "Tap Make one video. The sound's balanced so every part plays at the same volume."]], ["Info and File DNA", "", ["Hold a video and tap Info: where it came from, wat was made from it.", "Settings, then File DNA, for every file's fingerprint and history."]], ["Flash drive", "", ["Tap Flash drive on the storage switch (Pi / Flash drive).", "Type the pin.", "Any kind of file goes there, not just videos."]]]], ["Modes", [["Anything to MP4", "", ["Tap Anything to MP4 in Modes.", "Paste a link (YouTube, TikTok, Reels, anything), or tap Search YouTube, type anything and tap the video u want.", "Name it if u want, pick the Sound (Normal, Sped up, Slowed + reverb), and save.", "It lands in Saved from links."]], ["Save straight from another app", "app", ["In TikTok, YouTube, Instagram or Safari, tap Share.", "Pick MoCloud.", "Name it and tap Save to MoCloud. U don't have to open MoCloud."]], ["Speed up or slow down a saved video", "app", ["Hold the video.", "Tap Speed up or slow down.", "Pick Sped up or Slowed + reverb. A new copy shows up next to it."]], ["Karaoke", "", ["Tap Karaoke in Modes.", "Type in the search box: ur songs narrow down as u type. For a new song, tap Find new and pick it.", "Tap a language (English, Arabic...) to see only those songs, or change how they're sorted.", "Tap a line to jump there."]], ["Karaoke extras", "", ["The buttons over the slider: Vocals or Instrumental, Speed (the pitch stays the same), Repeat, English on or off, and Text size.", "Arabic in English letters? Tap عربي for Arabic letters. Arabic letters? Tap Arabizi. Habibi picks who the song's about.", "The buttons next to −10 and +10 jump back or ahead a line. Timing off? Tap ⋯, then Fix timing with MoTime (Undo's there too)."]], ["Games", "", ["Tap Games in Modes and start one.", "Everyone else opens MoCloud and joins with the code.", "Their phones are the controllers."]], ["Play with someone far away", "", ["Start a game, then tap Play with someone far away in the lobby.", "Send them the link. It opens the game for them on MoCloud's website, no pass needed.", "They pick one device or two, a player and a name, then the tutorial (Skip's right there).", "Nobody has to be the board: tap Board up top to see the table."]], ["PC games", "", ["Tap PC games in Modes.", "Tap a game. Ur PC wakes up and its screen shows here.", "Play with the mouse, keyboard or touch. Tap Close the game when you're done."]], ["Sleep mode", "app", ["Tap Sleep mode in Modes.", "Pick the cartoons and how long.", "Tap Start. Tap the Sleep mode tile again to stop it."]], ["Qibla", "app", ["Tap Qibla in Modes. Precise Location has to be on.", "Hold the phone flat and turn till it goes green and buzzes.", "Want it near 99%? In the day, line the phone up with the sun or a shadow and tap the matching button."]], ["MoMaps", "", ["Tap MoMaps in Modes, type where ur going, tap Search, then the place.", "It shows the fastest way from where u are. If it has tolls, the no-toll way is right under it: tap Go on the one u want.", "Full screen shows ur next turn, speed, traffic (and wat's causing it), tolls and ETA. Tap the tolls tile to switch to the no-toll way or back. Miss a turn and it finds a new way in a couple of seconds.", "Sharing directions from Google Maps to MoCloud still works. Ur own voice for each turn: Developer settings, MoMaps voice."]], ["My projects", "", ["Tap My projects in Modes.", "Tap one: it opens right inside MoCloud.", "Back (or ← Projects) takes u back to the list."]]]], ["Extras", [["Jarvis", "app", ["Tap the J button.", "Ask it anything: open a page, find something, the weather."]], ["Morning picks", "", ["Every morning, athkaar shows up at the top of Home.", "On Fridays it's Surah Al-Kahf instead."]], ["Notifications", "", ["U get a ping when an upload's done or fails, or if the Pi goes down.", "Nothing while you're watching."]], ["Apple TV", "tv", ["Same library, same sections up top.", "Pick and play with the remote. Settings stay simple there."]], ["Developer settings", "", ["Settings, then Developer settings.", "Type the pass (or use Face ID).", "Location (a green light means it's allowed, with a button to ask), Smart Cleanup, where ur space is going, the speed test, MoTime, Install an update, and shutting the Pi off."]]]]];
   const ABOUT_TAG = { app: "App only", web: "Website only", tv: "Apple TV" };
   function aboutCard() {
     return navCard("About MoCloud", "Every feature and how to use it, in a few steps.", openAbout, false, "");
@@ -8217,7 +8551,7 @@ self.onmessage = async (e) => {
     ["karaoke", MIC_ICON, "Karaoke", "Sing along", () => openKaraoke()],
     ["games", GAME_ICON, "Games", "Phones are the controllers", () => openGames()],
     ["pc", PC_ICON, "PC games", "Play from ur PC", () => openPcGames()],
-    ["momaps", TRIP_ICON, "MoMaps", "Follow ur Google Maps directions", () => tripNew()],
+    ["momaps", TRIP_ICON, "MoMaps", "Search a place and go", () => openMoMaps()],
     ["projects", PROJ_ICON, "My projects", "My other apps, in here", () => openProjects()],
   ];
   let modesEditing = false;
@@ -8702,7 +9036,7 @@ self.onmessage = async (e) => {
     return l;
   }
   function gameSetup(kind) {
-    const o = { engine: "liftoff", players: kind === "draw" ? 3 : 2, rules: { drawTill: false, jumpIn: false, sevenO: false }, mode: "here", level: "medium", solo: false, cards: 3, seconds: kind === "draw" ? 80 : 10, say: false, rounds: 1 };
+    const o = { engine: "liftoff", saved: "", keptList: null, players: kind === "draw" ? 3 : 2, rules: { drawTill: false, jumpIn: false, sevenO: false }, mode: "here", level: "medium", solo: false, cards: 3, seconds: kind === "draw" ? 80 : 10, say: false, rounds: 1 };
     const testOpt = (who) => gsOpt("checkbox", "solo", o.solo, "Test mode (one phone)", `MoCloud plays ${who}, and there's no board needed: tap the board button up top to see it on ur phone.`, (on) => { o.solo = on; });
     try { const saved = JSON.parse(localStorage.getItem("mocloud-uno-rules")) || {}; for (const k in o.rules) if (k in saved) o.rules[k] = !!saved[k]; } catch {}
     const dlg = $("gameSetup"), B = $("gsBody");
@@ -8742,6 +9076,15 @@ self.onmessage = async (e) => {
           gsOpt("radio", "ttengine", o.engine === "gemini", "A new game: Gemini only", "Gemini makes the whole thing, the idea, the rules, the look, every time. Free (it stays inside Gemini's free tier). A few minutes.", () => { o.engine = "gemini"; draw(); }),
           gsOpt("radio", "ttengine", o.engine === "claude", "A new game: Gemini + Claude", "Gemini comes up with the game, then Claude builds how it looks and plays. Costs a little: u see the price and OK it first.", () => { o.engine = "claude"; draw(); }));
         parts.push(m);
+        // Made games u saved at the end of a round: play them again (free, ready right away)
+        if (o.keptList === null) { o.keptList = []; gameApi("/api/tagteam/saved").then((d) => { o.keptList = d.games || []; if (o.keptList.length) draw(); }).catch(() => {}); }
+        if (o.keptList.length) {
+          parts.push(el("p", "gs-label", "Ur saved games"));
+          const k = el("div", "gs-modes");
+          for (const g of o.keptList) k.append(gsOpt("radio", "ttengine", o.engine === "saved" && o.saved === g.id, `Play ${g.title} again`,
+            `${g.tagline ? g.tagline + " " : ""}Made by ${g.by}. Free, and it starts right away.`, () => { o.engine = "saved"; o.saved = g.id; draw(); }));
+          parts.push(k);
+        }
         parts.push(el("p", "gs-label", "Difficulty"));
         parts.push(seg(o.engine === "liftoff" ? [["easy", "Easy · 8:00"], ["medium", "Medium · 5:30"], ["hard", "Hard · 3:30"]] : [["easy", "Easy"], ["medium", "Medium"], ["hard", "Hard"]], o.level, (v) => { o.level = v; draw(); }));
         parts.push(el("p", "gs-sub", o.engine === "liftoff" ? "Only the clock changes. A wrong move takes 15 seconds off it. U swap jobs every round." : "Gemini decides wat each level's like and how long the clock is. U swap jobs every round."));
@@ -8781,7 +9124,7 @@ self.onmessage = async (e) => {
         try {
           if (kind === "uno") try { localStorage.setItem("mocloud-uno-rules", JSON.stringify(o.rules)); } catch {}
           const rules = kind === "letters" ? { cards: o.cards, seconds: o.seconds, say: o.say } : kind === "draw" ? { rounds: o.rounds, seconds: o.seconds } : o.rules;
-          const v = await gameApi("/api/games", { game: kind, players: o.players, rules, mode: o.mode, level: o.level, solo: kind !== "c4" && o.solo, engine: o.engine, device: gameDevice() });
+          const v = await gameApi("/api/games", { game: kind, players: o.players, rules, mode: o.mode, level: o.level, solo: kind !== "c4" && o.solo, engine: o.engine, saved: o.saved, device: gameDevice() });
           dlg.close();
           openGame(v.code, v);
         } catch (e) { toast(e.message, true); go.disabled = false; }
@@ -10469,10 +10812,10 @@ self.onmessage = async (e) => {
   function ttMaking(v) {
     const t = v.tt || {}, c = el("div", "lo-card tt-make");
     if (!t.engine || t.engine === "liftoff") return null;
-    const by = t.engine === "claude" ? "Gemini + Claude" : "Gemini";
+    const by = t.by || (t.engine === "claude" ? "Gemini + Claude" : "Gemini");
     if (t.status === "ready") {
       c.classList.add("ready");
-      c.append(el("small", "", `Made by ${by}`), el("h2", "", t.title || "Ur game"));
+      c.append(el("small", "", `${t.kept ? "Saved on MoCloud · " : ""}Made by ${by}`), el("h2", "", t.title || "Ur game"));
       if (t.tagline) c.append(el("p", "", t.tagline));
       if (t.story) c.append(el("p", "sub", t.story));
       return c;
@@ -10540,6 +10883,14 @@ self.onmessage = async (e) => {
       : `${st.done} of ${st.total} done.`));
     const r = st.record || {};
     c.append(el("p", "sub", `This game: ${r.won || 0} won, ${r.lost || 0} lost`));
+    const t = v.tt || {};
+    if (!rocket && st.role !== "watch" && t.status === "ready") {   // liked it? keep it on MoCloud to play again
+      if (t.kept) {
+        const row = el("div", "tt-kept");
+        row.append(el("span", "", `${t.title || "This game"}'s saved on MoCloud. Pick it next time u start Tag Team.`), loBtn("link", "Unsave", () => gameAct("ttUnkeep")));
+        c.append(row);
+      } else c.append(loBtn("btn ghost tt-keep", `Save ${t.title || "this game"} to MoCloud`, () => gameAct("ttKeep")));
+    }
     if (st.role !== "watch") {
       const b = el("button", "btn lo-go", rocket ? "Next rocket (u swap jobs)" : "Next round (u swap jobs)"); b.type = "button";
       b.addEventListener("click", () => gameAct("again"));
@@ -10919,6 +11270,8 @@ self.onmessage = async (e) => {
     setTimeout(() => n.remove(), 30000);
   }
   setInterval(gameWatch, 6000);
+  // Tell the Pi where this website lives, so invite links made from the apps work too.
+  setTimeout(() => { if (!GUEST && isUrl(BACKENDS.pi.url) && piPasscode()) gameApi("/api/site", { site: location.origin + location.pathname }).catch(() => {}); }, 4000);
   setTimeout(gameWatch, 1500);
 
   // ----- the rules (the i button) -----
@@ -12636,12 +12989,13 @@ self.onmessage = async (e) => {
     }
   })();
 
-  async function startDownload(f) {
+  async function startDownload(f, fromSync) {
     await dlReady;
-    if (!dl.supported) { toast("This browser can't save videos for offline viewing. Try Chrome or Safari.", true); return; }
-    if (state.offline) { toast("MoCloud is offline, so new downloads can't start right now.", true); return; }
+    if (!dl.supported) { if (!fromSync) toast("This browser can't save videos for offline viewing. Try Chrome or Safari.", true); return; }
+    if (state.offline) { if (!fromSync) toast("MoCloud is offline, so new downloads can't start right now.", true); return; }
     const id = dlId(backend.id, f.key);
     let it = dl.items.get(id);
+    if (!fromSync && backend.id === "pi") dlTell(f.key, "add", f.name);   // ur other MoClouds download it too
     if ((it && it.done) || dl.queue.includes(id) || (dl.active && dl.active.id === id)) return;
     // The Pi's lighter copy when there is one (same picture, way smaller). A download that already
     // started keeps going with whichever version it began with.
@@ -12656,6 +13010,7 @@ self.onmessage = async (e) => {
       const est = await navigator.storage.estimate();
       const room = (est.quota || 0) - (est.usage || 0);
       if (est.quota && room < need + DL_MARGIN) {
+        if (fromSync) { if (!dlSync.full.has(f.key)) { dlSync.full.add(f.key); toast(`Couldn't download ${titleOf(f)} here too: not enough space on this device.`, true); } return; }
         toast(`Not enough space on this device. This video needs ${fmtSize(need)}, and about ${fmtSize(Math.max(0, room - DL_MARGIN))} is free for MoCloud.`, true);
         return;
       }
@@ -12667,7 +13022,7 @@ self.onmessage = async (e) => {
       it = { id, src: backend.id, key: f.key, name: f.name, size, got: 0, done: false, added: Date.now(), fname: await dlFileName(id) };
       dl.items.set(id, it);
     }
-    if (useLight && !it.got && !it.light) toast(`Grabbing the lighter copy: ${fmtSize(lightSize)} instead of ${fmtSize(f.size)}, same picture.`);
+    if (useLight && !it.got && !it.light && !fromSync) toast(`Grabbing the lighter copy: ${fmtSize(lightSize)} instead of ${fmtSize(f.size)}, same picture.`);
     it.size = size; it.light = useLight; it.error = "";
     await dlSave(it);
     dl.queue.push(id);
@@ -12742,20 +13097,70 @@ self.onmessage = async (e) => {
     dl.items.delete(it.id);
   }
 
-  // Removes the saved copy from this device only. The video stays on MoCloud.
-  async function removeDownload(id, quiet) {
+  // Removes the saved copy (here, and on ur other MoClouds too). The video stays on MoCloud.
+  async function removeDownload(id, quiet, fromSync) {
     const it = dl.items.get(id);
     if (!it) return;
+    if (!fromSync && it.src === "pi") dlTell(it.key, "remove");
     dl.queue = dl.queue.filter((x) => x !== id);
     if (dl.active && dl.active.id === id) { dl.active.removeAfter = true; dl.active.w.postMessage({ type: "cancel" }); return; }
     try {
       await dlRemoveNow(it);
-      if (!quiet) toast("Removed from this device. The video is still on MoCloud.");
+      if (!quiet) toast(it.src === "pi" ? "Removed from ur downloads everywhere. The video is still on MoCloud." : "Removed from this device. The video is still on MoCloud.");
     } catch (e) {
       toast(`Couldn't remove the download: ${e.message}`, true);
     }
     renderDlState(true);
   }
+
+  // ---- One list of downloads for every MoCloud (this browser, ur phone, any other browser) ----
+  // The Pi keeps the list. Download or remove here and it tells the Pi; every so often this browser checks the list and
+  // downloads wat's new on it, and removes wat's gone from it. Changes made with no internet wait here till it's back.
+  const dlSync = { busy: false, ver: -1, full: new Set(), timer: 0 };
+  const dlPending = () => { try { return JSON.parse(localStorage.getItem("mocloud-dl-pending")) || {}; } catch { return {}; } };
+  function dlTell(key, what, name) {
+    const p = dlPending(); p[key] = { what, name: name || "" };
+    try { localStorage.setItem("mocloud-dl-pending", JSON.stringify(p)); } catch {}
+    clearTimeout(dlSync.timer); dlSync.timer = setTimeout(dlSyncNow, 300);
+  }
+  async function dlSyncNow() {
+    clearTimeout(dlSync.timer);
+    dlSync.timer = setTimeout(dlSyncNow, 30000);
+    await dlReady;
+    if (dlSync.busy || !dl.supported || GUEST || state.offline || !isUrl(BACKENDS.pi.url) || !piPasscode()) return;
+    dlSync.busy = true;
+    try {
+      const pend = dlPending();
+      let first = false;
+      try { first = localStorage.getItem("mocloud-dl-synced") !== "1"; } catch {}
+      if (first) for (const it of dl.items.values()) if (it.src === "pi" && !pend[it.key]) pend[it.key] = { what: "add", name: it.name };   // downloads from before: they go on the list
+      const add = [], remove = [];
+      for (const [key, x] of Object.entries(pend)) (x.what === "add" ? add : remove).push(x.what === "add" ? { key, name: x.name } : key);
+      const r = await fetch(BACKENDS.pi.url + "/api/downloads", add.length || remove.length
+        ? { method: "POST", headers: { "X-Passcode": piPasscode(), "Content-Type": "application/json" }, body: JSON.stringify({ add, remove, device: liveId }) }
+        : { headers: { "X-Passcode": piPasscode() }, cache: "no-store" });
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      // Only what was sent is cleared (anything u did while it was sending goes next time).
+      const now = dlPending();
+      for (const [key, x] of Object.entries(pend)) if (now[key] && now[key].what === x.what) delete now[key];
+      try { localStorage.setItem("mocloud-dl-pending", JSON.stringify(now)); localStorage.setItem("mocloud-dl-synced", "1"); } catch {}
+      const want = new Map((d.keys || []).map((k) => [k.key, k]));
+      // Gone from the list (removed on another device): removed here too. Not ones waiting to be told to the Pi.
+      for (const it of [...dl.items.values()]) if (it.src === "pi" && !want.has(it.key) && !now[it.key]) await removeDownload(it.id, true, true);
+      // New on the list (downloaded on another device): downloaded here too, if it's still on MoCloud.
+      if (backend.id === "pi") for (const [key] of want) {
+        if (now[key] && now[key].what === "remove") continue;
+        if (dl.items.get(dlId("pi", key))) continue;   // here alr (or paused: u paused it, it stays paused)
+        const f = state.files.find((x) => x.key === key);
+        if (f) await startDownload(f, true);
+      }
+      if (d.ver !== dlSync.ver) { dlSync.ver = d.ver; renderDlState(true); }
+    } catch {}
+    dlSync.busy = false;
+  }
+  setTimeout(dlSyncNow, 4000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") dlSyncNow(); });
 
   // Plays a downloaded video straight from the device: no internet needed, instant skipping.
   async function localVideoUrl(f) {
@@ -12797,7 +13202,7 @@ self.onmessage = async (e) => {
   function askStopDownload(id) {
     const it = dl.items.get(id);
     if (!it) return;
-    $("dlStopText").textContent = `${titleOf({ name: it.name, type: "" })} is ${dlPct(it)}% downloaded. Stopping deletes wat's downloaded so far from this device. The video stays on MoCloud.`;
+    $("dlStopText").textContent = `${titleOf({ name: it.name, type: "" })} is ${dlPct(it)}% downloaded. Stopping deletes wat's downloaded so far, here and on ur other MoClouds. The video stays on MoCloud.`;
     $("dlStopGo").onclick = () => { $("dlStop").close(); removeDownload(id, true); toast("I'm done. Stopped the download."); };
     $("dlStopKeep").onclick = () => $("dlStop").close();
     if (!$("dlStop").open) $("dlStop").showModal();
@@ -12848,7 +13253,7 @@ self.onmessage = async (e) => {
       r.addEventListener("click", () => startDownload({ key: it.key, name: it.name, size: it.size }));
       acts.append(r);
     }
-    const rm = document.createElement("button"); rm.className = "link"; rm.textContent = "Remove from device";
+    const rm = document.createElement("button"); rm.className = "link"; rm.textContent = it.src === "pi" ? "Remove everywhere" : "Remove from device";
     rm.addEventListener("click", () => removeDownload(it.id));
     acts.append(rm);
     li.append(name, src, stat, acts);
