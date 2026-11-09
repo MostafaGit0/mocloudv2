@@ -580,6 +580,7 @@
   .loc-light.off { background: var(--red); box-shadow: 0 0 8px var(--red); }
   .loc-acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
   .pi-off { background: #E5212F; color: #fff; border-color: #E5212F; width: 100%; }
+  .btn.danger { background: transparent; color: var(--red); border-color: var(--red); width: 100%; }
   .fan-now { font-size: 14px; color: var(--dim); margin: 4px 0 6px; }
   .fan-val { display: block; font-size: 22px; margin-bottom: 6px; }
   .fan-slide input { width: 100%; accent-color: var(--accent); }
@@ -1128,10 +1129,24 @@
     box-shadow: 0 12px 40px rgba(0,0,0,.5); animation: helloIn .35s cubic-bezier(.2,.9,.3,1.3); transition: opacity .4s ease, transform .4s ease; pointer-events: none; }
   .hello-baby.out { opacity: 0; transform: translate(-50%, -50%) scale(.92); }
   @keyframes helloIn { from { opacity: 0; transform: translate(-50%, -40%) scale(.85); } }
-  #gamePlay { position: fixed; inset: 0; z-index: 44; display: grid; grid-template-rows: auto 1fr; overflow: hidden;
+  #gamePlay { position: fixed; inset: 0; z-index: 44; display: grid; grid-template-rows: auto 1fr; grid-template-columns: minmax(0, 1fr); overflow: hidden;
     background: var(--ink); padding-bottom: env(safe-area-inset-bottom); }
   #gamePlay[hidden] { display: none; }
-  .gp-top { display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; }
+  .gp-top { display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; min-width: 0; }
+  .gp-top > :not(.gp-title) { flex: none; }
+  @media (max-width: 520px) {   /* a phone held up: every button fits, the "you're ..." line gives way first */
+    .gp-top { gap: 6px; padding-left: 10px; padding-right: 10px; }
+    .gp-back-t { display: none; }
+    .gp-round { width: 34px !important; height: 34px !important; }
+    .gp-round svg { width: 18px; height: 18px; }
+    #gpBack, #gpPeek { padding: 6px 10px; }
+  }
+  @media (orientation: landscape) and (max-height: 520px) {   /* the board on a phone on its side: a smaller chat */
+    #gamePlay.as-board .gp-toasts { width: min(280px, calc(100vw - 32px)); gap: 2px; left: 10px; bottom: calc(8px + env(safe-area-inset-bottom)); }
+    #gamePlay.as-board .gp-line { font-size: 12px; padding: 3px 7px; gap: 6px; }
+    #gamePlay.as-board .gp-line i { width: 6px; height: 6px; margin-top: 5px; }
+    #gamePlay.as-board .gp-line:nth-last-child(n+4) { display: none; }
+  }
   .gp-title { flex: 1; min-width: 0; }
   .gp-title b { display: block; font-size: 16px; }
   .gp-title span { display: block; color: var(--dim); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1167,7 +1182,7 @@
   .gp-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
   .gp-center { min-height: 100%; display: grid; place-items: center; padding: 20px 16px 40px; }
 
-  /* the tutorial (it pauses the game for everyone) */
+  /* the tutorial (just on the screen that opened it) */
   .tut { position: absolute; inset: 0; z-index: 45; display: grid; place-items: center; padding: 16px; background: rgba(10,11,14,.82); overflow: auto; }
   .tut-card { width: min(640px, 100%); background: var(--panel); border-radius: 12px; padding: 22px; display: grid; gap: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.4); }
   .tut-step { color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .01em; }
@@ -1746,10 +1761,13 @@
   .uh-hand .uc.new { animation: cardIn .45s cubic-bezier(.2,.9,.3,1.2) both; }
   @keyframes cardIn { from { opacity: 0; transform: translateY(-60px) scale(.7); } }
   .uh-hand .uc.ok:active { transform: translateY(-22px) scale(1.04); }
+  .uh-btns .busy { opacity: .6; cursor: progress; }
   .uh-count { text-align: center; color: var(--dim); font-size: 13px; margin-bottom: -6px; }
   /* Just their phone (remote, one device): the whole table fits on it, the hand's a bit smaller */
-  .uh.uh-one { grid-template-rows: auto auto 1fr auto auto auto; grid-template-columns: minmax(0, 1fr); gap: 6px; overflow-y: auto; overflow-x: hidden; }
-  .uh.uh-one > * { min-width: 0; }
+  /* One column, top to bottom, so nothing can sit on top of anything else; it scrolls if the phone's short. */
+  .uh.uh-one { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; overflow-x: hidden; }
+  .uh.uh-one > * { min-width: 0; flex: none; }
+  .uh.uh-one > .uh-mid { flex: 1 0 auto; }
   .uh-me { display: flex; align-items: center; gap: 8px; margin: 6px 14px 0; padding: 8px 12px; border-radius: 10px; background: var(--panel);
     border-left: 4px solid var(--seat); flex-wrap: wrap; }
   .uh-me b { font-size: 15px; } .uh-me span:not(.gp-dot) { color: var(--dim); font-size: 13px; }
@@ -1762,18 +1780,6 @@
   .uh-deck { display: grid; justify-items: center; gap: 4px; } .uh-deck small { color: var(--dim); font-size: 12px; }
   .uh-one .uh-turn { font-size: 18px; }
   .uh-one .uh-note { font-size: 13px; min-height: 0; }
-  .uh-moves { margin: 0 14px; padding: 8px 10px; border-radius: 10px; background: var(--panel); }
-  .uh-moves-h { font-size: 12px; color: var(--dim); font-weight: 600; margin-bottom: 6px; }
-  .uh-mlist { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; align-items: flex-end; }
-  .uh-mlist::-webkit-scrollbar { display: none; }
-  .uh-moves-none { color: var(--dim); font-size: 13px; }
-  .uh-mv { position: relative; flex: none; display: grid; justify-items: center; gap: 3px; }
-  .uh-mv .uc { --cw: 34px; }
-  .uh-mv:first-child .uc { --cw: 42px; box-shadow: 0 0 0 2px var(--seat); }
-  .uh-mv span { font-size: 11px; color: var(--seat); font-weight: 700; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .uh-mv-n { position: absolute; inset: 0; display: grid; place-items: center; font-size: 15px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px #000; }
-  .uh-mv .uc.back { position: relative; }
-  .uh-mv-col { position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ink); }
   .uh-one .uh-hand { padding-top: 18px; }
   .uh-one .uh-hand .uc { --cw: min(17vw, 74px); }
   .ll-words-h { margin: 6px 0 4px; font-size: 13px; color: var(--dim); font-weight: 600; }
@@ -2095,6 +2101,7 @@
       <button type="button" class="chip" id="ccBtn" aria-pressed="false" hidden>Subtitles</button>
       <button type="button" class="chip" id="plLoop" hidden>Loop: off</button>
       <button type="button" class="chip" id="soloLoop" hidden aria-pressed="false">Loop: off</button>
+      <button type="button" class="chip" id="boostBtn" hidden aria-pressed="false">Volume boost: off</button>
       <button type="button" class="chip" id="plNext" hidden>Next</button>
       <button type="button" class="chip" id="fsBtn">Full screen</button>
     </div>
@@ -2333,7 +2340,7 @@
 
 <section id="gamePlay" hidden aria-labelledby="gpTitle">
   <div class="gp-top">
-    <button type="button" class="btn ghost small" id="gpBack">&larr; Back</button>
+    <button type="button" class="btn ghost small" id="gpBack" aria-label="Back">&larr;<span class="gp-back-t"> Back</span></button>
     <div class="gp-title"><b id="gpTitle"></b><span id="gpSub"></span></div>
     <span class="gp-zoom" id="gpZoom" hidden><button type="button" class="gp-round" id="gpZoomOut" aria-label="Zoom out">&minus;</button><button type="button" class="gp-round" id="gpZoomIn" aria-label="Zoom in">+</button></span>
     <div class="gp-as" id="gpAs" role="group" aria-label="Playing as" hidden></div>
@@ -4614,6 +4621,7 @@ self.onmessage = async (e) => {
     const on = !!queueFrom && shuffleKeys.includes(f.key) && state.meta.playlists[queueFrom];
     $("plLoop").hidden = $("plNext").hidden = !on;
     const solo = !on && isYT(f);
+    boostShow(f);
     if (soloLoopKey !== f.key) soloLoopKey = "";   // a different video: loop's off again
     $("soloLoop").hidden = !solo;
     if (solo) {
@@ -4638,6 +4646,39 @@ self.onmessage = async (e) => {
     if (!player.f) return;
     soloLoopKey = soloLoopKey === player.f.key ? "" : player.f.key;
     plPlayerCtl(player.f);
+  });
+  // Anything to MP4 videos: Volume boost turns the sound up past the max (1.5×, 2×, 3×), for quiet ones. Off for
+  // every video till u tap it. A limiter after it keeps the loud parts from crackling.
+  const BOOSTS = [1, 1.5, 2, 3];
+  const boost = { key: "", i: 0, ctx: null, gain: null, video: null };
+  function boostShow(f) {
+    const b = $("boostBtn");
+    b.hidden = !isYT(f);
+    if (boost.key !== f.key) { boost.key = f.key; boost.i = 0; }   // a different video: back to normal
+    const x = BOOSTS[boost.i];
+    b.textContent = x === 1 ? "Volume boost: off" : `Volume boost: ${x}×`;
+    b.setAttribute("aria-pressed", String(x > 1));
+    b.classList.toggle("on", x > 1);
+    const v = $("pStage").querySelector("video");
+    if (boost.gain && boost.video === v) boost.gain.gain.value = x;
+  }
+  $("boostBtn").addEventListener("click", () => {
+    const v = $("pStage").querySelector("video");
+    if (!player.f || !v) return;
+    boost.i = (boost.i + 1) % BOOSTS.length;
+    if (BOOSTS[boost.i] > 1 && boost.video !== v) {   // the first boost on this video: its sound goes through the booster
+      try {
+        boost.ctx = boost.ctx || new (window.AudioContext || window.webkitAudioContext)();
+        const src = boost.ctx.createMediaElementSource(v);
+        const gain = boost.ctx.createGain();
+        const limit = boost.ctx.createDynamicsCompressor();
+        limit.threshold.value = -2; limit.knee.value = 0; limit.ratio.value = 20; limit.attack.value = 0.003; limit.release.value = 0.15;
+        src.connect(gain).connect(limit).connect(boost.ctx.destination);
+        boost.gain = gain; boost.video = v;
+      } catch { boost.i = 0; toast("This browser can't boost the volume", true); }
+    }
+    if (boost.ctx && boost.ctx.state === "suspended") boost.ctx.resume().catch(() => {});
+    boostShow(player.f);
   });
   $("plNext").addEventListener("click", () => { const n = player.f && nextEpisodeOf(player.f); if (n) openPlayer(n); else toast("That's the last one"); });
 
@@ -6231,6 +6272,7 @@ self.onmessage = async (e) => {
     if (isVideo(f)) {
       const v = document.createElement("video");
       v.controls = true; v.autoplay = true; v.playsInline = true; v.preload = "auto";
+      if (isYT(f)) v.crossOrigin = "anonymous";   // so Volume boost can turn its sound up (the Pi allows it)
       v.setAttribute("controlslist", "nofullscreen"); // the Full screen button below keeps the screen size
       v.addEventListener("error", () => {
         const box = document.createElement("div"); box.className = "p-error";
@@ -6745,7 +6787,7 @@ self.onmessage = async (e) => {
   };
   // The card's two little buttons, drawn (not letters) so they sit dead centre in their circles.
   const TRIP_MINUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
-  // Tolls on this way: a green $. No tolls: a grey $ crossed out. (Switching ways is on the full-screen map, or ask Jarvis.)
+  // Tolls on this way: a green $. No tolls: a grey $ crossed out. (Switching ways is on the full-screen map.)
   const TRIP_TOLL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M16.5 7.5c-.6-1.5-2.3-2.5-4.5-2.5-2.6 0-4.3 1.3-4.3 3.2 0 4.4 9 2.4 9 6.9 0 2-1.8 3.4-4.7 3.4-2.3 0-4.1-1-4.7-2.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   const TRIP_NOTOLL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M16.5 7.5c-.6-1.5-2.3-2.5-4.5-2.5-2.6 0-4.3 1.3-4.3 3.2 0 4.4 9 2.4 9 6.9 0 2-1.8 3.4-4.7 3.4-2.3 0-4.1-1-4.7-2.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".75"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   const TRIP_AUTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5 14 10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M16.5 3v3.5M14.75 4.75h3.5M20 9v2.6M18.7 10.3h2.6M9.5 4.2v2.2M8.4 5.3h2.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
@@ -7709,7 +7751,7 @@ self.onmessage = async (e) => {
   }
 
   function renderDev() {
-    const parts = [locCard(), speedCard(), fanCard(), offCard(), claudeCard(), ttCostCard()];
+    const parts = [locCard(), speedCard(), fanCard(), endGamesCard(), offCard(), claudeCard(), ttCostCard()];
     const C = devUI.clean;
     if (!C) parts.push(card(devUI.err ? "Couldn't load it" : "Loading", devUI.err || "ii calm one sec"));
     else {
@@ -7721,6 +7763,23 @@ self.onmessage = async (e) => {
     }
     parts.push(karFileCard());
     $("devBody").replaceChildren(...parts);
+  }
+
+  // ---------- End every game (Developer settings only) ----------
+  function endGamesCard() {
+    const c = card("End every game", "Every game going ends for everyone rn, on every device, wherever they are (far-away invites too), and a PC game that's on gets closed.");
+    const b = el("button", "btn danger", "End every game"); b.type = "button";
+    b.addEventListener("click", async () => {
+      if (!(await askSure("End every game?", "Every game going ends for everyone, on every device. Nobody can get back into them.", "End them all", "Nah"))) return;
+      b.disabled = true; b.textContent = "Ending...";
+      try {
+        const r = await devApi("/api/dev/games/end-all", jsonPost({}));
+        toast(!r.ended && !r.pc ? "No games were going." : [r.ended ? `Ended ${r.ended} ${r.ended === 1 ? "game" : "games"} for everyone.` : "", r.pc ? "Closed the PC game." : ""].filter(Boolean).join(" "));
+      } catch (e) { if (e.message !== "locked") toast(e.message, true); }
+      b.disabled = false; b.textContent = "End every game";
+    });
+    c.append(b);
+    return c;
   }
 
   // ---------- Shut the Pi off (Developer settings only): asks twice ----------
@@ -8605,7 +8664,7 @@ self.onmessage = async (e) => {
   });
 
   // ---------- About MoCloud: every feature, and how to use it in a few steps ----------
-  const ABOUT = [["Watching", [["Watch something", "", ["Tap any poster to play it.", "Leave the app or lock ur phone, it keeps playing.", "Control it from the lock screen, Control Center, Dynamic Island or CarPlay."]], ["Shows and seasons", "", ["Tap a show.", "Pick a season up top.", "Tap an episode, or hit Play / Resume or Shuffle."]], ["Skip intro and next episode", "", ["Tap Skip Intro when it pops up.", "At the end, Next Episode counts down. Tap it to go now."]], ["Continue watching", "", ["It's the first row on Home.", "Tap In season to see where that episode is in its season.", "Hold it (app) or tap Remove from row (website) to take it off."]], ["Sections", "", ["Tap a bubble at the top: Shows, Movies, Videos, Saved from links, Photos.", "Tap All to see everything again."]], ["Search", "", ["Type in Search stuff.", "A show, an episode's name, a folder, or a word from a description all work."]], ["Subtitles", "", ["Nothing to do: MoCloud finds them by itself.", "No subtitles anywhere? The Pi writes them by listening (Whisper).", "See which ones have them: Settings, then Subtitles."]], ["Picture in picture", "app", ["Play a video.", "Swipe home. It keeps playing in a small window."]], ["Wrong poster", "app", ["Hold the show, or open it.", "Tap Wrong poster? and pick the right one."]]]], ["Ur stuff", [["Upload", "", ["App: tap +, then From Photos or From Files.", "Website: drop files anywhere, or tap Choose files.", "It goes up in the background. U get a notification when it's done."]], ["Download to watch offline", "", ["Hold a video (app) or tap Download under it (website).", "It downloads on ur other MoClouds too (the app and the website). Find them in Downloads.", "Remove a download and it's removed everywhere."]], ["Folders and moving", "", ["Tap Select.", "Tick wat u want.", "Tap Move and pick a folder (or make a new one)."]], ["Delete", "", ["Hold a video and tap Delete (app), or tap Delete under it (website).", "To delete a bunch: Select, tick them, Delete."]], ["Playlists", "", ["Hold a video, tap Add to playlist, pick one or make a new one.", "Open the playlist and hit Play or Shuffle.", "Saved links can Play on loop."]], ["Make one video out of many", "", ["Open a playlist.", "Tap Edit (app) or Select (website) and tick 2 or more.", "Tap Make one video. The sound's balanced so every part plays at the same volume."]], ["Info and File DNA", "", ["Hold a video and tap Info: where it came from, wat was made from it.", "Settings, then File DNA, for every file's fingerprint and history."]], ["Flash drive", "", ["Tap Flash drive on the storage switch (Pi / Flash drive).", "Type the pin.", "Any kind of file goes there, not just videos."]]]], ["Modes", [["Anything to MP4", "", ["Tap Anything to MP4 in Modes.", "Paste a link (YouTube, TikTok, Reels, anything), or tap Search YouTube, type anything and tap the video u want.", "Name it if u want, pick the Sound (Normal, Sped up, Slowed + reverb), and save.", "It lands in Saved from links."]], ["Save straight from another app", "app", ["In TikTok, YouTube, Instagram or Safari, tap Share.", "Pick MoCloud.", "Name it and tap Save to MoCloud. U don't have to open MoCloud."]], ["Speed up or slow down a saved video", "app", ["Hold the video.", "Tap Speed up or slow down.", "Pick Sped up or Slowed + reverb. A new copy shows up next to it."]], ["Karaoke", "", ["Tap Karaoke in Modes.", "Type in the search box: ur songs narrow down as u type. For a new song, tap Find new and pick it.", "Tap a language (English, Arabic...) to see only those songs, or change how they're sorted.", "Tap a line to jump there."]], ["Karaoke extras", "", ["The buttons over the slider: Vocals or Instrumental, Speed (the pitch stays the same), Repeat, English on or off, and Text size.", "Arabic in English letters? Tap عربي for Arabic letters. Arabic letters? Tap Arabizi. Habibi picks who the song's about.", "The buttons next to −10 and +10 jump back or ahead a line. Timing off? Tap ⋯, then Fix timing with MoTime (Undo's there too)."]], ["Games", "", ["Tap Games in Modes and start one.", "Everyone else opens MoCloud and joins with the code.", "Their phones are the controllers.", "Testing it on one device? Pick Test: u play every spot, then switch between every player and the board with the buttons up top."]], ["Play with someone far away", "", ["Start a game, then tap Play with someone far away in the lobby.", "Send them the link. It opens the game for them on MoCloud's website, no pass needed.", "They pick one device or two, a player and a name, then the tutorial (Skip's right there).", "Nobody has to be the board: tap Board up top to see the table."]], ["PC games", "", ["Tap PC games in Modes.", "Tap a game. Ur PC wakes up and its screen shows here.", "Play with the mouse, keyboard or touch. Tap Close the game when you're done."]], ["Sleep mode", "app", ["Tap Sleep mode in Modes.", "Pick the cartoons and how long.", "Tap Start. Tap the Sleep mode tile again to stop it."]], ["Qibla", "app", ["Tap Qibla in Modes. Precise Location has to be on.", "Hold the phone flat and turn till it goes green and buzzes.", "Want it near 99%? In the day, line the phone up with the sun or a shadow and tap the matching button."]], ["MoMaps", "", ["Tap MoMaps in Modes, type where ur going, tap Search, then the place.", "It shows the fastest way from where u are. If it has tolls, the no-toll way is right under it: tap Go on the one u want.", "Full screen shows ur next turn, speed, traffic (and wat's causing it), tolls and ETA. The line goes orange where traffic's slow, red where it's jammed. A green $ on the bar means tolls, a crossed-out $ means none: tap the tolls tile on full screen to switch. Miss a turn and it finds a new way in a couple of seconds.", "Sharing directions from Google Maps to MoCloud still works. Ur own voice plays at the start, before each turn and when u get there: record it in Developer settings, MoMaps voice. The speaker button on full screen turns it off."]], ["My projects", "", ["Tap My projects in Modes.", "Tap one: it opens right inside MoCloud.", "Back (or ← Projects) takes u back to the list."]]]], ["Extras", [["Jarvis", "app", ["Tap the J button.", "Ask it anything, or tell it to do it: play something, take u somewhere (MoMaps, tolls or no tolls), end the trip, MoSync an episode, download one, play the athkaar, pause the video, open any page, the weather."]], ["Morning picks", "", ["Every morning, athkaar shows up at the top of Home.", "On Fridays it's Surah Al-Kahf instead."]], ["Notifications", "", ["U get a ping when an upload's done or fails, or if the Pi goes down.", "Nothing while you're watching."]], ["Apple TV", "tv", ["Same library, same sections up top.", "Pick and play with the remote. Settings stay simple there."]], ["Developer settings", "", ["Settings, then Developer settings.", "Type the pass (or use Face ID).", "Location (a green light means it's allowed, with a button to ask), Smart Cleanup, where ur space is going, the speed test, MoTime, Install an update, and shutting the Pi off."]]]]];
+  const ABOUT = [["Watching", [["Watch something", "", ["Tap any poster to play it.", "Leave the app or lock ur phone, it keeps playing.", "Control it from the lock screen, Control Center, Dynamic Island or CarPlay."]], ["Shows and seasons", "", ["Tap a show.", "Pick a season up top.", "Tap an episode, or hit Play / Resume or Shuffle."]], ["Skip intro and next episode", "", ["Tap Skip Intro when it pops up.", "At the end, Next Episode counts down. Tap it to go now."]], ["Continue watching", "", ["It's the first row on Home.", "Tap In season to see where that episode is in its season.", "Hold it (app) or tap Remove from row (website) to take it off."]], ["Sections", "", ["Tap a bubble at the top: Shows, Movies, Videos, Saved from links, Photos.", "Tap All to see everything again."]], ["Search", "", ["Type in Search stuff.", "A show, an episode's name, a folder, or a word from a description all work."]], ["Subtitles", "", ["Nothing to do: MoCloud finds them by itself.", "No subtitles anywhere? The Pi writes them by listening (Whisper).", "See which ones have them: Settings, then Subtitles."]], ["Picture in picture", "app", ["Play a video.", "Swipe home. It keeps playing in a small window."]], ["Wrong poster", "app", ["Hold the show, or open it.", "Tap Wrong poster? and pick the right one."]]]], ["Ur stuff", [["Upload", "", ["App: tap +, then From Photos or From Files.", "Website: drop files anywhere, or tap Choose files.", "It goes up in the background. U get a notification when it's done."]], ["Download to watch offline", "", ["Hold a video (app) or tap Download under it (website).", "It downloads on ur other MoClouds too (the app and the website). Find them in Downloads.", "Remove a download and it's removed everywhere."]], ["Folders and moving", "", ["Tap Select.", "Tick wat u want.", "Tap Move and pick a folder (or make a new one)."]], ["Delete", "", ["Hold a video and tap Delete (app), or tap Delete under it (website).", "To delete a bunch: Select, tick them, Delete."]], ["Playlists", "", ["Hold a video, tap Add to playlist, pick one or make a new one.", "Open the playlist and hit Play or Shuffle.", "Saved links can Play on loop."]], ["Make one video out of many", "", ["Open a playlist.", "Tap Edit (app) or Select (website) and tick 2 or more.", "Tap Make one video. The sound's balanced so every part plays at the same volume."]], ["Info and File DNA", "", ["Hold a video and tap Info: where it came from, wat was made from it.", "Settings, then File DNA, for every file's fingerprint and history."]], ["Flash drive", "", ["Tap Flash drive on the storage switch (Pi / Flash drive).", "Type the pin.", "Any kind of file goes there, not just videos."]]]], ["Modes", [["Anything to MP4", "", ["Tap Anything to MP4 in Modes.", "Paste a link (YouTube, TikTok, Reels, anything), or tap Search YouTube, type anything and tap the video u want.", "Name it if u want, pick the Sound (Normal, Sped up, Slowed + reverb), and save.", "It lands in Saved from links."]], ["Save straight from another app", "app", ["In TikTok, YouTube, Instagram or Safari, tap Share.", "Pick MoCloud.", "Name it and tap Save to MoCloud. U don't have to open MoCloud."]], ["Speed up or slow down a saved video", "app", ["Hold the video.", "Tap Speed up or slow down.", "Pick Sped up or Slowed + reverb. A new copy shows up next to it."]], ["Karaoke", "", ["Tap Karaoke in Modes.", "Type in the search box: ur songs narrow down as u type. For a new song, tap Find new and pick it.", "Tap a language (English, Arabic...) to see only those songs, or change how they're sorted.", "Tap a line to jump there."]], ["Karaoke extras", "", ["The buttons over the slider: Vocals or Instrumental, Speed (the pitch stays the same), Repeat, English on or off, and Text size.", "Arabic in English letters? Tap عربي for Arabic letters. Arabic letters? Tap Arabizi. Habibi picks who the song's about.", "The buttons next to −10 and +10 jump back or ahead a line. Timing off? Tap ⋯, then Fix timing with MoTime (Undo's there too)."]], ["Games", "", ["Tap Games in Modes and start one.", "Everyone else opens MoCloud and joins with the code.", "Their phones are the controllers.", "Testing it on one device? Pick Test: u play every spot, then switch between every player and the board with the buttons up top."]], ["Play with someone far away", "", ["Start a game, then tap Play with someone far away in the lobby.", "Send them the link. It opens the game for them on MoCloud's website, no pass needed.", "They pick one device or two, a player and a name, then the tutorial (Skip's right there).", "Nobody has to be the board: tap Board up top to see the table."]], ["PC games", "", ["Tap PC games in Modes.", "Tap a game. Ur PC wakes up and its screen shows here.", "Play with the mouse, keyboard or touch. Tap Close the game when you're done."]], ["Sleep mode", "app", ["Tap Sleep mode in Modes.", "Pick the cartoons and how long.", "Tap Start. Tap the Sleep mode tile again to stop it."]], ["Qibla", "app", ["Tap Qibla in Modes. Precise Location has to be on.", "Hold the phone flat and turn till it goes green and buzzes.", "Want it near 99%? In the day, line the phone up with the sun or a shadow and tap the matching button."]], ["MoMaps", "", ["Tap MoMaps in Modes, type where ur going, tap Search, then the place.", "It shows the fastest way from where u are. If it has tolls, the no-toll way is right under it: tap Go on the one u want.", "Full screen shows ur next turn, speed, traffic (and wat's causing it), tolls and ETA. The line goes orange where traffic's slow, red where it's jammed. A green $ on the bar means tolls, a crossed-out $ means none: tap the tolls tile on full screen to switch. Miss a turn and it finds a new way in a couple of seconds.", "Sharing directions from Google Maps to MoCloud still works. Ur own voice plays at the start, before each turn and when u get there: record it in Developer settings, MoMaps voice. The speaker button on full screen turns it off."]], ["My projects", "", ["Tap My projects in Modes.", "Tap one: it opens right inside MoCloud.", "Back (or ← Projects) takes u back to the list."]]]], ["Extras", [["Morning picks", "", ["Every morning, athkaar shows up at the top of Home.", "On Fridays it's Surah Al-Kahf instead."]], ["Notifications", "", ["U get a ping when an upload's done or fails, or if the Pi goes down.", "Nothing while you're watching."]], ["Apple TV", "tv", ["Same library, same sections up top.", "Pick and play with the remote. Settings stay simple there."]], ["Developer settings", "", ["Settings, then Developer settings.", "Type the pass (or use Face ID).", "Location (a green light means it's allowed, with a button to ask), Smart Cleanup, where ur space is going, the speed test, MoTime, Install an update, End every game, and shutting the Pi off."]]]]];
   const ABOUT_TAG = { app: "App only", web: "Website only", tv: "Apple TV" };
   function aboutCard() {
     return navCard("About MoCloud", "Every feature and how to use it, in a few steps.", openAbout, false, "");
@@ -9306,7 +9365,7 @@ self.onmessage = async (e) => {
     finally { clearTimeout(t); }
     const data = await res.json().catch(() => ({}));
     if (res.status === 404 && !data.error) throw new Error("The Pi needs the newest MoCloud installer for games.");
-    if (!res.ok) throw Object.assign(new Error(data.error || `The Pi said no (${res.status}).`), { code: data.code, status: res.status });
+    if (!res.ok) throw Object.assign(new Error(data.error || `The Pi said no (${res.status}).`), { code: data.code, status: res.status, endedBy: data.endedBy });
     return data;
   }
 
@@ -9572,7 +9631,7 @@ self.onmessage = async (e) => {
     } else if (view) GM.testAs = "";
     GM.tt.root = null; GM.tt.key = ""; GM.tt.frame = null; GM.code = code; GM.view = view || null; GM.handIds = null; GM.c4Last = ""; GM.topLast = null; GM.handCount = null;
     GM.seen = view ? Math.max(0, ...view.events.map((e) => e.id)) : -1;
-    feedReset(); GM.peek = false; GM.lpFull = false; GM.dd.canvas = null; GM.dd.local = null;
+    feedReset(); GM.peek = false; GM.lpFull = false; GM.tut = null; GM.dd.canvas = null; GM.dd.local = null;
     if (view) for (const e of view.events.slice(-4)) GM.feed.push(e);  // the last few things that happened, straight away
     gpWake();
     $("gamePlay").hidden = false;
@@ -9593,10 +9652,24 @@ self.onmessage = async (e) => {
     if ($("settingsPage").hidden && $("gamesPage").hidden && !GUEST) document.body.classList.remove("no-scroll");
     if (!fromHistory && location.hash === "#game") history.back();
     if (!$("gamesPage").hidden) gamesLoad();
-    if (GUEST && GU.view) guestRender(el("h2", "", "U left the game"), el("p", "sub", "Ur spot's saved."),
+    const over = GM.over; GM.over = "";
+    if (GUEST && GU.view && over) guestRender(el("h2", "", "The game's over"),   // ended (not left): nothing to go back to
+      el("p", "sub", over === "?" ? "It ended, so this link doesn't work anymore. Ask for a new one to play again." : `${over === "u" ? "U" : over} ended the game. Ask for a new link to play again.`));
+    else if (GUEST && GU.view) guestRender(el("h2", "", "U left the game"), el("p", "sub", "Ur spot's saved."),
       guestBtn("Back to the game", "", () => { if (GUEST.board) GM.watchCode = GU.view.code; openGame(GU.view.code, null); }));
   }
   $("gpBack").addEventListener("click", () => closeGame());
+  {
+    const S = $("gpStage");
+    const lift = () => {
+      clearTimeout(GM.touchT);
+      if (!GM.touching) return;
+      GM.touching = false;
+      if (GM.redraw) { GM.redraw = false; setTimeout(() => renderGame(), 60); }   // after the tap's click goes through
+    };
+    S.addEventListener("pointerdown", () => { GM.touching = true; clearTimeout(GM.touchT); GM.touchT = setTimeout(lift, 1500); }, true);
+    for (const ev of ["pointerup", "pointercancel"]) S.addEventListener(ev, lift, true);
+  }
   window.addEventListener("popstate", () => {
     if (location.hash !== "#game") closeGame(true);
     if (location.hash !== "#games" && location.hash !== "#game") closeGames(true);
@@ -9612,9 +9685,11 @@ self.onmessage = async (e) => {
     GM.wake = null; keepAwake(true);
     gamePoll(); // straight back in after the phone was locked
   });
-  function gameGone(byMe) {
+  // The game's over for good (someone ended it, or it timed out): not the same as u leaving it.
+  function gameGone(byMe, endedBy) {
     if (!GM.code) return;
-    toast(byMe ? "Game ended." : "The game ended.");
+    GM.over = byMe ? "u" : endedBy || "?";
+    toast(byMe ? "Game ended." : endedBy ? `${endedBy} ended the game.` : "The game ended.");
     closeGame();
   }
   async function gamePoll() {
@@ -9629,7 +9704,7 @@ self.onmessage = async (e) => {
         gameUpdate(v);
       } catch (e) {
         if (gen !== GM.gen) return;
-        if (e.code === "NO_GAME") return gameGone();
+        if (e.code === "NO_GAME") return gameGone(false, e.endedBy);
         GM.offline = true; renderGameSub();
         await sleep(Math.min(5000, 800 * ++fails));
       }
@@ -9717,14 +9792,14 @@ self.onmessage = async (e) => {
   }
   for (const ev of ["pointermove", "pointerdown", "keydown", "touchstart"]) $("gamePlay").addEventListener(ev, gpWake, { passive: true });
   async function gameAct(action, extra = {}) {
-    if (GM.busy) return;
+    if (GM.busy) return toast("One sec, the Pi's still on ur last move.");
     GM.busy = true;
     try {
       const v = await gameApi(`/api/games/${GM.code}`, { device: gameDevice(), action, ...extra });
       if (v.ended) return gameGone(true);
       gameUpdate(v);
     } catch (e) {
-      if (e.code === "NO_GAME") return gameGone();
+      if (e.code === "NO_GAME") return gameGone(false, e.endedBy);
       toast(e.message, true);
     } finally { GM.busy = false; }
   }
@@ -9738,6 +9813,8 @@ self.onmessage = async (e) => {
   function renderGame() {
     const v = GM.view, S = $("gpStage");
     if (GM.dd && GM.dd.drawing) { GM.dd.pending = true; ddPaint(); return; }  // mid-stroke: the screen waits for the finger to lift
+    // Mid-tap: the screen waits for the finger to lift (redrawing under a finger loses the tap).
+    if (GM.touching && v && S.firstElementChild) { GM.redraw = true; return; }
     if (!v) { S.replaceChildren(gpCenter(el("p", "sub", "Loading..."))); return; }
     $("gpTitle").textContent = GAME_NAMES[v.game] || "Game";
     renderGameSub();
@@ -9753,7 +9830,7 @@ self.onmessage = async (e) => {
     $("gpTut").hidden = v.game === "c4";
     $("gpZoom").hidden = !(role === "board" || role === "watch") || v.phase === "lobby";
     S.style.zoom = $("gpZoom").hidden ? "" : String(GM.zoom);
-    const tut = v.paused ? renderTutorial(v, role) : null;
+    const tut = GM.tut != null ? renderTutorial(v, role) : null;   // just on this screen (nobody else sees it or waits)
     const main = v.phase === "lobby" ? gpCenter(renderLobby(v)) : v.game === "c4" ? renderC4(v)
       : v.game === "letters" ? renderLetters(v, role) : v.game === "life" ? renderLife(v, role) : v.game === "draw" ? renderDraw(v, role)
       : v.game === "tagteam" ? (v.state && v.state.ai ? ttAIView(v) : renderLiftoff(v, role))
@@ -9896,7 +9973,7 @@ self.onmessage = async (e) => {
     $("guestPage").hidden = false;
     guestRender(el("p", "sub", "Getting the game..."));
     try { GU.view = await gameApi(`/api/games/invite?device=${encodeURIComponent(gameDevice())}`); }
-    catch (e) { return guestRender(el("h2", "", "That link doesn't work anymore"), el("p", "sub", e.message)); }
+    catch (e) { return guestRender(el("h2", "", e.endedBy ? "The game's over" : "That link doesn't work anymore"), el("p", "sub", e.endedBy ? `${e.endedBy} ended the game. Ask for a new link to play again.` : e.message)); }
     const v = GU.view;
     if (GUEST.board && v.game !== "tagteam") return guestBoard();
     if ((v.mine || []).some((x) => x !== "board")) return openGame(v.code, v);   // came back: straight into the game
@@ -9962,6 +10039,29 @@ self.onmessage = async (e) => {
     }
     const first = v.seats.find((x) => x.seat !== "board" && !x.taken);
     if (first) { chosen = first.seat; setTimeout(() => grid.querySelector(`.seat-${first.seat}`)?.classList.add("mine"), 0); }
+    // Someone picks a spot while this is up (the host on their phone, another guest): it shows taken right away,
+    // and if it was the one picked here, the next free one's picked instead.
+    clearInterval(GU.live);
+    GU.live = setInterval(async () => {
+      if (!grid.isConnected) return clearInterval(GU.live);
+      try {
+        const nv = await gameApi(`/api/games/invite?device=${encodeURIComponent(gameDevice())}`);
+        if (!grid.isConnected) return;
+        GU.view = nv;
+        for (const st of nv.seats.filter((x) => x.seat !== "board")) {
+          const b = grid.querySelector(`.seat-${st.seat}`); if (!b) continue;
+          b.disabled = st.taken;
+          b.querySelector("span").textContent = st.name;
+          b.querySelector("small").textContent = st.taken ? "Taken" : "Tap to pick";
+          if (st.taken && chosen === st.seat) { chosen = null; b.classList.remove("mine"); }
+        }
+        if (!chosen) {
+          const free = nv.seats.find((x) => x.seat !== "board" && !x.taken);
+          if (free) { chosen = free.seat; grid.querySelector(`.seat-${free.seat}`)?.classList.add("mine"); }
+        }
+        if (nv.phase !== "lobby" && !(nv.mine || []).length) { clearInterval(GU.live); guestBoot(); }   // it started without them
+      } catch {}
+    }, 2000);
     const join = guestBtn("Join", "", async () => {
       if (!chosen) { err.textContent = "Pick a player first."; err.hidden = false; return; }
       const name = nameIn.value.trim();
@@ -9969,6 +10069,7 @@ self.onmessage = async (e) => {
       join.disabled = true; err.hidden = true;
       try {
         GU.view = await gameApi(`/api/games/invite`, { device: gameDevice(), action: "seat", seat: chosen, name, devices: guestOnePhone() ? 1 : 2 });
+        clearInterval(GU.live);
         nameHello(name);
         guestTutorial(0);
       } catch (e) {
@@ -9987,7 +10088,7 @@ self.onmessage = async (e) => {
   // Two versions: just their phone (everything's on it), or their phone plus a table screen.
   const GUEST_SCREEN = {
     one: {
-      uno: ["Top: everyone else, how many cards they've got, their points, and who's up next.", "Middle: the draw pile, the card on top, the colour in play and whose turn it is. Last moves, under it, shows the cards that just got played and who played them.", "Bottom: ur hand. Cards u can play stand up with a white outline.", "Wanna see the big table? Tap Board up top, then My screen to come back."],
+      uno: ["Top: everyone else, how many cards they've got, their points, and who's up next.", "Middle: the draw pile, the card on top, the colour in play and whose turn it is. Wat just happened shows in the chat up top.", "Bottom: ur hand. Cards u can play stand up with a white outline.", "Wanna see the big table? Tap Board up top, then My screen to come back."],
       letters: ["The category and whose turn it is are up top.", "The wheel shows which letters are still open. Locked ones are pushed down in the colour of whoever took them.", "Words so far lists every word said this card, and the players list shows who's still in.", "Tap Board up top any time for the big table."],
       life: ["Ur spinner, ur money and ur choices are right here.", "The little board shows everyone's car. Tap it to see the whole road.", "Everyone else's money is under it."],
       draw: ["The drawing shows up on ur phone while it's being drawn.", "The blanks, the timer, everyone's guesses and the scores are all on ur phone too."],
@@ -10006,8 +10107,7 @@ self.onmessage = async (e) => {
     const one = guestOnePhone();
     const screen = { t: one ? "Everything's on ur phone" : "Ur phone and the table", p: (one ? GUEST_SCREEN.one : GUEST_SCREEN.two)[v.game] || [] };
     const fix = (x) => {
-      x = x.replace(/\s*\((or on the iPad if it's the board|the Apple TV or an iPad|Apple TV or iPad|the Apple TV or iPad)\)/gi, "")
-        .replace(/\s*The game's paused while this is up for everyone(, so take ur time)?\./, "").trim();
+      x = x.replace(/\s*\((or on the iPad if it's the board|the Apple TV or an iPad|Apple TV or iPad|the Apple TV or iPad)\)/gi, "").trim();
       return one ? x.replace(/\bthe board\b/g, "the table").replace(/\bThe board\b/g, "The table")
         : x.replace(/\bthe board\b/g, "the table screen").replace(/\bThe board\b/g, "The table screen");
     };
@@ -10224,28 +10324,18 @@ self.onmessage = async (e) => {
     if (myTurn && st.pending) mid.append(el("div", "uh-warn", `+${st.pending} coming at u` + ((st.playable || []).length ? ". Throw ur own +2 or +4 on it, or take it" : "")));
     const ev = (v.events || []).filter((e) => e.kind !== "join").slice(-1)[0];
     if (ev && !one) mid.append(el("div", "uh-note", ev.text));
-    // Just their phone: the last few moves, newest first (the card and who played it, or who drew).
-    let moves = null;
-    if (one) {
-      moves = el("div", "uh-moves");
-      moves.append(el("div", "uh-moves-h", "Last moves"));
-      const list = el("div", "uh-mlist");
-      const recent = [...(st.moves || [])].reverse().slice(0, 6);
-      if (!recent.length) list.append(el("span", "uh-moves-none", ev ? ev.text : "Nothing played yet"));
-      for (const m of recent) {
-        const it = el("div", `uh-mv seat-${m.by}`);
-        const c = unoCard(m.card || null);
-        if (!m.card) c.append(el("b", "uh-mv-n", "+" + (m.n || 1)));
-        it.append(c);
-        if (m.card && m.card.c === "w" && m.color) { const dot = el("i", "uh-mv-col"); dot.style.background = COLOR_HEX[m.color]; it.append(dot); }
-        it.append(el("span", "", m.by === me ? "U" : seatName(m.by)));
-        list.append(it);
-      }
-      moves.append(list);
-    }
     // buttons
     const btns = el("div", "uh-btns");
-    const button = (label, cls, fn) => { const b = el("button", cls, label); b.type = "button"; b.addEventListener("click", fn); btns.append(b); return b; };
+    // Each one shows it's working the moment it's tapped (and can't be sent twice while the Pi answers).
+    const button = (label, cls, fn) => {
+      const b = el("button", cls, label); b.type = "button";
+      b.addEventListener("click", async () => {
+        if (b.disabled) return;
+        b.disabled = true; b.classList.add("busy");
+        try { await fn(); } finally { if (b.isConnected) { b.disabled = false; b.classList.remove("busy"); } }
+      });
+      btns.append(b); return b;
+    };
     if (st.pickColor) button("Pick a colour", "btn", async () => { const c = await pickColor(); if (c) gameAct("color", { color: c }); });
     else if (myTurn) {
       if (st.pending) {
@@ -10279,9 +10369,7 @@ self.onmessage = async (e) => {
       if (myTurn) meBar.append(el("small", "uh-tag", "ur turn"));
       root.append(meBar);
     }
-    root.append(opps, mid);
-    if (moves) root.append(moves);
-    root.append(btns);
+    root.append(opps, mid, btns);
     const foot = el("div", "");
     foot.append(el("div", "uh-count", `${cards.length} card${cards.length === 1 ? "" : "s"}` + (st.drawn !== null && st.drawn !== undefined && myTurn ? " · u can play the one u drew" : "")), hand);
     root.append(foot);
@@ -11151,12 +11239,12 @@ self.onmessage = async (e) => {
   function ddTutorial(v) {
     const R = v.rules || {};
     return [
-      { t: "How Pictionary works", p: ["Everyone takes turns drawing. Everyone else guesses wat it is.", `Each player draws ${R.rounds || 1} time${(R.rounds || 1) === 1 ? "" : "s"}. Most points at the end wins. The game's paused while this is up.`] },
+      { t: "How Pictionary works", p: ["Everyone takes turns drawing. Everyone else guesses wat it is.", `Each player draws ${R.rounds || 1} time${(R.rounds || 1) === 1 ? "" : "s"}. Most points at the end wins.`] },
       { t: "Drawing", p: ["When it's ur turn, pick one of 3 words on ur phone (u get 15 seconds), then draw it with ur finger.", "No letters or numbers in the drawing. Pick colours, brush sizes, the eraser, Undo and Clear under the drawing."] },
       { t: "The board", p: ["Every line u draw shows up on the board (and everyone's phone) as u draw it.", "The board shows the blanks for the word, the timer, everyone's guesses and the scores."] },
       { t: "Guessing", p: ["Type ur guess on ur phone. Wrong guesses show up for everyone. Right ones stay hidden so nobody copies u.", "One letter off? It tells u ur so close."] },
       { t: "Points", p: [`Guess it faster, get more points (up to 100). The drawer gets 20 for everyone who gets it. There's ${R.seconds || 80} seconds per drawing.`, "A letter or two of the word shows up when time's running out."] },
-      { t: "That's it", p: ["Close this and the game picks up right where it left off. The clock button shows everything that happened."] },
+      { t: "That's it", p: ["Close this to get back to the game. The clock button shows everything that happened."] },
     ];
   }
 
@@ -11214,7 +11302,7 @@ self.onmessage = async (e) => {
   // The clock and the signal lights tick on their own between updates from the Pi.
   function loTickStart(v) {
     const st = v.state, L = GM.lo;
-    L.until = st.stage === "go" && !v.paused ? performance.now() + st.left * 1000 : 0;
+    L.until = st.stage === "go" ? performance.now() + st.left * 1000 : 0;
     L.still = st.left;
     if (!L.tick) L.tick = setInterval(loTick, 100);
     loTick();
@@ -11422,9 +11510,9 @@ self.onmessage = async (e) => {
     T.root.classList.toggle("tall-head", st.stage !== "go");
     const key = show ? `${(v.tt || {}).gid}|${st.round}|${job}` : "";
     if (key !== T.key) { T.key = key; if (key) ttLoad(key); else { T.wrap.querySelectorAll("iframe").forEach((f) => f.remove()); T.frame = null; } }
-    const locked = job === "panel" && (st.stage !== "go" || !!v.paused);
+    const locked = job === "panel" && st.stage !== "go";
     T.block.hidden = !locked;
-    T.block.textContent = v.paused ? "Paused for the tutorial" : "";
+    T.block.textContent = "";
     setTimeout(() => loTickStart(v), 0);
     return T.root;
   }
@@ -11610,7 +11698,7 @@ self.onmessage = async (e) => {
     } else {
       w.append(loTop(v));
       if (sw) w.append(tools);
-      if (st.panel && st.stage !== "over") body.append(loPanel(st, st.role === "pilot" && st.stage === "go" && !v.paused));
+      if (st.panel && st.stage !== "over") body.append(loPanel(st, st.role === "pilot" && st.stage === "go"));
       body.dataset.keep = "lo-panel";
     }
     w.append(body);
@@ -11618,7 +11706,7 @@ self.onmessage = async (e) => {
     return w;
   }
 
-  // ----- the tutorial (pauses the game for everyone; it's big on the board) -----
+  // ----- the tutorial (just on the screen that opened it: nobody else sees it or waits) -----
   function tutSteps(v) {
     if (v.game === "tagteam") return v.guide || [{ t: "Tag Team", p: ["Get everything on the panel done before the clock runs out."] }];
     if (v.game === "letters") return llTutorial(v);
@@ -11626,7 +11714,7 @@ self.onmessage = async (e) => {
     if (v.game === "draw") return ddTutorial(v);
     const R = v.rules || {};
     const steps = [
-      { t: "How Uno works", p: ["Everyone starts with 7 cards. Get rid of all of urs first and u win.", "Every round is its own game: the winner scores points for every card the others are still holding.", "The game's paused while this is up for everyone, so take ur time."] },
+      { t: "How Uno works", p: ["Everyone starts with 7 cards. Get rid of all of urs first and u win.", "Every round is its own game: the winner scores points for every card the others are still holding."] },
       { t: "Ur hand", img: "hand", p: ["Ur cards are at the bottom of ur phone, sorted by colour. Nobody else can see them, not even the board.", "Got a lot? They squeeze together so they all fit."] },
       { t: "Wat u can play", img: "playable", p: ["The cards u can play right now stand up with a white outline. The others are dimmed.", "Tap a card to play it."] },
       { t: "Matching the pile", img: "wild", p: ["The big card in the middle is the top of the pile, and the line under it says the colour in play.", "Play a card with the same colour, the same number, or the same symbol. A Wild goes on anything."] },
@@ -11640,13 +11728,13 @@ self.onmessage = async (e) => {
     const on = UNO_HOUSE.filter(([k]) => R[k]);
     if (on.length) steps.push({ t: "House rules in this game", p: on.map(([, t, d]) => `${t}: ${d}`) });
     steps.push({ t: "The board and the history", p: ["The board (the Apple TV or an iPad) shows the whole table: everyone's card count, the pile, whose turn it is, and every move as it happens.", "Arguing about wat happened? The clock button up top shows every move made this game."] });
-    steps.push({ t: "That's it", p: ["Close this and the game picks up right where it left off. Good luck gang."] });
+    steps.push({ t: "That's it", p: ["Close this to get back to the game. Good luck gang."] });
     return steps;
   }
   function llTutorial(v) {
     const R = v.rules || {};
     return [
-      { t: "How Tapple works", p: ["A category comes up on the board, like \"Things in a kitchen\".", `On ur turn, name something in it that starts with an open letter, before the ${R.seconds || 10}-second timer runs out.`, "The game's paused while this is up for everyone."] },
+      { t: "How Tapple works", p: ["A category comes up on the board, like \"Things in a kitchen\".", `On ur turn, name something in it that starts with an open letter, before the ${R.seconds || 10}-second timer runs out.`] },
       R.say
         ? { t: "Ur turn", p: ["Say ur word out loud so everyone hears it, then tap its first letter on the wheel on ur phone (or on the iPad if it's the board).", "That letter locks for the rest of the card, and the timer starts over for the next player."] }
         : { t: "Ur turn", p: ["Type ur word on ur phone and tap Lock it. Tapping a letter on the wheel starts ur word with it.", "Its first letter locks for the rest of the card, and the timer starts over for the next player."] },
@@ -11654,12 +11742,12 @@ self.onmessage = async (e) => {
       { t: "Running out", p: ["Timer hits 0 before u lock one? You're out of this card. Can't think of anything? Tap I got nothing.", "Out players still watch, and can still say ur buggin."] },
       { t: "Ur buggin", p: ["Someone said something made up, or not in the category? Tap Ur buggin right after they lock it (u get 6 seconds).", "If half the other players agree, the word's thrown out, its letter pops back up, and that player's out."] },
       { t: "Winning", p: [`Last one standing wins the card. First to ${R.cards || 3} cards u him fr.`, "Every finished game's saved on the Games page for 3 days. The clock button up top shows every word said."] },
-      { t: "That's it", p: ["Close this and the timer picks up right where it stopped. Good luck gang."] },
+      { t: "That's it", p: ["Close this to get back to the game. Good luck gang."] },
     ];
   }
   function lpTutorial() {
     return [
-      { t: "How Life works", p: ["Everyone drives a car down the same road, from Start to Retire.", "Whoever retires with the most money wins. The game's paused while this is up for everyone."] },
+      { t: "How Life works", p: ["Everyone drives a car down the same road, from Start to Retire.", "Whoever retires with the most money wins."] },
       { t: "Spinning", p: ["On ur turn, the spinner shows up on ur phone. Tap it to spin, and it lands on 1 to 10.", "The board (Apple TV or iPad) spins too, then ur car drives that many spaces down the road."] },
       { t: "Ur car", p: ["Every car has ur name on it. U ride in the front as a blue peg. Get married and ur spouse joins u, and every kid gets a peg in the back.", "The orange spaces are life cards: money in or out. The latest one shows up in the middle of the board."] },
       { t: "College or work", p: ["Ur first move: pick college or straight to work.", "College is a longer road and $100k in loans, but the best-paying jobs need a degree. Straight to work: no debt, u start earning sooner."] },
@@ -11668,33 +11756,32 @@ self.onmessage = async (e) => {
       { t: "Family or hustle", p: ["At the Crossroads, pick the Family road (babies, small costs) or the Hustle road (shorter, huge swings both ways).", "Every kid is worth $50k at the end."] },
       { t: "Houses and loans", p: ["Buy a house at a house stop. At the end it sells for more if u spin 6 or higher.", "Run out of cash and the bank lends u $50k at a time. Each loan costs $60k at the end."] },
       { t: "Retiring", p: ["The end of the road is Retire. First to get there gets $100k, then $75k, $50k, $25k.", "When everyone's retired: houses sold, kids counted, loans paid back. Richest u him fr."] },
-      { t: "That's it", p: ["Close this and the game picks up right where it left off. The clock button shows every move."] },
+      { t: "That's it", p: ["Close this to get back to the game. The clock button shows every move."] },
     ];
   }
   function renderTutorial(v, role) {
-    const steps = tutSteps(v), i = Math.min(v.paused.step || 0, steps.length - 1), st = steps[i];
+    const steps = tutSteps(v), i = Math.max(0, Math.min(GM.tut || 0, steps.length - 1)), st = steps[i];
     const box = el("div", "tut");
     const c = el("div", "tut-card");
-    c.append(el("div", "tut-step", `Tutorial · ${i + 1} of ${steps.length} · game paused`), el("h2", "", st.t));
+    c.append(el("div", "tut-step", `Tutorial · ${i + 1} of ${steps.length}`), el("h2", "", st.t));
     if (st.img && TUT_IMG[st.img]) { const f = el("div", "tut-img"); const im = document.createElement("img"); im.src = TUT_IMG[st.img]; im.alt = ""; f.append(im); c.append(f); }
     st.p.forEach((t) => c.append(el("p", "", t)));
     const dots = el("div", "tut-dots"); steps.forEach((_, k) => dots.append(el("i", k === i ? "on" : ""))); c.append(dots);
     const acts = el("div", "tut-acts");
-    if ((v.mine || []).length) {
-      const back = el("button", "btn ghost", "Back"); back.type = "button"; back.disabled = i === 0;
-      back.addEventListener("click", () => gameAct("tutorial", { step: i - 1 }));
-      const close = el("button", "btn ghost", "Close"); close.type = "button";
-      close.addEventListener("click", () => gameAct("tutorialEnd"));
-      const next = el("button", "btn", i === steps.length - 1 ? "Let's play" : "Next"); next.type = "button";
-      next.addEventListener("click", () => gameAct(i === steps.length - 1 ? "tutorialEnd" : "tutorial", { step: i + 1 }));
-      acts.append(back, close, next);
-      setTimeout(() => next.focus(), 0);
-    } else acts.append(el("span", "sub", "Someone in the game moves this along."));
+    const go = (n) => { GM.tut = n; renderGame(); };
+    const back = el("button", "btn ghost", "Back"); back.type = "button"; back.disabled = i === 0;
+    back.addEventListener("click", () => go(i - 1));
+    const close = el("button", "btn ghost", "Close"); close.type = "button";
+    close.addEventListener("click", () => go(null));
+    const next = el("button", "btn", i === steps.length - 1 ? "Let's play" : "Next"); next.type = "button";
+    next.addEventListener("click", () => go(i === steps.length - 1 ? null : i + 1));
+    acts.append(back, close, next);
+    setTimeout(() => next.focus(), 0);
     c.append(acts);
     box.append(c);
     return box;
   }
-  $("gpTut").addEventListener("click", () => { if (GM.view && !GM.view.paused) gameAct("tutorial", { step: 0 }); });
+  $("gpTut").addEventListener("click", () => { if (GM.view && GM.tut == null) { GM.tut = 0; renderGame(); } });   // only on this screen
 
   // ----- every move this game (for when y'all argue about wat happened) -----
   $("gpLog").addEventListener("click", async () => {
