@@ -1944,6 +1944,8 @@
   .trip-bar, .trip-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; color: var(--paper); }
   .trip-bar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; text-align: left; font: inherit; }
   .trip-open { display: flex; align-items: center; gap: inherit; flex: 1; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .trip-go { font: inherit; font-weight: 800; font-size: 15px; border: 0; border-radius: 10px; padding: 8px 14px; background: var(--accent); color: var(--ink); cursor: pointer; white-space: nowrap; }
+  .trip-go:disabled { opacity: .6; }
   .trip-btns { flex: none; display: flex; align-items: center; gap: 12px; }   /* far enough apart to hit the right one */
   .trip-sign { flex: none; width: 42px; height: 42px; border-radius: 10px; background: var(--accent); color: var(--ink); display: grid; place-items: center; }
   .trip-sign svg { width: 26px; height: 26px; }
@@ -6809,11 +6811,13 @@ self.onmessage = async (e) => {
   const tripPhone = matchMedia("(pointer: coarse)").matches;
   function tripHead(t) {
     if (t.state === "arrived") return `U made it to ${t.name}`;
+    if (t.state === "atStop" && t.atStop) return `U're at ${t.atStop.name}`;
     if (t.rerouting) return "Finding u a new way...";
     if (t.state === "waiting" || !t.next) return `MoMaps to ${t.name}`;
     return (t.next.in != null ? tripDist(t.next.in) + " · " : "") + t.next.text;
   }
   const tripSub = (t) => t.state === "arrived" ? "U made it. MoMaps clears it in a minute."
+    : t.state === "atStop" ? `Stop ${(t.atStop || {}).n || ""}. Hit Continue when u're ready for the next leg.`
     : t.state === "waiting" ? (t.problem || (trip.watch != null ? "Getting where u are..." : "Waiting for GPS from the phone that started it..."))
     : t.stop ? `Stop: ${t.stop.name} · ${tripDist(t.stop.left)}${t.stop.count > 1 ? ` (${t.stop.count} stops left)` : ""}` : `To ${t.name}`;
   const tripEsc = (x) => String(x == null ? "" : x).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -6857,6 +6861,17 @@ self.onmessage = async (e) => {
     const dlgs = [...document.querySelectorAll("dialog[open]")];
     return dlgs.length ? dlgs[dlgs.length - 1] : document.body;
   }
+  // At a stop: Continue starts the next leg (to the next stop, or the end).
+  async function tripContinue(btn) {
+    if (btn) { btn.disabled = true; btn.textContent = "Getting the next leg..."; }
+    try {
+      const r = await fetch(BACKENDS.pi.url + "/api/trip/continue", { method: "POST", headers: { "X-Passcode": piPasscode(), "Content-Type": "application/json" }, body: "{}" });
+      const d = await r.json();
+      if (d.trip !== undefined) { trip.t = d.trip; tripRender(); }
+    } catch { toast("Couldn't reach the Pi. Try again.", true); }
+    if (btn) btn.disabled = false;
+  }
+  const tripNextName = (t) => ((t.stops || [])[0] || { name: t.name }).name;
   function tripRender() {
     const t = trip.t;
     voiceCheck(t);
@@ -6895,13 +6910,17 @@ self.onmessage = async (e) => {
         trip.box.innerHTML = `<div class="trip-bar"><button type="button" class="trip-open">
           <span class="trip-sign"></span><span class="trip-txt"><b></b><span></span></span>
           <span class="trip-eta"><b></b><span></span><i class="trip-toll" hidden></i></span></button>
-          <span class="trip-btns"><button type="button" class="trip-min" aria-label="Move MoMaps to an empty spot" title="Find an empty spot" data-auto>${TRIP_AUTO}</button>
+          <span class="trip-btns"><button type="button" class="trip-go" data-go hidden>Continue</button><button type="button" class="trip-min" aria-label="Move MoMaps to an empty spot" title="Find an empty spot" data-auto>${TRIP_AUTO}</button>
           <button type="button" class="trip-min" aria-label="Shrink MoMaps to a dot" title="Shrink to a dot" data-mini>${TRIP_MINUS}</button></span></div>`;
         bar = trip.box.querySelector(".trip-bar");
         bar.querySelector(".trip-open").onclick = () => { if (!trip.box._dragged) { trip.open = true; tripRender(); tripPlace(true); } };
         bar.querySelector("[data-mini]").onclick = () => { if (!trip.box._dragged) tripMini(true); };
         bar.querySelector("[data-auto]").onclick = () => { if (!trip.box._dragged) { tripSaved(trip.ctx, null); tripPlace(true); } };   // got it wrong: look again
+        bar.querySelector("[data-go]").onclick = (e) => { if (!trip.box._dragged) tripContinue(e.currentTarget); };
       }
+      const go = bar.querySelector("[data-go]"), atStop = t.state === "atStop";
+      if (go.hidden === atStop) { go.hidden = !atStop; tripPlace(true); }
+      if (atStop && !go.disabled) { go.textContent = "Continue"; go.setAttribute("aria-label", `Continue to ${tripNextName(t)}`); }
       bar.querySelector(".trip-open").setAttribute("aria-label", `MoMaps to ${t.name}. Open the map.`);
       if (bar._sign !== sign) { bar.querySelector(".trip-sign").innerHTML = sign; bar._sign = sign; }
       bar.querySelector(".trip-txt b").textContent = tripHead(t);
@@ -6926,13 +6945,14 @@ self.onmessage = async (e) => {
         <button type="button" class="trip-min" data-small aria-label="Make it small">${TRIP_UP}</button>
         <button type="button" class="trip-min" data-mini aria-label="Shrink MoMaps to a dot">${TRIP_MINUS}</button></div>
         <iframe class="trip-map" title="MoMaps" allow="geolocation 'none'"></iframe><div class="trip-prob" hidden></div>
-        <div class="trip-foot"><span></span><span class="acts"><button type="button" class="trip-auto">Full screen</button><button type="button" class="trip-auto" data-auto>Auto spot</button><button type="button" class="trip-end">End</button></span></div></div>`;
+        <div class="trip-foot"><span></span><span class="acts"><button type="button" class="trip-go" data-go hidden>Continue</button><button type="button" class="trip-auto">Full screen</button><button type="button" class="trip-auto" data-auto>Auto spot</button><button type="button" class="trip-end">End</button></span></div></div>`;
       trip.box.querySelector(".trip-map").src = url;
       trip.box.querySelector("[data-small]").onclick = () => { trip.open = false; tripRender(); tripPlace(true); };
       trip.box.querySelector("[data-mini]").onclick = () => tripMini(true);
       trip.box.querySelector(".trip-auto[data-auto]").onclick = () => { tripSaved(trip.ctx, null); tripPlace(true); };
       trip.box.querySelector(".trip-auto:not([data-auto])").onclick = tripFull;
       trip.box.querySelector(".trip-end").onclick = tripEnd;
+      trip.box.querySelector(".trip-foot [data-go]").onclick = (e) => tripContinue(e.currentTarget);
       fresh = true;
     }
     const c = trip.box.querySelector(".trip-card");
@@ -7187,7 +7207,8 @@ self.onmessage = async (e) => {
     // The browser only says something when u move: the last spot's sent again every 2 seconds so the ETA stays live.
     trip.again = setInterval(() => { if (trip.last && Date.now() - trip.sentAt > 2000) tripSend(trip.last); if (trip.last) tripOffline(trip.last); }, 2000);
     trip.watch = navigator.geolocation.watchPosition((p) => { trip.last = p; tripSend(p); tripOffline(p); }, (e) => {
-      if (e.code === 1) { tripFollow(false); toast("MoMaps needs ur location. Allow it in the browser's settings.", true); }
+      // This browser won't share where it is (a car screen): ur phone's MoCloud app sends it instead, while it's open.
+      if (e.code === 1) { tripFollow(false); toast("This browser won't share its location, so MoMaps uses ur phone's. Keep the MoCloud app open on it."); }
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   }
   async function tripSend(p) {
@@ -7201,6 +7222,7 @@ self.onmessage = async (e) => {
       if (r.ok) {
         const d = await r.json();
         if (d.follower === false) trip.yieldTill = Date.now() + 6000;   // the app (or another device) is sending: it counts, this one checks back
+        trip.fixAt = Math.min(Date.now(), p.timestamp || Date.now());   // when it was at this spot (the voice times turns from this)
         trip.t = d.trip || null; trip.good = Date.now(); tripKeepRoute();
         if (!trip.t) tripFollow(false);
         tripRender();
@@ -7227,7 +7249,7 @@ self.onmessage = async (e) => {
   }
   function tripOffline(p) {
     const t = trip.t, r = trip.route;
-    if (!t || !r || r.rid !== t.rid || Date.now() - (trip.good || Date.now()) < 3500 || Date.now() < (trip.yieldTill || 0) || t.state === "arrived") return;
+    if (!t || !r || r.rid !== t.rid || Date.now() - (trip.good || Date.now()) < 3500 || Date.now() < (trip.yieldTill || 0) || t.state === "arrived" || t.state === "atStop") return;
     const c = p.coords, here = [c.latitude, c.longitude];
     const kx = 111320 * Math.cos(here[0] * Math.PI / 180), ky = 110540;
     let best = null;
@@ -7241,19 +7263,22 @@ self.onmessage = async (e) => {
       if (!best || score < best.score) best = { dist, along, score };
     }
     if (!best) return;
-    const along = best.along, left = Math.max(0, r.len - along), steps = r.steps;
+    const stop = (r.via || [])[0];   // the stop this leg ends at: no further along than it
+    const along = stop ? Math.min(best.along, stop.end) : best.along, left = Math.max(0, r.len - along), steps = r.steps;
     const end = r.pts[r.pts.length - 1];
     const arrived = left < 30 || Math.hypot((end[1] - here[1]) * kx, (end[0] - here[0]) * ky) < 35;
     let i = steps.findIndex((x) => x.end > along + 1); if (i < 0) i = steps.length - 1;
     const nx = steps[i + 1], af = steps[i + 2];
     const turnId = (x) => x.pt ? `${x.man || "STEP"}@${x.pt[0].toFixed(4)},${x.pt[1].toFixed(4)}` : null;
-    const next = arrived || !nx ? { text: `U'll be at ${t.name}`, man: "ARRIVE", in: Math.round(left), id: "ARRIVE" }
+    const legEnd = stop && steps[i].end >= stop.end - 1;   // the next thing is the stop itself
+    const next = legEnd ? { text: `U'll be at ${stop.name}`, man: "ARRIVE", in: Math.round(Math.max(0, stop.end - along)), id: "STOP", stop: true }
+      : arrived || !nx ? { text: `U'll be at ${t.name}`, man: "ARRIVE", in: Math.round(left), id: "ARRIVE" }
       : { text: nx.text, man: nx.man, in: Math.round(Math.max(0, steps[i].end - along)), id: turnId(nx) };
-    const then = !arrived && nx && af && nx.end - steps[i].end < 150 ? { text: af.text, man: af.man } : null;
+    const then = !arrived && !legEnd && nx && af && nx.end - steps[i].end < 150 ? { text: af.text, man: af.man } : null;
     const secs = r.len > 0 ? r.dur * left / r.len : 0;
-    const via = (r.via || []).filter((v) => v.end - 40 > along);
+    const via = r.via || [];
     const local = Object.assign({}, t, {
-      state: arrived ? "arrived" : "going", next, then, left: Math.round(left), secs: Math.round(secs), eta: Math.round(Date.now() / 1000 + secs),
+      state: arrived && !stop ? "arrived" : "going", next, then, left: Math.round(left), secs: Math.round(secs), eta: Math.round(Date.now() / 1000 + secs),
       along: Math.round(along * 10) / 10, off: Math.round(best.dist), rerouting: false, offline: true,
       stop: via.length ? { name: via[0].name, left: Math.round(via[0].end - along), secs: Math.round(secs * (via[0].end - along) / (left || 1)), count: via.length } : null,
       pos: { lat: here[0], lng: here[1], heading: c.heading == null || isNaN(c.heading) ? null : c.heading, speed: c.speed == null || isNaN(c.speed) ? null : c.speed, at: Date.now() / 1000 },
@@ -7296,22 +7321,37 @@ self.onmessage = async (e) => {
     if (!t) return;
     const full = el("button", "btn small", "Full screen"); full.type = "button"; full.onclick = () => { closeMoMaps(); tripFull(); };
     const end = el("button", "btn ghost small", "End"); end.type = "button"; end.onclick = async () => { await tripEnd(); mmNow(); };
-    box.replaceChildren(el("b", "", t.state === "arrived" ? `U made it to ${t.name}` : `On ur way to ${t.name}`), full, end);
+    const parts = [el("b", "", t.state === "arrived" ? `U made it to ${t.name}` : t.state === "atStop" && t.atStop ? `U're at ${t.atStop.name}` : `On ur way to ${t.name}`)];
+    if (t.state === "atStop") { const go = el("button", "btn small", "Continue"); go.type = "button"; go.onclick = () => tripContinue(go); parts.push(go); }
+    box.replaceChildren(...parts, full, end);
   }
-  // Where u are. Some browsers (car screens especially) never answer when asked: so it never waits more than
-  // a few seconds, and uses the last spot it had (this browser's, or the one MoMaps' trip last got) instead.
-  function mmWhere(wait) {
+  // Where u are. Some browsers (car screens especially) never answer, or never let a site ask. Then it's where
+  // ur phone is: the MoCloud app tells the Pi while it's open. It never waits more than a few seconds, and after
+  // that uses the last spot it had (this browser's, or the one MoMaps' trip last got).
+  async function mmPhoneHere() {
+    try {
+      const r = await fetch(BACKENDS.pi.url + "/api/trip/here", { headers: { "X-Passcode": piPasscode() }, cache: "no-store" });
+      const d = await r.json();
+      return d.here ? { lat: d.here.lat, lon: d.here.lon, phone: true } : null;
+    } catch { return null; }
+  }
+  async function mmWhere(wait) {
     const last = () => mm.here || (trip.last ? { lat: trip.last.coords.latitude, lon: trip.last.coords.longitude } : null)
       || (trip.t && trip.t.pos ? { lat: trip.t.pos.lat, lon: trip.t.pos.lng } : null);
-    if (!("geolocation" in navigator)) return Promise.resolve(last());
-    if (!mm.asking) {
-      mm.asking = new Promise((done) => {
-        navigator.geolocation.getCurrentPosition((p) => { mm.here = { lat: p.coords.latitude, lon: p.coords.longitude }; done(mm.here); },
-          (e) => { if (e.code === 1) mmNote("MoMaps needs ur location. Allow it in the browser's settings.", true); done(null); },
-          { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 });
-      }).finally(() => { mm.asking = null; });
+    let own = null;
+    if ("geolocation" in navigator) {
+      if (!mm.asking) {
+        mm.asking = new Promise((done) => {
+          navigator.geolocation.getCurrentPosition((p) => { mm.here = { lat: p.coords.latitude, lon: p.coords.longitude }; done(mm.here); },
+            () => done(null), { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 });
+        }).finally(() => { mm.asking = null; });
+      }
+      own = await Promise.race([mm.asking, new Promise((r) => setTimeout(r, Math.min(wait || 4000, 4000)))]);
     }
-    return Promise.race([mm.asking, new Promise((r) => setTimeout(r, wait || 4000))]).then((h) => h || last());
+    if (own) return own;
+    const ph = await mmPhoneHere();
+    if (ph) { mm.here = ph; return ph; }
+    return last();
   }
   async function mmPost(path, body) {
     const stop = new AbortController(), t = setTimeout(() => stop.abort(), 30000);   // never "Searching..." forever
@@ -7443,7 +7483,7 @@ self.onmessage = async (e) => {
     box.replaceChildren(el("h3", "", p.name), el("span", "", "Finding the fastest way from where u are..."));
     try {
       const here = await mmWhere(8000);
-      if (!here) throw new Error("This browser won't say where u are, so MoMaps can't find the way from here. Allow location for this site, or start it from the app.");
+      if (!here) throw new Error("Couldn't get where u are. Open the MoCloud app on ur phone (it tells MoMaps where u are while it's open), or allow location for this site.");
       const d = await mmPost("/api/trip/preview", { lat: here.lat, lon: here.lon, place: p });
       mmWays(p, d.ways || []);
     } catch (err) {
@@ -7499,41 +7539,81 @@ self.onmessage = async (e) => {
     voice.loaded = Date.now();
     try { await voiceFetch(); } finally { voice.ready = true; voiceTick(); }   // a trip that started while they loaded: "starting the trip" plays now
   }
+  // The clips live in this browser (its own storage, a few KB each): every visit uses them straight from there.
+  // The Pi's only asked which ones changed, and only a new or re-recorded one is downloaded. No signal: the ones
+  // already here still play.
+  const VOICE_CACHE = "momaps-voice", VOICE_LIST = "mocloud-momaps-voice-list";
+  const voiceKey = (kind, v) => `https://momaps.voice/${kind}?v=${v}`;   // just a name for it in this browser's storage
   async function voiceFetch() {
+    let list = null;
+    try { list = JSON.parse(localStorage.getItem(VOICE_LIST) || "null"); } catch {}
     try {
       const r = await fetch(BACKENDS.pi.url + "/api/trip/voice", { headers: { "X-Passcode": piPasscode() }, cache: "no-store" });
-      if (!r.ok) return;
-      const d = await r.json();
-      if (d.ver === voice.ver) return;
-      voice.ver = d.ver;
-      const urls = {};
-      for (const k of d.kinds || []) {
-        if (!k.clip) continue;
-        try {
-          const a = await fetch(`${BACKENDS.pi.url}/api/trip/voice/${k.kind}.m4a?v=${k.clip.v}`, { headers: { "X-Passcode": piPasscode() } });
-          if (a.ok) urls[k.kind] = URL.createObjectURL(await a.blob());
-        } catch {}
-      }
-      Object.values(voice.urls).forEach((u) => URL.revokeObjectURL(u));
-      voice.urls = urls; voice.lens = {};
-      for (const [k, u] of Object.entries(urls)) {   // how long each one is (so it starts early enough to finish before the turn)
-        const m = new Audio(); m.preload = "metadata"; m.onloadedmetadata = () => { if (isFinite(m.duration)) voice.lens[k] = m.duration; }; m.src = u;
+      if (r.ok) {
+        const d = await r.json();
+        list = { ver: d.ver, clips: (d.kinds || []).filter((k) => k.clip).map((k) => ({ kind: k.kind, v: k.clip.v })) };
       }
     } catch {}
+    if (!list || list.ver === voice.ver) return;
+    let box = null;
+    try { box = await caches.open(VOICE_CACHE); } catch {}
+    const urls = {};
+    for (const c of list.clips) {
+      try {
+        const key = voiceKey(c.kind, c.v);
+        let res = box && await box.match(key);
+        if (!res) {   // new or re-recorded: downloaded once, then kept here
+          const a = await fetch(`${BACKENDS.pi.url}/api/trip/voice/${c.kind}.m4a?v=${c.v}`, { headers: { "X-Passcode": piPasscode() } });
+          if (!a.ok) continue;
+          res = a;
+          if (box) await box.put(key, a.clone());
+        }
+        urls[c.kind] = URL.createObjectURL(await res.blob());
+      } catch {}
+    }
+    if (box) {   // old versions and deleted ones go
+      try {
+        const keep = new Set(list.clips.map((c) => voiceKey(c.kind, c.v)));
+        for (const req of await box.keys()) if (!keep.has(req.url)) await box.delete(req);
+      } catch {}
+    }
+    try { localStorage.setItem(VOICE_LIST, JSON.stringify(list)); } catch {}
+    voice.ver = list.ver;
+    Object.values(voice.urls).forEach((u) => URL.revokeObjectURL(u));
+    voice.urls = urls; voice.lens = {};
+    // Each clip gets its own player, loaded ahead of time, so it starts the instant it's needed (and how long
+    // each one is: so it starts early enough to finish before the turn).
+    voice.els = {};
+    for (const [k, u] of Object.entries(urls)) {
+      const m = new Audio(); m.preload = "auto"; m.onended = voiceNext;
+      m.onloadedmetadata = () => { if (isFinite(m.duration)) voice.lens[k] = m.duration; };
+      m.src = u; m.load();
+      voice.els[k] = m;
+    }
+    if (voice.unlocked) voiceUnlockAll();
   }
   setTimeout(() => voiceLoad(), 3000);   // MoMaps' voice clips, ready before any trip starts
   // Browsers only let a page play sound after a tap: the first tap anywhere gets the voice's player ready, so the
   // clips play later on their own (starting the trip, every turn, u made it) even with no tap right then.
   const VOICE_SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+  function voiceUnlockAll() {   // each clip's player plays a moment muted, so the browser lets it play later on its own
+    for (const m of Object.values(voice.els || {})) {
+      if (m.dataset.ok) continue;
+      m.muted = true;
+      m.play().then(() => { m.pause(); m.currentTime = 0; m.muted = false; m.dataset.ok = "1"; }).catch(() => { m.muted = false; });
+    }
+  }
   function voiceUnlock() {
-    if (voice.audio) return;
+    voiceUnlockAll();
+    if (voice.unlocked) return;
+    voice.unlocked = true;
     voice.audio = new Audio(); voice.audio.src = VOICE_SILENT;
-    voice.audio.play().then(() => voice.audio.pause()).catch(() => { voice.audio = null; });
-    voice.audio && (voice.audio.onended = voiceNext);
+    voice.audio.play().then(() => voice.audio.pause()).catch(() => {});
+    voice.audio.onended = voiceNext;
   }
   ["pointerdown", "keydown", "touchend"].forEach((ev) => addEventListener(ev, voiceUnlock, { capture: true, passive: true }));
   const voiceLen = (k) => voice.lens[k] || 1.5;
-  const voicePlaying = () => !!(voice.audio && !voice.audio.paused && !voice.audio.ended && voice.audio.src !== VOICE_SILENT);
+  const voicePlaying = () => !!(voice.audio && !voice.audio.paused && !voice.audio.ended && !voice.audio.muted && voice.audio.src !== VOICE_SILENT);
   function voiceSay(kind) {   // after the one playing, if there is one. Nothing when the voice is off or there's no recording for it.
     if (!voice.on || !voice.urls[kind]) return;
     if (voicePlaying()) { if (!voice.queue.includes(kind)) voice.queue.push(kind); return; }
@@ -7548,7 +7628,10 @@ self.onmessage = async (e) => {
         if (m !== voice.audio && !m.paused && !m.muted) { voice.ducked.push([m, m.volume]); try { m.volume = m.volume * 0.25; } catch {} }
       });
     }
-    voice.audio.src = u; voice.audio.currentTime = 0; voice.audio.volume = 1;
+    const ready = (voice.els || {})[kind];
+    if (ready) voice.audio = ready;   // the clip's own player, loaded and ready
+    else voice.audio.src = u;
+    voice.audio.currentTime = 0; voice.audio.volume = 1;
     voice.audio.play().catch(() => voiceNext());
   }
   function voiceNext() {
@@ -7582,7 +7665,7 @@ self.onmessage = async (e) => {
         voice.speed = Math.min(70, Math.hypot(dx, dy) / (at - pp.at));   // (a GPS jump never counts as 200 mph)
       } else if (!pp || at - pp.at >= 15) voice.speed = 0;
       if (t.pos) voice.prev = { lat: t.pos.lat, lng: t.pos.lng, at };
-      voice.posAt = at; voice.heard = Date.now();
+      voice.posAt = at; voice.heard = Math.min(Date.now(), trip.fixAt || Date.now());   // from when it was at that spot
     }
     voice.nearEnd = t.state === "arrived" || (t.left != null && t.left < 150);
     if (!voice.tick) voice.tick = setInterval(voiceTick, 250);
@@ -7601,6 +7684,11 @@ self.onmessage = async (e) => {
       if (t.state !== "arrived") voiceSay("START");
     }
     if (t.state === "arrived") { if (voice.arrived !== t.id) { voice.arrived = t.id; voiceSay("ARRIVE"); } return; }
+    if (t.state === "atStop") {   // got to a stop: "u made it" for that one too
+      const k = t.id + "|stop|" + ((t.atStop || {}).n || 0);
+      if (!voice.done.has(k)) { voice.done.add(k); voiceSay("ARRIVE"); }
+      return;
+    }
     const n = t.next;
     if (t.state !== "going" || t.rerouting || !n || !n.id || n.man === "ARRIVE" || n.in == null) return;
     const key = t.id + "|" + n.id;
