@@ -1762,6 +1762,7 @@
   @keyframes cardIn { from { opacity: 0; transform: translateY(-60px) scale(.7); } }
   .uh-hand .uc.ok:active { transform: translateY(-22px) scale(1.04); }
   .uh-btns .busy { opacity: .6; cursor: progress; }
+  #gpStage .gp-sent { opacity: .55; transform: scale(.96); transition: opacity .08s, transform .08s; }
   .uh-count { text-align: center; color: var(--dim); font-size: 13px; margin-bottom: -6px; }
   /* Just their phone (remote, one device): the whole table fits on it, the hand's a bit smaller */
   /* One column, top to bottom, so nothing can sit on top of anything else; it scrolls if the phone's short. */
@@ -3087,7 +3088,10 @@ self.onmessage = async (e) => {
         throw offlineError();
       }
       if (state.offline) goOnline(); // it answered, so it's back
-      if (res.status === 401) { await askPasscode(); continue; }
+      if (res.status === 401) {
+        if (GUEST) throw new Error("That needs the pass.");   // an invite link never asks for the pass
+        await askPasscode(); continue;
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         const err = new Error(data.error || `Storage returned an error (${res.status}).`);
@@ -6096,6 +6100,7 @@ self.onmessage = async (e) => {
     const gen = ++msScreen.gen;
     let v = 0, fails = 0;
     while (gen === msScreen.gen) {
+      if (GUEST) return;   // an invite link: just the game
       if (document.visibilityState !== "visible" || state.offline || backend.id !== "pi" || !BACKENDS.pi.url) { await sleep(3000); continue; }
       try {
         const r = await api(`/api/mosync/screen?device=${encodeURIComponent(liveId)}&name=${encodeURIComponent(msScreenName())}&act=${msScreen.act}&v=${v}&wait=1`, { timeout: 40000 });
@@ -9739,10 +9744,14 @@ self.onmessage = async (e) => {
       clearTimeout(GM.touchT);
       if (!GM.touching) return;
       GM.touching = false;
-      if (GM.redraw) { GM.redraw = false; setTimeout(() => renderGame(), 60); }   // after the tap's click goes through
+      // Held back till the tap's click has gone through (Safari sends it a beat after the finger lifts).
+      if (GM.redraw) { clearTimeout(GM.redrawT); GM.redrawT = setTimeout(redrawNow, 400); }
     };
-    S.addEventListener("pointerdown", () => { GM.touching = true; clearTimeout(GM.touchT); GM.touchT = setTimeout(lift, 1500); }, true);
+    S.addEventListener("pointerdown", (e) => { GM.tapEl = e.target.closest && e.target.closest("button, [role=button]");
+      GM.touching = true; clearTimeout(GM.touchT); GM.touchT = setTimeout(lift, 1500); }, true);
     for (const ev of ["pointerup", "pointercancel"]) S.addEventListener(ev, lift, true);
+    const redrawNow = () => { clearTimeout(GM.redrawT); if (GM.redraw && !GM.touching) { GM.redraw = false; renderGame(); } };
+    S.addEventListener("click", () => setTimeout(redrawNow, 0));   // the click landed: catch up right away
   }
   window.addEventListener("popstate", () => {
     if (location.hash !== "#game") closeGame(true);
@@ -9864,18 +9873,52 @@ self.onmessage = async (e) => {
     clearTimeout(GM.idle);
     GM.idle = setTimeout(() => { if (!g.querySelector(".gp-top:hover, .gp-top :focus-visible")) g.classList.add("ui-idle"); }, 3000);
   }
-  for (const ev of ["pointermove", "pointerdown", "keydown", "touchstart"]) $("gamePlay").addEventListener(ev, gpWake, { passive: true });
+  // A mouse wakes the bar as it moves. A finger only wakes it once the tap's gone through: Safari on iPhone
+  // swallows a tap that makes something appear while it's landing (it treats it as a "hover"), so showing the
+  // bar on touch used to eat the first tap on Draw or a card.
+  for (const ev of ["pointermove", "pointerdown"]) $("gamePlay").addEventListener(ev, (e) => { if (e.pointerType === "mouse") gpWake(); }, { passive: true });
+  $("gamePlay").addEventListener("keydown", gpWake, { passive: true });
+  $("gamePlay").addEventListener("click", () => setTimeout(gpWake, 0));
   async function gameAct(action, extra = {}) {
     if (GM.busy) return toast("One sec, the Pi's still on ur last move.");
     GM.busy = true;
+    // The move shows on screen right away instead of after the trip to the Pi (far away that's a second or more).
+    // The Pi's answer replaces it a moment later; if the Pi says no, it goes back to how it was.
+    const real = GM.view, guess = real && gameGuess(real, action, extra);
+    const tapped = GM.tapEl && GM.tapEl.isConnected ? GM.tapEl : null;
+    if (guess) { GM.view = guess; renderGame(); }
+    else if (tapped) tapped.classList.add("gp-sent");   // no guess for this one: at least the thing u tapped answers straight away
     try {
       const v = await gameApi(`/api/games/${GM.code}`, { device: gameDevice(), action, ...extra });
       if (v.ended) return gameGone(true);
+      if (guess && GM.view === guess) GM.view = real;   // so the real answer always goes in
       gameUpdate(v);
     } catch (e) {
+      if (guess && GM.view === guess) { GM.view = real; renderGame(); }
       if (e.code === "NO_GAME") return gameGone(false, e.endedBy);
       toast(e.message, true);
-    } finally { GM.busy = false; }
+    } finally {
+      GM.busy = false;
+      if (tapped) tapped.classList.remove("gp-sent");
+    }
+  }
+  // Wat the screen should look like after ur move, worked out on this device (Uno: the moves that can't surprise u).
+  function gameGuess(v, action, extra) {
+    if (v.game !== "uno" || !v.state || !v.state.hand) return null;
+    const st = JSON.parse(JSON.stringify(v.state)), me = st.seat;
+    if (st.turn !== me && action !== "uno") return null;
+    if (action === "play") {
+      const cd = st.hand.find((c) => c.id === extra.card);
+      if (!cd) return null;
+      st.hand = st.hand.filter((c) => c.id !== cd.id);
+      st.top = cd; st.color = extra.color || cd.c;
+      st.counts = { ...st.counts, [me]: st.hand.length };
+    } else if (action === "draw") {
+      st.hand = st.hand.concat({ id: "__drawing", c: "w", v: "wd4" });   // a card on its way: face down till the Pi says wat it is
+    } else if (action !== "pass" && action !== "uno") return null;
+    if (action === "uno") { st.canUno = false; st.uno = { ...st.uno, [me]: true }; }
+    else { st.sending = true; st.playable = []; st.drawn = null; st.pending = 0; st.canUno = false; }
+    return { ...v, state: st };
   }
   function renderGameSub() {
     const v = GM.view;
@@ -10394,7 +10437,7 @@ self.onmessage = async (e) => {
     if (st.color) ring.style.setProperty("--cur", COLOR_HEX[st.color]);
     ring.append(unoCard(st.top));
     pile.append(ring);
-    const turn = el("div", "uh-turn" + (myTurn ? " me" : ""), st.pickColor ? "Pick the first colour" : turnLine(st.turn, me));
+    const turn = el("div", "uh-turn" + (myTurn && !st.sending ? " me" : ""), st.pickColor ? "Pick the first colour" : st.sending ? "Sent..." : turnLine(st.turn, me));
     mid.append(pile, turn);
     if (st.color) mid.append(el("div", "uh-note", `Colour: ${COLOR_NAMES[st.color]}` + (st.dir === -1 && st.order.length > 2 ? " · going the other way" : "")
       + (one && upNext && !st.pickColor ? ` · next up: ${upNext === me ? "u" : seatName(upNext)}` : "")));
@@ -10414,7 +10457,7 @@ self.onmessage = async (e) => {
       btns.append(b); return b;
     };
     if (st.pickColor) button("Pick a colour", "btn", async () => { const c = await pickColor(); if (c) gameAct("color", { color: c }); });
-    else if (myTurn) {
+    else if (myTurn && !st.sending) {
       if (st.pending) {
         button(`Take +${st.pending}`, "btn", () => gameAct("draw"));
       } else if (st.drawn !== null && st.drawn !== undefined) button("Keep it and pass", "btn ghost", () => gameAct("pass"));
@@ -10432,6 +10475,7 @@ self.onmessage = async (e) => {
     const playable = new Set(st.playable || []);
     const before = GM.handIds;
     for (const cd of cards) {
+      if (cd.id === "__drawing") { const u = unoCard(null); u.classList.add("new", "uh-coming"); hand.append(u); continue; }
       const u = unoCard(cd, "button"); u.type = "button";
       u.classList.add(playable.has(cd.id) ? "ok" : "no");
       if (before && !before.has(cd.id)) u.classList.add("new");
