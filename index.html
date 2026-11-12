@@ -7207,8 +7207,7 @@ self.onmessage = async (e) => {
     // The browser only says something when u move: the last spot's sent again every 2 seconds so the ETA stays live.
     trip.again = setInterval(() => { if (trip.last && Date.now() - trip.sentAt > 2000) tripSend(trip.last); if (trip.last) tripOffline(trip.last); }, 2000);
     trip.watch = navigator.geolocation.watchPosition((p) => { trip.last = p; tripSend(p); tripOffline(p); }, (e) => {
-      // This browser won't share where it is (a car screen): ur phone's MoCloud app sends it instead, while it's open.
-      if (e.code === 1) { tripFollow(false); toast("This browser won't share its location, so MoMaps uses ur phone's. Keep the MoCloud app open on it."); }
+      if (e.code === 1) { tripFollow(false); toast("MoMaps needs ur location. Allow it in the browser's settings.", true); }
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   }
   async function tripSend(p) {
@@ -7325,33 +7324,20 @@ self.onmessage = async (e) => {
     if (t.state === "atStop") { const go = el("button", "btn small", "Continue"); go.type = "button"; go.onclick = () => tripContinue(go); parts.push(go); }
     box.replaceChildren(...parts, full, end);
   }
-  // Where u are. Some browsers (car screens especially) never answer, or never let a site ask. Then it's where
-  // ur phone is: the MoCloud app tells the Pi while it's open. It never waits more than a few seconds, and after
-  // that uses the last spot it had (this browser's, or the one MoMaps' trip last got).
-  async function mmPhoneHere() {
-    try {
-      const r = await fetch(BACKENDS.pi.url + "/api/trip/here", { headers: { "X-Passcode": piPasscode() }, cache: "no-store" });
-      const d = await r.json();
-      return d.here ? { lat: d.here.lat, lon: d.here.lon, phone: true } : null;
-    } catch { return null; }
-  }
-  async function mmWhere(wait) {
+  // Where u are. Some browsers (car screens especially) never answer when asked: so it never waits more than
+  // a few seconds, and uses the last spot it had (this browser's, or the one MoMaps' trip last got) instead.
+  function mmWhere(wait) {
     const last = () => mm.here || (trip.last ? { lat: trip.last.coords.latitude, lon: trip.last.coords.longitude } : null)
       || (trip.t && trip.t.pos ? { lat: trip.t.pos.lat, lon: trip.t.pos.lng } : null);
-    let own = null;
-    if ("geolocation" in navigator) {
-      if (!mm.asking) {
-        mm.asking = new Promise((done) => {
-          navigator.geolocation.getCurrentPosition((p) => { mm.here = { lat: p.coords.latitude, lon: p.coords.longitude }; done(mm.here); },
-            () => done(null), { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 });
-        }).finally(() => { mm.asking = null; });
-      }
-      own = await Promise.race([mm.asking, new Promise((r) => setTimeout(r, Math.min(wait || 4000, 4000)))]);
+    if (!("geolocation" in navigator)) return Promise.resolve(last());
+    if (!mm.asking) {
+      mm.asking = new Promise((done) => {
+        navigator.geolocation.getCurrentPosition((p) => { mm.here = { lat: p.coords.latitude, lon: p.coords.longitude }; done(mm.here); },
+          (e) => { if (e.code === 1) mmNote("MoMaps needs ur location. Allow it in the browser's settings.", true); done(null); },
+          { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 });
+      }).finally(() => { mm.asking = null; });
     }
-    if (own) return own;
-    const ph = await mmPhoneHere();
-    if (ph) { mm.here = ph; return ph; }
-    return last();
+    return Promise.race([mm.asking, new Promise((r) => setTimeout(r, wait || 4000))]).then((h) => h || last());
   }
   async function mmPost(path, body) {
     const stop = new AbortController(), t = setTimeout(() => stop.abort(), 30000);   // never "Searching..." forever
@@ -7483,7 +7469,7 @@ self.onmessage = async (e) => {
     box.replaceChildren(el("h3", "", p.name), el("span", "", "Finding the fastest way from where u are..."));
     try {
       const here = await mmWhere(8000);
-      if (!here) throw new Error("Couldn't get where u are. Open the MoCloud app on ur phone (it tells MoMaps where u are while it's open), or allow location for this site.");
+      if (!here) throw new Error("This browser won't say where u are, so MoMaps can't find the way from here. Allow location for this site, or start it from the app.");
       const d = await mmPost("/api/trip/preview", { lat: here.lat, lon: here.lon, place: p });
       mmWays(p, d.ways || []);
     } catch (err) {
@@ -10294,7 +10280,10 @@ self.onmessage = async (e) => {
     if (over) say.textContent = st.winner === "draw" ? "Board's full. It's a draw." :
       v.mode === "pi" && st.winner === "p2" ? "Oh nah ur trash lmao" : `${seatName(st.winner)} u him fr`;
     else if (st.thinking) { say.textContent = "MoCloud's thinking"; const d = el("span", "c4-think seat-p2"); d.append(el("i"), el("i"), el("i")); say.append(d); }
-    else say.textContent = `${seatName(st.turn)} its ur turn gang`;
+    else {   // a player's own phone: theirs, or who they're waiting on. The board (or both on one phone): "X its ur turn gang"
+      const mineP = (v.mine || []).filter((x) => x !== "board");
+      say.textContent = mineP.length === 1 ? turnLine(st.turn, mineP[0]) : `${seatName(st.turn)} its ur turn gang`;
+    }
     const shell = el("div", "c4-shell");
     const body = el("div", "c4-body");
     const grid = el("div", "c4-grid");
@@ -12602,6 +12591,8 @@ self.onmessage = async (e) => {
     kar.panes = panes;
     kar.times = song.synced ? karTimes(song.lines, song.duration) : [];
   }
+  // A karaoke song starts playing: MoMaps shrinks to its dot (bottom left) so it isn't hopping around the moving lyrics.
+  $("kpAudio").addEventListener("play", () => { if (trip.t && !trip.mini) tripMini(true); });
   function karTick() {
     const a = $("kpAudio");
     const dur = a.duration || (kar.song && kar.song.duration) || 0;
