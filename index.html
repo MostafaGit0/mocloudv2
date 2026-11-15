@@ -424,6 +424,9 @@
   .kp-mo-track { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
   .kp-mo-fill { height: 100%; width: 0; background: var(--accent); transition: width .6s ease; }
   .kp-mo-err { color: var(--red); font-size: 12px; margin: 0; }
+  .kp-mo-h { align-items: center; }
+  .kp-mo-stop { padding: 2px 10px; font-size: 12px; margin-left: 8px; }
+  .kp-mo-h .kp-mo-stop[hidden] { display: none; }
   /* the player */
   #karPlay { position: fixed; inset: 0; z-index: 43; background: var(--ink); display: grid; grid-template-rows: 1fr; }
   /* Only the lyrics while u sing: the top and the controls float over them and fade out 2.5 seconds after
@@ -2171,7 +2174,7 @@
 <dialog id="info">
   <h3 id="infoTitle"></h3>
   <dl id="infoList"></dl>
-  <div class="info-acts"><button class="btn ghost" id="infoClose">Close</button><button class="link" id="infoFindSubs" hidden>Find subtitles</button><button class="link" id="infoWhisper" hidden>Redo subtitles with Whisper</button><button class="link" id="infoSrt" hidden>Add a subtitle file (.srt)</button><input type="file" id="infoSrtFile" accept=".srt,.vtt,.ass,.ssa" hidden><button class="link" id="infoDna" hidden>File DNA</button></div>
+  <div class="info-acts"><button class="btn ghost" id="infoClose">Close</button><button class="link" id="infoFindSubs" hidden>Find subtitles</button><button class="link" id="infoWhisper" hidden>Redo subtitles with Whisper</button><button class="link" id="infoEleven" hidden>Subtitles test: ElevenLabs</button><button class="link" id="infoSrt" hidden>Add a subtitle file (.srt)</button><input type="file" id="infoSrtFile" accept=".srt,.vtt,.ass,.ssa" hidden><button class="link" id="infoDna" hidden>File DNA</button></div>
 </dialog>
 
 <section id="settingsPage" hidden aria-labelledby="setTitle">
@@ -2298,7 +2301,7 @@
     </div>
   </div>
   <div class="kp-mo" id="kpMoBar" hidden>
-    <div class="kp-mo-h"><b id="kpMoText"></b><span id="kpMoLeft"></span></div>
+    <div class="kp-mo-h"><b id="kpMoText"></b><span id="kpMoLeft"></span><button type="button" class="btn ghost small kp-mo-stop" id="kpMoStop">Stop</button></div>
     <div class="kp-mo-track" id="kpMoTrack"><div class="kp-mo-fill" id="kpMoFill"></div></div>
     <p class="kp-mo-err" id="kpMoErr" hidden></p>
   </div>
@@ -3988,6 +3991,35 @@ self.onmessage = async (e) => {
       toast(`Whisper's gonna write subtitles for ${titleOf(f)}`);
       await refresh();
     } catch (e) { toast(e.message || "Couldn't ask the Pi for Whisper.", true); }
+  }
+
+  // Subtitles test with ElevenLabs: it listens to the episode. Has subtitles: they're lined up with wat it heard.
+  // Has none: it writes them. The ones from before are kept, so u can flip between Current and ElevenLabs.
+  async function elevenSubs(f) {
+    let st;
+    try { st = await api("/api/subs/elevenlabs?key=" + encodeURIComponent(f.key)); } catch (e) { return toast(e.message || "Couldn't reach the Pi.", true); }
+    if (st.state === "working") return toast(`ElevenLabs is working on ${titleOf(f)} rn. Give it a few minutes.`);
+    const opts = [];
+    if (st.have && st.showing !== "elevenlabs") opts.push(["show:elevenlabs", "Show the ElevenLabs subtitles"]);
+    if (st.hasCurrent && st.showing !== "current") opts.push(["show:current", "Show the Current subtitles"]);
+    const what = st.hasSubs || st.hasCurrent ? "Line up the subtitles with ElevenLabs" : "Make subtitles with ElevenLabs";
+    opts.push(["run", (st.have ? "Redo: " : "") + what + (st.setUp ? (st.price ? ` (${st.price})` : "") : " (not set up yet)")]);
+    const head = "Subtitles test, now showing: " + (st.showing === "elevenlabs" ? "ElevenLabs" : "Current")
+      + (st.state === "failed" ? ". Last time it didn't work: " + st.error : st.note ? ". " + st.note : "");
+    const pick = await askChoice(head, opts);
+    if (!pick) return;
+    await new Promise((r) => setTimeout(r, 80));
+    try {
+      if (pick.startsWith("show:")) {
+        await api("/api/subs/elevenlabs/show", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: f.key, which: pick.slice(5) }) });
+        toast(`Switching ${titleOf(f)} to the ${pick === "show:current" ? "Current" : "ElevenLabs"} subtitles. Give it a minute.`);
+      } else {
+        if (!st.setUp) return toast("ElevenLabs isn't set up yet. On the Pi run: sudo mocloud-timing-setup", true);
+        await api("/api/subs/elevenlabs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: f.key }) });
+        toast(`ElevenLabs is on ${titleOf(f)}. It switches to its subtitles when it's done (a few minutes).`);
+      }
+      await refresh();
+    } catch (e) { toast(e.message || "That didn't work.", true); }
   }
 
   // Tells you when subtitles are ready (or couldn't be found), once per result on this device,
@@ -6027,6 +6059,8 @@ self.onmessage = async (e) => {
     $("infoWhisper").hidden = !canAsk;
     $("infoWhisper").textContent = subsFile(full.key) ? "Redo subtitles with Whisper" : "Make subtitles with Whisper";
     $("infoWhisper").onclick = () => { $("info").close(); whisperSubs(full); };
+    $("infoEleven").hidden = !(video && !isYT(full) && backend.id === "pi" && state.files.some((x) => x.key === full.key));
+    $("infoEleven").onclick = () => { $("info").close(); elevenSubs(full); };
     // Ur own subtitle file for this video (.srt and such): it's lined up with the sound and used from then on.
     $("infoSrt").hidden = !(video && backend.id === "pi" && state.files.some((x) => x.key === full.key));
     $("infoSrt").onclick = () => { $("infoSrtFile").value = ""; $("infoSrtFile")._for = full; $("infoSrtFile").click(); };
@@ -12560,6 +12594,7 @@ self.onmessage = async (e) => {
     const show = !!m && (KMO_BUSY.includes(m.state) || m.state === "failed");
     bar.hidden = !show;
     if (!show) return;
+    $("kpMoStop").hidden = m.state === "failed";
     $("kpMoText").textContent = m.state === "failed" ? "MoTime didn't work" : m.state === "waking" ? "MoTime: waking ur PC..."
       : m.state === "working" ? "MoTime: timing the words..." : "MoTime: starting...";
     const left = m.state === "failed" ? null : m.left;
@@ -12606,16 +12641,25 @@ self.onmessage = async (e) => {
       }
     } catch {}
   }
+  // Stop MoTime on this song (stuck waking the PC, say): the song stays exactly as it is.
+  async function karMoStop() {
+    const s = kar.song;
+    if (!s) return;
+    try { karMo.st = await karApi("/api/karaoke/motime/cancel", { id: s.id }); karMoShow(); toast("Stopped MoTime. The song's left how it was."); }
+    catch (e) { toast(e.message, true); }
+  }
+  $("kpMoStop").addEventListener("click", karMoStop);
   $("kpMo").addEventListener("click", async () => {
     const s = kar.song;
     if (!s) return;
     const m = karMo.st, busy = m && KMO_BUSY.includes(m.state);
     const opts = [];
+    if (busy) opts.push(["stop", "Stop MoTime"]);
     if (!busy) opts.push(["fix", "Fix timing with MoTime"]);
     if (!busy && m && m.canUndo) opts.push(["undo", "Undo MoTime"]);
-    if (!opts.length) return toast("MoTime's working on this one rn.");
     const pick = await askChoice("MoTime", opts);
     await new Promise((r) => setTimeout(r, 80));   // the first box's close finishes before the second opens
+    if (pick === "stop") return karMoStop();
     if (pick === "fix") {
       const ok = await askChoice("Let MoTime fix this song? Ur PC lines every word up with the singing (it gets woken if it's asleep). If u don't like how it comes out, Undo MoTime puts it back.", [["yes", "Fix it"]]);
       if (ok !== "yes") return;
