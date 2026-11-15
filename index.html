@@ -2293,7 +2293,7 @@
     <button type="button" class="btn ghost small" id="kpBack">&larr; Back</button>
     <div class="kp-name"><b id="kpTitle"></b><span id="kpArtist"></span></div>
     <div class="kp-acts">
-      <button type="button" class="btn ghost small kp-tt-btn" id="kpTT" title="Timing test: Music.ai vs AudioShake">Timing: Current</button>
+      <button type="button" class="btn ghost small kp-tt-btn" id="kpTT" title="Timing test: ElevenLabs vs AudioShake">Timing: Current</button>
       <button type="button" class="btn ghost small kp-mo-btn" id="kpMo" aria-label="Lyrics timing (MoTime)" title="Lyrics timing (MoTime)">&#8943;</button>
     </div>
   </div>
@@ -12632,9 +12632,9 @@ self.onmessage = async (e) => {
       } catch (e) { toast(e.message, true); }
     }
   });
-  // ----- Timing test: Music.ai vs AudioShake on the same song (both get the lyrics as they were before either one) -----
+  // ----- Timing test: ElevenLabs vs AudioShake on the same song (both get the lyrics as they were before either one) -----
   const karTT = { id: "", st: null, timer: 0 };
-  const TT_LABEL = { current: "Current", musicai: "Music.ai", audioshake: "AudioShake" };
+  const TT_LABEL = { current: "Current", elevenlabs: "ElevenLabs", audioshake: "AudioShake" };
   function karTTShow() {
     const t = karTT.st, b = $("kpTT"), bar = $("kpTTBar");
     const showing = (t && t.showing) || "current";
@@ -12677,14 +12677,13 @@ self.onmessage = async (e) => {
     if (!s) return;
     if (!t) return toast("Couldn't reach the Pi for the timing test rn.", true);
     const opts = [];
-    for (const k of ["current", "musicai", "audioshake"]) {
+    for (const k of ["current", "elevenlabs", "audioshake"]) {
       const have = k === "current" ? t.hasCurrent : t.services[k].have;
       if (have && k !== t.showing) opts.push(["show:" + k, "Show the " + TT_LABEL[k] + " timing"]);
     }
     for (const [k, v] of Object.entries(t.services)) {
       if (v.state === "working") continue;
-      const price = v.cost == null ? "" : k === "audioshake" ? ` (${v.credits} credit${v.credits === 1 ? "" : "s"}, about $${v.cost.toFixed(2)})` : ` (about $${v.cost.toFixed(2)})`;
-      opts.push(["run:" + k, (v.have ? "Redo with " : "Time it with ") + v.name + (v.setUp ? price : " (not set up yet)")]);
+      opts.push(["run:" + k, (v.have ? "Redo with " : "Time it with ") + v.name + (v.setUp ? (v.price ? ` (${v.price})` : "") : " (not set up yet)")]);
     }
     const pick = await askChoice("Timing test, now showing: " + TT_LABEL[t.showing] + ". Both services get this song's lyrics as they were before either one touched it.", opts);
     if (!pick) return;
@@ -12697,7 +12696,7 @@ self.onmessage = async (e) => {
     }
     const v = t.services[k];
     if (!v.setUp) return toast(v.name + " isn't set up yet. On the Pi run: sudo mocloud-timing-setup", true);
-    const ok = await askChoice(`Time this song with ${v.name}? It costs about $${(v.cost || 0).toFixed(2)}. When it's done it switches to the ${v.name} timing, and u can flip back any time.`, [["yes", "Time it"]]);
+    const ok = await askChoice(`Time this song with ${v.name}? ${v.price ? "It's " + v.price + ". " : ""}When it's done it switches to the ${v.name} timing, and u can flip back any time.`, [["yes", "Time it"]]);
     if (ok !== "yes") return;
     try { karTT.st = await karApi("/api/karaoke/timing-test", { id: s.id, service: k }); karTTShow(); clearTimeout(karTT.timer); karTT.timer = setTimeout(karTTCheck, 3000); }
     catch (e) { toast(e.message, true); }
