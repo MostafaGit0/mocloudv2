@@ -3887,6 +3887,12 @@ self.onmessage = async (e) => {
   }
   const playerWake = autoHide($("player"), () => { const v = $("pStage").querySelector("video"); return !!v && !v.paused && !v.ended; });
   for (const ev of ["play", "pause", "ended"]) $("pStage").addEventListener(ev, playerWake, true);
+  // The video's own buttons (play, skip, the slider) go with the rest: Safari only fades them, so they're turned off
+  // completely while things are hidden, and back the moment u touch the screen.
+  new MutationObserver(() => {
+    const on = !$("player").classList.contains("ui-idle");
+    $("pStage").querySelectorAll("video").forEach((v) => { if (v.controls !== on) v.controls = on; });
+  }).observe($("player"), { attributes: true, attributeFilter: ["class"] });
   const onFs = () => {
     $("fsBtn").textContent = fsElement() === $("pBody") ? "Exit full screen" : "Full screen";
     playerWake();
@@ -6340,6 +6346,7 @@ self.onmessage = async (e) => {
       if (old._subsUrl) URL.revokeObjectURL(old._subsUrl);
     });
     stage.replaceChildren();
+    $("player").classList.remove("ui-idle");
     $("pTitle").textContent = titleOf(f); $("pTitle").title = f.name;
     $("pSource").textContent = "";
     $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || knownThumb(f.key));
@@ -6459,6 +6466,7 @@ self.onmessage = async (e) => {
     pmini.nodes = [...$("pStage").childNodes];
     b.querySelector(".pmini-hold").append(...pmini.nodes);
     pmini.v = v; pmini.on = true;
+    v.controls = false;   // the bar is the only controls now: Safari draws a video's own buttons on top of everything, even hidden
     b.querySelector(".pmini-open b").textContent = $("pTitle").textContent;
     ["timeupdate", "play", "pause", "ended", "durationchange"].forEach((e) => v.addEventListener(e, pminiTick));
     if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
@@ -6472,6 +6480,7 @@ self.onmessage = async (e) => {
   function pminiPut() {   // the player's things go back where they were
     const v = pmini.v;
     if (v) ["timeupdate", "play", "pause", "ended", "durationchange"].forEach((e) => v.removeEventListener(e, pminiTick));
+    if (v) v.controls = true;   // back in the player: its own buttons again
     $("pStage").append(...pmini.nodes);
     pmini.nodes = []; pmini.v = null; pmini.on = false;
     if (pmini.box) pmini.box.classList.remove("on");
