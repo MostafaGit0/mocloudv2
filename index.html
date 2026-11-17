@@ -443,6 +443,7 @@
   .kp-name span { display: block; color: var(--dim); font-size: 13px; }
   .kp-stage { display: grid; grid-template-columns: 1fr; gap: 0 28px; min-height: 0; padding: 0 18px; }
   .kp-stage.two { grid-template-columns: 1fr 1fr; }
+  .kp-stage.two.flip > .kp-pane:first-child { order: 2; }   /* Swap sides: English on the left, the original on the right */
   .kp-pane { overflow-y: auto; min-height: 0; padding: 30vh 6px 40vh; scrollbar-width: none; text-align: center;
     -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 78%, transparent); mask-image: linear-gradient(transparent, #000 18%, #000 78%, transparent); }
   .kp-pane::-webkit-scrollbar { display: none; }
@@ -982,6 +983,17 @@
   .p-stage { position: relative; overflow: hidden; background: #000; display: grid; place-items: center; min-height: 200px; border-radius: var(--radius); }
   .p-body:fullscreen .p-stage { border-radius: 0; }
   .p-body:-webkit-full-screen .p-stage { border-radius: 0; }
+  .p-stage video::-webkit-media-controls, .p-stage video::-webkit-media-controls-panel, .p-stage video::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+  .p-vc { position: absolute; inset: 0; z-index: 3; pointer-events: none; transition: opacity .35s ease, visibility .35s; }
+  #player.ui-idle .p-vc { opacity: 0; visibility: hidden; }
+  .p-vc button, .p-vc input { pointer-events: auto; }
+  .p-vc-mid { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 28px; }
+  .p-vc-mid button { border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: #fff; background: rgba(0,0,0,.45); }
+  .p-vc-skip { width: 52px; height: 52px; } .p-vc-skip svg { width: 30px; height: 30px; }
+  .p-vc-play { width: 68px; height: 68px; } .p-vc-play svg { width: 32px; height: 32px; }
+  .p-vc-bot { position: absolute; left: 12px; right: 12px; bottom: 10px; display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: 14px; background: rgba(0,0,0,.5); color: #fff; }
+  .p-vc-time { flex: none; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .p-vc-seek { flex: 1; min-width: 0; accent-color: #fff; }
   .p-stage video, .p-stage img { display: block; width: 100%; max-height: calc(100dvh - 170px); object-fit: contain; background: #000; }
   /* Screen size. Default is how it always looked. The others fill a widescreen frame. */
   .p-stage:not([data-fit="default"]) video { aspect-ratio: 16 / 9; height: auto; }
@@ -2316,6 +2328,7 @@
       <button type="button" class="kp-pill" id="kpSpeed" aria-pressed="false" title="How fast it plays (the pitch stays the same)">Speed 1&times;</button>
       <button type="button" class="kp-pill" id="kpRepeat" aria-pressed="false" title="Play it again from the top when it ends">Repeat</button>
       <button type="button" class="kp-pill" id="kpTrans" aria-pressed="true" hidden title="Show or hide the English">English on</button>
+      <button type="button" class="kp-pill" id="kpFlip" aria-pressed="false" hidden title="Swap which side the original and the English are on">Swap sides</button>
       <button type="button" class="kp-pill" id="kpAr" hidden title="Switch Arabic typed in English letters to Arabic letters">عربي</button>
       <button type="button" class="kp-pill" id="kpHab" hidden></button>
       <button type="button" class="kp-pill" id="kpSize" title="How big the lyrics are">Text medium</button>
@@ -3887,12 +3900,6 @@ self.onmessage = async (e) => {
   }
   const playerWake = autoHide($("player"), () => { const v = $("pStage").querySelector("video"); return !!v && !v.paused && !v.ended; });
   for (const ev of ["play", "pause", "ended"]) $("pStage").addEventListener(ev, playerWake, true);
-  // The video's own buttons (play, skip, the slider) go with the rest: Safari only fades them, so they're turned off
-  // completely while things are hidden, and back the moment u touch the screen.
-  new MutationObserver(() => {
-    const on = !$("player").classList.contains("ui-idle");
-    $("pStage").querySelectorAll("video").forEach((v) => { if (v.controls !== on) v.controls = on; });
-  }).observe($("player"), { attributes: true, attributeFilter: ["class"] });
   const onFs = () => {
     $("fsBtn").textContent = fsElement() === $("pBody") ? "Exit full screen" : "Full screen";
     playerWake();
@@ -6334,6 +6341,39 @@ self.onmessage = async (e) => {
     if (note) toast(note);
   }
 
+  // The video's controls: back 15, play / pause, forward 15, and the time with a slider. They're MoCloud's own (Safari's
+  // never show), so when they fade with the rest of the player they're fully gone, nothing left over the picture.
+  function playerControls(v) {
+    const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>';
+    const PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>';
+    const skip = (fwd) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${fwd ? "M13 3.5a8.5 8.5 0 1 1-8.2 6.3" : "M11 3.5a8.5 8.5 0 1 0 8.2 6.3"}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="${fwd ? "M13 1v5l3.5-2.5z" : "M11 1v5L7.5 3.5z"}" fill="currentColor"/><text x="12" y="16" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor">15</text></svg>`;
+    const box = el("div", "p-vc");
+    box.innerHTML = `<div class="p-vc-mid"><button type="button" class="p-vc-skip" data-by="-15" aria-label="Back 15 seconds">${skip(false)}</button>
+      <button type="button" class="p-vc-play" aria-label="Pause"></button>
+      <button type="button" class="p-vc-skip" data-by="15" aria-label="Forward 15 seconds">${skip(true)}</button></div>
+      <div class="p-vc-bot"><span class="p-vc-time"></span><input type="range" class="p-vc-seek" min="0" max="1" step="0.1" value="0" aria-label="Where in the video"></div>`;
+    const play = box.querySelector(".p-vc-play"), seek = box.querySelector(".p-vc-seek"), time = box.querySelector(".p-vc-time");
+    const clock = (x) => { x = Math.max(0, Math.floor(x || 0)); const h = Math.floor(x / 3600), m = Math.floor(x / 60) % 60, sec = String(x % 60).padStart(2, "0"); return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`; };
+    const paint = (at) => {
+      const d = isFinite(v.duration) ? v.duration : 0, t = at != null ? at : v.currentTime;
+      time.textContent = `${clock(t)} / ${clock(d)}`;
+      if (d && +seek.max !== d) seek.max = d;
+      if (at == null && !seek._held) seek.value = t;
+      const on = !v.paused && !v.ended;
+      if (play._on !== on) { play._on = on; play.innerHTML = on ? PAUSE : PLAY; play.setAttribute("aria-label", on ? "Pause" : "Play"); }
+    };
+    play.onclick = () => { if (v.paused || v.ended) v.play().catch(() => {}); else v.pause(); };
+    box.querySelectorAll(".p-vc-skip").forEach((b) => b.onclick = () => {
+      const d = isFinite(v.duration) ? v.duration : Infinity;
+      v.currentTime = Math.min(Math.max(0, v.currentTime + +b.dataset.by), d); paint();
+    });
+    seek.addEventListener("input", () => { seek._held = true; paint(+seek.value); });
+    seek.addEventListener("change", () => { v.currentTime = +seek.value; seek._held = false; });
+    ["timeupdate", "play", "pause", "ended", "durationchange", "loadedmetadata", "seeked"].forEach((e) => v.addEventListener(e, () => paint()));
+    paint();
+    return box;
+  }
+
   function openPlayer(f) {
     if (pmini.on) { if (player.f && player.f.key === f.key) return pminiBack(); pminiStop(); }   // the one in the mini bar makes way
     if (!shuffleKeys.includes(f.key)) { shuffleKeys = []; queueFrom = ""; queueLoop = "off"; } // picking something else ends a shuffle or playlist
@@ -6346,7 +6386,6 @@ self.onmessage = async (e) => {
       if (old._subsUrl) URL.revokeObjectURL(old._subsUrl);
     });
     stage.replaceChildren();
-    $("player").classList.remove("ui-idle");
     $("pTitle").textContent = titleOf(f); $("pTitle").title = f.name;
     $("pSource").textContent = "";
     $("pInfo").onclick = () => openInfo(f, stage.querySelector("video") || knownThumb(f.key));
@@ -6362,9 +6401,8 @@ self.onmessage = async (e) => {
 
     if (isVideo(f)) {
       const v = document.createElement("video");
-      v.controls = true; v.autoplay = true; v.playsInline = true; v.preload = "auto";
+      v.controls = false; v.autoplay = true; v.playsInline = true; v.preload = "auto";   // MoCloud's own controls, never Safari's
       if (isYT(f)) v.crossOrigin = "anonymous";   // so Volume boost can turn its sound up (the Pi allows it)
-      v.setAttribute("controlslist", "nofullscreen"); // the Full screen button below keeps the screen size
       v.addEventListener("error", () => {
         const box = document.createElement("div"); box.className = "p-error";
         box.innerHTML = "<b>This browser can’t play this file</b>The video is fine, but its format (often MKV, AVI or HEVC) isn’t supported here. Download it, or copy the direct link and open it in VLC with Open Network Stream.";
@@ -6377,7 +6415,7 @@ self.onmessage = async (e) => {
         box.append(document.createElement("br"), direct);
         stage.replaceChildren(box);
       });
-      stage.append(v);
+      stage.append(v, playerControls(v));
       if (MS.s && MS.s.key === f.key && MS.s.state !== "ended") msAttach(v);   // MoSync: the sound's on the phone
       trackProgress(f, v);
       attachSubs(f, v);
@@ -6466,7 +6504,6 @@ self.onmessage = async (e) => {
     pmini.nodes = [...$("pStage").childNodes];
     b.querySelector(".pmini-hold").append(...pmini.nodes);
     pmini.v = v; pmini.on = true;
-    v.controls = false;   // the bar is the only controls now: Safari draws a video's own buttons on top of everything, even hidden
     b.querySelector(".pmini-open b").textContent = $("pTitle").textContent;
     ["timeupdate", "play", "pause", "ended", "durationchange"].forEach((e) => v.addEventListener(e, pminiTick));
     if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
@@ -6480,7 +6517,6 @@ self.onmessage = async (e) => {
   function pminiPut() {   // the player's things go back where they were
     const v = pmini.v;
     if (v) ["timeupdate", "play", "pause", "ended", "durationchange"].forEach((e) => v.removeEventListener(e, pminiTick));
-    if (v) v.controls = true;   // back in the player: its own buttons again
     $("pStage").append(...pmini.nodes);
     pmini.nodes = []; pmini.v = null; pmini.on = false;
     if (pmini.box) pmini.box.classList.remove("on");
@@ -12836,7 +12872,9 @@ self.onmessage = async (e) => {
     const bilingual = !!song.langName && (song.lines || []).some((l) => l.en) || (song.plain || []).some((l) => l && l.en);
     const two = bilingual && karPref("mocloud-kar-trans", "1") === "1";   // the English can be hidden
     $("kpTrans").hidden = !bilingual;
-    stage.className = "kp-stage" + (two ? " two" : "");
+    const flip = two && karPref("mocloud-kar-flip", "0") === "1";
+    $("kpFlip").hidden = !two;
+    stage.className = "kp-stage" + (two ? " two" : "") + (flip ? " flip" : "");
     const panes = [];
     const mkPane = (label, pick) => {
       const pane = el("div", "kp-pane" + (song.synced ? "" : " kp-plain"));
@@ -12939,6 +12977,7 @@ self.onmessage = async (e) => {
     a.loop = rep; $("kpRepeat").setAttribute("aria-pressed", String(rep));
     const trans = karPref("mocloud-kar-trans", "1") === "1";
     $("kpTrans").textContent = trans ? "English on" : "English off"; $("kpTrans").setAttribute("aria-pressed", String(trans));
+    $("kpFlip").setAttribute("aria-pressed", String(karPref("mocloud-kar-flip", "0") === "1"));
     const size = KAR_SIZES[Math.max(0, Math.min(3, parseInt(karPref("mocloud-kar-size", "1"), 10) || 0))] || KAR_SIZES[1];
     $("karPlay").style.setProperty("--kar-scale", size[1]);
     $("kpSize").textContent = "Text " + size[0];
@@ -12950,6 +12989,10 @@ self.onmessage = async (e) => {
   $("kpRepeat").addEventListener("click", () => { karSet("mocloud-kar-repeat", karPref("mocloud-kar-repeat", "0") === "1" ? "0" : "1"); karControls(); });
   $("kpTrans").addEventListener("click", () => {
     karSet("mocloud-kar-trans", karPref("mocloud-kar-trans", "1") === "1" ? "0" : "1");
+    karControls(); if (kar.song) { karBuild(kar.song); kar.cur = -2; }
+  });
+  $("kpFlip").addEventListener("click", () => {
+    karSet("mocloud-kar-flip", karPref("mocloud-kar-flip", "0") === "1" ? "0" : "1");
     karControls(); if (kar.song) { karBuild(kar.song); kar.cur = -2; }
   });
   $("kpSize").addEventListener("click", async () => {
