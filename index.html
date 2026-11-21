@@ -2309,7 +2309,7 @@
     <div class="kp-name"><b id="kpTitle"></b><span id="kpArtist"></span></div>
     <div class="kp-acts">
       <button type="button" class="btn ghost small kp-tt-btn" id="kpTT" title="Timing test: ElevenLabs vs AudioShake">Timing: Current</button>
-      <button type="button" class="btn ghost small kp-mo-btn" id="kpMo" aria-label="Lyrics timing (MoTime)" title="Lyrics timing (MoTime)">&#8943;</button>
+      <button type="button" class="btn ghost small kp-mo-btn" id="kpMo" aria-label="This song: MoTime, fill in repeats" title="This song: MoTime, fill in repeats">&#8943;</button>
     </div>
   </div>
   <div class="kp-mo" id="kpMoBar" hidden>
@@ -12554,6 +12554,7 @@ self.onmessage = async (e) => {
     $("karPlay").hidden = false;
     karMoWatch(sg.id);
     karTTWatch(sg.id);
+    karRepWatch(sg.id);
     if (location.hash !== "#sing") history.pushState({ mocloudSing: 1 }, "", "#sing");
     if ("mediaSession" in navigator && typeof MediaMetadata !== "undefined") {
       try { navigator.mediaSession.metadata = new MediaMetadata({ title: song.title, artist: song.artist || "", album: "MoCloud karaoke" }); } catch {}
@@ -12702,9 +12703,14 @@ self.onmessage = async (e) => {
     if (busy) opts.push(["stop", "Stop MoTime"]);
     if (!busy) opts.push(["fix", "Fix timing with MoTime"]);
     if (!busy && m && m.canUndo) opts.push(["undo", "Undo MoTime"]);
-    const pick = await askChoice("MoTime", opts);
+    const r = karRep.st, repBusy = r && KREP_BUSY.includes(r.state);
+    if (!repBusy) opts.push(["repeats", "Fill in repeats"]);
+    if (!repBusy && r && r.canUndo) opts.push(["repundo", "Undo fill in repeats"]);
+    const pick = await askChoice("This song", opts);
     await new Promise((r) => setTimeout(r, 80));   // the first box's close finishes before the second opens
     if (pick === "stop") return karMoStop();
+    if (pick === "repeats") return karRepStart();
+    if (pick === "repundo") return karRepUndo();
     if (pick === "fix") {
       const ok = await askChoice("Let MoTime fix this song? Ur PC lines every word up with the singing (it gets woken if it's asleep). If u don't like how it comes out, Undo MoTime puts it back.", [["yes", "Fix it"]]);
       if (ok !== "yes") return;
@@ -12721,6 +12727,54 @@ self.onmessage = async (e) => {
       } catch (e) { toast(e.message, true); }
     }
   });
+  // ----- Fill in repeats: songs saved when lyrics sites shortened their repeats ("[Chorus x2]") -----
+  // The missing lines get added (their English copied from the same line, free), then the Pi times it again by ear.
+  const karRep = { id: "", st: null, timer: 0 };
+  const KREP_BUSY = ["working", "timing"];
+  async function karRepCheck() {
+    const id = karRep.id;
+    if (!id || $("karPlay").hidden) return;
+    let r = null;
+    try { r = await karApi("/api/karaoke/repeats?id=" + encodeURIComponent(id)); } catch {}
+    if (id !== karRep.id) return;
+    const was = karRep.st && karRep.st.state;
+    karRep.st = r;
+    if (r && was && was !== r.state) {
+      if (r.state === "timing" || r.state === "done") await karSongRefresh(id);
+      if (r.state === "failed") toast(r.error, true);
+      else if (r.note && ["timing", "done", "nothing"].includes(r.state)) toast(r.note);
+    }
+    clearTimeout(karRep.timer);
+    if (r && KREP_BUSY.includes(r.state)) karRep.timer = setTimeout(karRepCheck, 5000);
+  }
+  function karRepWatch(id) {
+    karRep.id = id; karRep.st = null;
+    clearTimeout(karRep.timer);
+    karRepCheck();
+  }
+  async function karRepStart() {
+    const s = kar.song;
+    if (!s) return;
+    const ok = await askChoice("Fill in repeats? If this song's lyrics are missing a repeated chorus (the light-up stops there), the Pi adds the missing lines, copies their English from the same lines, and times it again by ear. All free. Undo puts it back exactly.", [["yes", "Fill them in"]]);
+    if (ok !== "yes") return;
+    try {
+      karRep.st = await karApi("/api/karaoke/repeats", { id: s.id });
+      toast("Looking up the full lyrics...");
+      clearTimeout(karRep.timer); karRep.timer = setTimeout(karRepCheck, 2000);
+    } catch (e) { toast(e.message, true); }
+  }
+  async function karRepUndo() {
+    const s = kar.song;
+    if (!s) return;
+    const ok = await askChoice("Undo fill in repeats? The song goes back exactly how it was before.", [["yes", "Undo"]]);
+    if (ok !== "yes") return;
+    try {
+      karRep.st = await karApi("/api/karaoke/repeats/undo", { id: s.id });
+      await karSongRefresh(s.id);
+      karTTWatch(s.id);
+      toast("Put back how it was.");
+    } catch (e) { toast(e.message, true); }
+  }
   // ----- Timing test: ElevenLabs vs AudioShake on the same song (both get the lyrics as they were before either one) -----
   const karTT = { id: "", st: null, timer: 0 };
   const TT_LABEL = { current: "Current", elevenlabs: "ElevenLabs", audioshake: "AudioShake" };
